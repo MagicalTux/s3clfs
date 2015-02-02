@@ -33,6 +33,7 @@ QT += network
 DEFINES += S3CLFS_$$upper($${BUILD_TYPE})
 SOURCES += src/$${BUILD_TYPE}/main.cpp
 CONFIG += silent
+LIBS += -lfuse
 
 include(src/leveldb.pri)
 
