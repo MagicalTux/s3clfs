@@ -34,6 +34,8 @@ DEFINES += S3CLFS_$$upper($${BUILD_TYPE})
 SOURCES += src/$${BUILD_TYPE}/main.cpp
 CONFIG += silent
 
+include(src/leveldb.pri)
+
 x11 {
 	CONFIG += link_pkgconfig
 	PKGCONFIG += openssl
