@@ -8,7 +8,7 @@ int main(int argc, char *argv[]) {
 
 	// arguments
 	QCommandLineParser parser;
-	parser.setApplicationDescription("S3ClFS");
+	parser.setApplicationDescription("S3 Cluster FileSystem");
 	parser.addHelpOption();
 	parser.addVersionOption();
 	parser.addPositionalArgument("bucket", QCoreApplication::translate("main", "Name of bucket on AWS S3"));
@@ -18,7 +18,13 @@ int main(int argc, char *argv[]) {
 	parser.process(app);
 
 	const QStringList args = parser.positionalArguments();
+	if (args.length() != 2) {
+		parser.showHelp(1);
+		Q_UNREACHABLE();
+	}
 	// bucket is args.at(0), path is args.at(1)
+	//
+	qDebug("here?");
 
 	return app.exec();
 }
