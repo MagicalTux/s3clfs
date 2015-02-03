@@ -5,6 +5,10 @@ QtFuseNode::QtFuseNode(QtFuse &_fuse, struct stat *_attr, QString _name, QtFuseN
 	parent = _parent;
 }
 
+fuse_ino_t QtFuseNode::getIno() const {
+	return ino;
+}
+
 const struct stat *QtFuseNode::getAttr() const {
 	return &attr;
 }

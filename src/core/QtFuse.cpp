@@ -7,7 +7,9 @@
 
 #define QTFUSE_OBJ_FROM_REQ() QtFuse *c = (QtFuse*)fuse_req_userdata(req)
 #define QTFUSE_CHECK_INODE(ino) if (!c->inode_map.contains(ino)) { fuse_reply_err(req, EINVAL); return; }
+#define QTFUSE_CHECK_INODE2(ino) if (!inode_map.contains(ino)) { req->error(EINVAL); return; }
 #define QTFUSE_GET_INODE(ino) (c->inode_map.value(ino))
+#define QTFUSE_GET_INODE2(ino) (inode_map.value(ino))
 #define QTFUSE_REQ() (new QtFuseRequest(req, *c))
 #define QTFUSE_NOT_IMPL(e) qDebug("fuse: %s not implemented, returning " #e, __FUNCTION__); req->error(e)
 
@@ -60,8 +62,14 @@ void QtFuse::fuse_lookup_root(QtFuseRequest *req) {
 }
 
 void QtFuse::priv_qtfuse_forget(fuse_req_t req, fuse_ino_t ino, unsigned long nlookup) {
-	qDebug("TODO forget(%ld, %ld)", ino, nlookup);
-	fuse_reply_none(req);
+	QTFUSE_OBJ_FROM_REQ();
+	QTFUSE_CHECK_INODE(ino);
+	c->fuse_forget(QTFUSE_REQ(), QTFUSE_GET_INODE(ino), nlookup);
+}
+
+void QtFuse::fuse_forget(QtFuseRequest *req, QtFuseNode *node, unsigned long nlookup) {
+	qDebug("TODO forget(%ld, %ld)", node->getIno(), nlookup);
+	req->none();
 }
 
 void QtFuse::priv_qtfuse_getattr(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi) {
@@ -396,6 +404,60 @@ void QtFuse::fuse_poll(QtFuseRequest *req, QtFuseNode*, struct fuse_file_info*, 
 	QTFUSE_NOT_IMPL(ENOSYS);
 }
 
+void QtFuse::priv_qtfuse_write_buf(fuse_req_t req, fuse_ino_t ino, struct fuse_bufvec *bufv, off_t off, struct fuse_file_info *fi) {
+	QTFUSE_OBJ_FROM_REQ();
+	QTFUSE_CHECK_INODE(ino);
+	c->fuse_write_buf(QTFUSE_REQ(), QTFUSE_GET_INODE(ino), bufv, off, fi);
+}
+
+void QtFuse::fuse_write_buf(QtFuseRequest *req, QtFuseNode*, struct fuse_bufvec *, off_t, struct fuse_file_info *) {
+	QTFUSE_NOT_IMPL(ENOSYS);
+}
+
+void QtFuse::priv_qtfuse_retrieve_reply(fuse_req_t req, void *cookie, fuse_ino_t ino, off_t offset, struct fuse_bufvec *bufv) {
+	QTFUSE_OBJ_FROM_REQ();
+	QTFUSE_CHECK_INODE(ino);
+	c->fuse_retrieve_reply(QTFUSE_REQ(), cookie, QTFUSE_GET_INODE(ino), offset, bufv);
+}
+
+void QtFuse::fuse_retrieve_reply(QtFuseRequest *req, void*, QtFuseNode*, off_t, struct fuse_bufvec *) {
+	req->none();
+}
+
+void QtFuse::priv_qtfuse_forget_multi(fuse_req_t req, size_t count, struct fuse_forget_data *forgets) {
+	QTFUSE_OBJ_FROM_REQ();
+	c->fuse_forget_multi(QTFUSE_REQ(), count, forgets);
+}
+
+void QtFuse::fuse_forget_multi(QtFuseRequest *req, size_t count, struct fuse_forget_data *forgets) {
+	for(size_t i = 0; i < count; i++) {
+		fuse_ino_t ino = forgets[i].ino;
+		QTFUSE_CHECK_INODE2(ino);
+		fuse_forget(req, QTFUSE_GET_INODE2(ino), forgets[i].nlookup);
+	}
+	req->none(); // just in case count==0
+}
+
+void QtFuse::priv_qtfuse_flock(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi, int op) {
+	QTFUSE_OBJ_FROM_REQ();
+	QTFUSE_CHECK_INODE(ino);
+	c->fuse_flock(QTFUSE_REQ(), QTFUSE_GET_INODE(ino), fi, op);
+}
+
+void QtFuse::fuse_flock(QtFuseRequest *req, QtFuseNode*, struct fuse_file_info *, int) {
+	QTFUSE_NOT_IMPL(ENOSYS);
+}
+
+void QtFuse::priv_qtfuse_fallocate(fuse_req_t req, fuse_ino_t ino, int mode, off_t offset, off_t length, struct fuse_file_info *fi) {
+	QTFUSE_OBJ_FROM_REQ();
+	QTFUSE_CHECK_INODE(ino);
+	c->fuse_fallocate(QTFUSE_REQ(), QTFUSE_GET_INODE(ino), mode, offset, length, fi);
+}
+
+void QtFuse::fuse_fallocate(QtFuseRequest *req, QtFuseNode*, int, off_t, off_t, struct fuse_file_info *) {
+	QTFUSE_NOT_IMPL(ENOSYS);
+}
+
 static bool signals_set = false;
 struct fuse_lowlevel_ops QtFuse::qtfuse_op = {
 	priv_qtfuse_init,
@@ -434,6 +496,11 @@ struct fuse_lowlevel_ops QtFuse::qtfuse_op = {
 	priv_qtfuse_bmap,
 	priv_qtfuse_ioctl,
 	priv_qtfuse_poll,
+	priv_qtfuse_write_buf,
+	priv_qtfuse_retrieve_reply,
+	priv_qtfuse_forget_multi,
+	priv_qtfuse_flock,
+	priv_qtfuse_fallocate,
 };
 
 QtFuseNode *QtFuse::fuse_make_node(struct stat *attr, QString name, QtFuseNode *parent, int ino) {

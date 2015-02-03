@@ -38,6 +38,7 @@ protected:
 	virtual void fuse_destroy();
 	virtual void fuse_lookup(QtFuseRequest *req, QtFuseNode *parent, QString name);
 	virtual void fuse_lookup_root(QtFuseRequest *req); // called to lookup the root node
+	virtual void fuse_forget(QtFuseRequest *req, QtFuseNode *node, unsigned long nlookup);
 	virtual void fuse_getattr(QtFuseRequest *req, QtFuseNode *node, struct fuse_file_info *fi);
 	virtual void fuse_setattr(QtFuseRequest *req, QtFuseNode *node, struct stat *attr, int to_set, struct fuse_file_info *fi);
 	virtual void fuse_readlink(QtFuseRequest *req, QtFuseNode *node);
@@ -70,6 +71,11 @@ protected:
 	virtual void fuse_bmap(QtFuseRequest *req, QtFuseNode *ino, size_t blocksize, uint64_t idx);
 	virtual void fuse_ioctl(QtFuseRequest *req, QtFuseNode *ino, int cmd, void *arg, struct fuse_file_info *fi, unsigned flags, const void *in_buf, size_t in_bufsz, size_t out_bufsz);
 	virtual void fuse_poll(QtFuseRequest *req, QtFuseNode *ino, struct fuse_file_info *fi, struct fuse_pollhandle *ph);
+	virtual void fuse_write_buf(QtFuseRequest *req, QtFuseNode *ino, struct fuse_bufvec *bufv, off_t off, struct fuse_file_info *fi);
+	virtual void fuse_retrieve_reply(QtFuseRequest *req, void *cookie, QtFuseNode *ino, off_t offset, struct fuse_bufvec *bufv);
+	virtual void fuse_forget_multi(QtFuseRequest *req, size_t count, struct fuse_forget_data *forgets);
+	virtual void fuse_flock(QtFuseRequest *req, QtFuseNode *ino, struct fuse_file_info *fi, int op);
+	virtual void fuse_fallocate(QtFuseRequest *req, QtFuseNode *ino, int mode, off_t offset, off_t length, struct fuse_file_info *fi);
 
 	virtual QtFuseNode *fuse_make_node(struct stat *attr, QString name, QtFuseNode *parent, int ino=0);
 	QMap<long int, QtFuseNode*> inode_map;
@@ -116,6 +122,11 @@ private:
 	static void priv_qtfuse_bmap(fuse_req_t req, fuse_ino_t ino, size_t blocksize, uint64_t idx);
 	static void priv_qtfuse_ioctl(fuse_req_t req, fuse_ino_t ino, int cmd, void *arg, struct fuse_file_info *fi, unsigned flags, const void *in_buf, size_t in_bufsz, size_t out_bufsz);
 	static void priv_qtfuse_poll(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi, struct fuse_pollhandle *ph);
+	static void priv_qtfuse_write_buf(fuse_req_t req, fuse_ino_t ino, struct fuse_bufvec *bufv, off_t off, struct fuse_file_info *fi);
+	static void priv_qtfuse_retrieve_reply(fuse_req_t req, void *cookie, fuse_ino_t ino, off_t offset, struct fuse_bufvec *bufv);
+	static void priv_qtfuse_forget_multi(fuse_req_t req, size_t count, struct fuse_forget_data *forgets);
+	static void priv_qtfuse_flock(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi, int op);
+	static void priv_qtfuse_fallocate(fuse_req_t req, fuse_ino_t ino, int mode, off_t offset, off_t length, struct fuse_file_info *fi);
 
 	static struct fuse_lowlevel_ops qtfuse_op;
 
