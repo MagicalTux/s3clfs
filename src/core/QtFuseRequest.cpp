@@ -1,6 +1,6 @@
-#include "QtFuse.h"
-#include "QtFuseRequest.h"
-#include "QtFuseNode.h"
+#include "QtFuse.hpp"
+#include "QtFuseRequest.hpp"
+#include "QtFuseNode.hpp"
 
 QtFuseRequest::QtFuseRequest(fuse_req_t _req, QtFuse &_parent): QObject(&_parent), parent(_parent) {
 	req = _req;

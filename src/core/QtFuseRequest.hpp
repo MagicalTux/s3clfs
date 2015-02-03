@@ -1,7 +1,7 @@
 #ifndef __HEADER_QTFUSEREQUEST_H
 #define __HEADER_QTFUSEREQUEST_H
 
-#include "QtFuse.h"
+#include "QtFuse.hpp"
 #include <QObject>
 
 class QtFuseRequest: private QObject {

@@ -1,6 +1,3 @@
-#ifndef __HEADER_QTFUSE_H
-#define __HEADER_QTFUSE_H
-
 #define _FILE_OFFSET_BITS 64
 #define FUSE_USE_VERSION 26
 #include <QObject>
@@ -8,6 +5,8 @@
 #include <QMap>
 #include <pthread.h>
 #include <errno.h>
+
+#pragma once
 
 #include <fuse.h>
 #include <fuse/fuse_lowlevel.h>
@@ -127,6 +126,4 @@ private:
 	char *fuse_buf;
 	int fuse_buf_len;
 };
-
-#endif /* __HEADER_QTFUSE_H */
 

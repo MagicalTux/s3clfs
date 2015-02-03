@@ -1,4 +1,4 @@
-#include "QtFuse.h"
+#include "QtFuse.hpp"
 #include <QObject>
 
 class QtFuseNode: public QObject {

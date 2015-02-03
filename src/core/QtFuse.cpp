@@ -1,6 +1,6 @@
-#include "QtFuse.h"
-#include "QtFuseNode.h"
-#include "QtFuseRequest.h"
+#include "QtFuse.hpp"
+#include "QtFuseNode.hpp"
+#include "QtFuseRequest.hpp"
 #include <signal.h>
 #include <stdlib.h>
 #include <QCoreApplication>
