@@ -6,7 +6,12 @@
 # (build will default to cli)
 
 lessThan(QT_MAJOR_VERSION, 5) {
-	error("S3ClFS requires Qt5 or better")
+	error("S3ClFS requires Qt5.4 or better")
+}
+equals(QT_MAJOR_VERSION, 5) {
+	lessThan(QT_MINOR_VERSION, 4) {
+		error("S3ClFS requires Qt5.4 or better")
+	}
 }
 
 cli {
@@ -49,12 +54,9 @@ QMAKE_MACOSX_DEPLOYMENT_TARGET = 10.9
 QMAKE_MAC_SDK=macosx10.9
 
 CPP_CLASSES = \
-	core/ApiRequest \
-	core/Company \
-	core/Keychain \
-	core/Storage \
-	core/StorageDatabase \
-	core/StorageFile
+	core/QtFuse \
+	core/QtFuseNode \
+	core/QtFuseRequest
 
 equals(BUILD_TYPE,cli) {
 	TARGET = s3clfs
