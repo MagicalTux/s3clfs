@@ -56,7 +56,9 @@ QMAKE_MAC_SDK=macosx10.9
 CPP_CLASSES = \
 	core/QtFuse \
 	core/QtFuseNode \
-	core/QtFuseRequest
+	core/QtFuseRequest \
+	core/S3Fuse \
+	core/S3FuseNode
 
 equals(BUILD_TYPE,cli) {
 	TARGET = s3clfs

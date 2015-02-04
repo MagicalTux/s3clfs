@@ -1,5 +1,6 @@
 #include <QCoreApplication>
 #include <QCommandLineParser>
+#include <S3Fuse.hpp>
 
 int main(int argc, char *argv[]) {
 	QCoreApplication app(argc, argv);
@@ -23,8 +24,8 @@ int main(int argc, char *argv[]) {
 		Q_UNREACHABLE();
 	}
 	// bucket is args.at(0), path is args.at(1)
-	//
-	qDebug("here?");
+	
+	S3Fuse fuse(args.at(0), args.at(1));
 
 	return app.exec();
 }

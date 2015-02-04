@@ -503,7 +503,7 @@ struct fuse_lowlevel_ops QtFuse::qtfuse_op = {
 	priv_qtfuse_fallocate,
 };
 
-QtFuseNode *QtFuse::fuse_make_node(struct stat *attr, QString name, QtFuseNode *parent, int ino) {
+QtFuseNode *QtFuse::fuse_make_node(struct stat *attr, QString name, QtFuseNode *parent, fuse_ino_t ino) {
 	qDebug("QtFuse::fuse_make_node");
 	if ((ino == 0) || (inode_map.contains(ino))) {
 		for(; inode_map.contains(inode_map_idx); inode_map_idx++);
