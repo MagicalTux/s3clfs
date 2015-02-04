@@ -1,9 +1,7 @@
 #include "S3Fuse.hpp"
 #include "S3FuseNode.hpp"
 
-S3Fuse::S3Fuse(QString _bucket, QString path): QtFuse(path) {
-	bucket = _bucket;
-	init();
+S3Fuse::S3Fuse(const QByteArray &path): QtFuse(path) {
 }
 
 QtFuseNode *S3Fuse::fuse_make_node(struct stat *attr, QString name, QtFuseNode *parent, fuse_ino_t ino) {

@@ -56,7 +56,7 @@ void QtFuse::fuse_lookup_root(QtFuseRequest *req) {
 	attr.st_atime = 0;
 	attr.st_mtime = 0;
 	attr.st_ctime = 0;
-	QtFuseNode *node = fuse_make_node(&attr, QString(), NULL, 1);
+	QtFuseNode *node = fuse_make_node(&attr, QByteArray(), NULL, 1);
 
 	if (req) req->entry(node);
 }
@@ -108,50 +108,50 @@ void QtFuse::fuse_readlink(QtFuseRequest *req, QtFuseNode *) {
 void QtFuse::priv_qtfuse_mknod(fuse_req_t req, fuse_ino_t parent, const char *name, mode_t mode, dev_t rdev) {
 	QTFUSE_OBJ_FROM_REQ();
 	QTFUSE_CHECK_INODE(parent);
-	c->fuse_mknod(QTFUSE_REQ(), QTFUSE_GET_INODE(parent), QString::fromUtf8(name), mode, rdev);
+	c->fuse_mknod(QTFUSE_REQ(), QTFUSE_GET_INODE(parent), name, mode, rdev);
 }
 
-void QtFuse::fuse_mknod(QtFuseRequest *req, QtFuseNode *, QString, mode_t, dev_t) {
+void QtFuse::fuse_mknod(QtFuseRequest *req, QtFuseNode *, const QByteArray&, mode_t, dev_t) {
 	QTFUSE_NOT_IMPL(EPERM);
 }
 
 void QtFuse::priv_qtfuse_mkdir(fuse_req_t req, fuse_ino_t parent, const char *name, mode_t mode) {
 	QTFUSE_OBJ_FROM_REQ();
 	QTFUSE_CHECK_INODE(parent);
-	c->fuse_mkdir(QTFUSE_REQ(), QTFUSE_GET_INODE(parent), QString::fromUtf8(name), mode);
+	c->fuse_mkdir(QTFUSE_REQ(), QTFUSE_GET_INODE(parent), name, mode);
 }
 
-void QtFuse::fuse_mkdir(QtFuseRequest *req, QtFuseNode *, QString, int) {
+void QtFuse::fuse_mkdir(QtFuseRequest *req, QtFuseNode *, const QByteArray&, int) {
 	QTFUSE_NOT_IMPL(ENOSYS);
 }
 
 void QtFuse::priv_qtfuse_unlink(fuse_req_t req, fuse_ino_t parent, const char *name) {
 	QTFUSE_OBJ_FROM_REQ();
 	QTFUSE_CHECK_INODE(parent);
-	c->fuse_unlink(QTFUSE_REQ(), QTFUSE_GET_INODE(parent), QString::fromUtf8(name));
+	c->fuse_unlink(QTFUSE_REQ(), QTFUSE_GET_INODE(parent), name);
 }
 
-void QtFuse::fuse_unlink(QtFuseRequest *req, QtFuseNode *, QString) {
+void QtFuse::fuse_unlink(QtFuseRequest *req, QtFuseNode *, const QByteArray&) {
 	QTFUSE_NOT_IMPL(ENOSYS);
 }
 
 void QtFuse::priv_qtfuse_rmdir(fuse_req_t req, fuse_ino_t parent, const char *name) {
 	QTFUSE_OBJ_FROM_REQ();
 	QTFUSE_CHECK_INODE(parent);
-	c->fuse_rmdir(QTFUSE_REQ(), QTFUSE_GET_INODE(parent), QString::fromUtf8(name));
+	c->fuse_rmdir(QTFUSE_REQ(), QTFUSE_GET_INODE(parent), name);
 }
 
-void QtFuse::fuse_rmdir(QtFuseRequest *req, QtFuseNode *, QString) {
+void QtFuse::fuse_rmdir(QtFuseRequest *req, QtFuseNode *, const QByteArray &) {
 	QTFUSE_NOT_IMPL(ENOSYS);
 }
 
 void QtFuse::priv_qtfuse_symlink(fuse_req_t req, const char *link, fuse_ino_t parent, const char *name) {
 	QTFUSE_OBJ_FROM_REQ();
 	QTFUSE_CHECK_INODE(parent);
-	c->fuse_symlink(QTFUSE_REQ(), QString::fromUtf8(link), QTFUSE_GET_INODE(parent), QString::fromUtf8(name));
+	c->fuse_symlink(QTFUSE_REQ(), link, QTFUSE_GET_INODE(parent), name);
 }
 
-void QtFuse::fuse_symlink(QtFuseRequest *req, QString, QtFuseNode*, QString) {
+void QtFuse::fuse_symlink(QtFuseRequest *req, const QByteArray&, QtFuseNode*, const QByteArray&) {
 	QTFUSE_NOT_IMPL(ENOSYS);
 }
 
@@ -160,10 +160,10 @@ void QtFuse::priv_qtfuse_rename(fuse_req_t req, fuse_ino_t parent, const char *n
 	QTFUSE_CHECK_INODE(parent);
 	if (parent != newparent)
 		QTFUSE_CHECK_INODE(newparent);
-	c->fuse_rename(QTFUSE_REQ(), QTFUSE_GET_INODE(parent), QString::fromUtf8(name), QTFUSE_GET_INODE(newparent), QString::fromUtf8(newname));
+	c->fuse_rename(QTFUSE_REQ(), QTFUSE_GET_INODE(parent), name, QTFUSE_GET_INODE(newparent), newname);
 }
 
-void QtFuse::fuse_rename(QtFuseRequest *req, QtFuseNode*, QString, QtFuseNode*, QString) {
+void QtFuse::fuse_rename(QtFuseRequest *req, QtFuseNode*, const QByteArray&, QtFuseNode*, const QByteArray&) {
 	QTFUSE_NOT_IMPL(ENOSYS);
 }
 
@@ -175,10 +175,10 @@ void QtFuse::priv_qtfuse_link(fuse_req_t req, fuse_ino_t ino, fuse_ino_t newpare
 		return;
 	}
 	QTFUSE_CHECK_INODE(newparent);
-	c->fuse_link(QTFUSE_REQ(), QTFUSE_GET_INODE(ino), QTFUSE_GET_INODE(newparent), QString::fromUtf8(newname));
+	c->fuse_link(QTFUSE_REQ(), QTFUSE_GET_INODE(ino), QTFUSE_GET_INODE(newparent), newname);
 }
 
-void QtFuse::fuse_link(QtFuseRequest *req, QtFuseNode*, QtFuseNode*, QString) {
+void QtFuse::fuse_link(QtFuseRequest *req, QtFuseNode*, QtFuseNode*, const QByteArray&) {
 	QTFUSE_NOT_IMPL(EPERM); // "The file system containing oldpath and newpath does not support the creation of hard links."
 }
 
@@ -503,7 +503,7 @@ struct fuse_lowlevel_ops QtFuse::qtfuse_op = {
 	priv_qtfuse_fallocate,
 };
 
-QtFuseNode *QtFuse::fuse_make_node(struct stat *attr, QString name, QtFuseNode *parent, fuse_ino_t ino) {
+QtFuseNode *QtFuse::fuse_make_node(struct stat *attr, const QByteArray &name, QtFuseNode *parent, fuse_ino_t ino) {
 	qDebug("QtFuse::fuse_make_node");
 	if ((ino == 0) || (inode_map.contains(ino))) {
 		for(; inode_map.contains(inode_map_idx); inode_map_idx++);
@@ -534,7 +534,7 @@ static int set_one_signal_handler(int sig, void (*handler)(int)) {
 
 void *QtFuse::qtfuse_start_thread(void *_c) {
 	QtFuse *c = (QtFuse*)_c;
-	char *argv[] = { strdup("fuse"), strdup("-f"), strdup(c->mp.toUtf8().data()) };
+	char *argv[] = { strdup("fuse"), strdup("-f"), strdup(c->mp.data()) };
 	int argc = 3;
 
 	struct fuse_args args = FUSE_ARGS_INIT(argc, argv);
@@ -588,7 +588,7 @@ void QtFuse::priv_fuse_session_process() {
 	fuse_session_process(fuse, fuse_buf, fuse_buf_len, tmpch);
 }
 
-QtFuse::QtFuse(QString _mp) {
+QtFuse::QtFuse(const QByteArray &_mp) {
 	mp = _mp;
 	inode_map_generation = 1;
 	// so we can catch ^C and killed processes, make those signal call QCoreApplication::quit()

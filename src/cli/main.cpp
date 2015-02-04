@@ -1,6 +1,6 @@
 #include <QCoreApplication>
 #include <QCommandLineParser>
-#include <S3Fuse.hpp>
+#include <S3FS.hpp>
 
 int main(int argc, char *argv[]) {
 	QCoreApplication app(argc, argv);
@@ -25,7 +25,7 @@ int main(int argc, char *argv[]) {
 	}
 	// bucket is args.at(0), path is args.at(1)
 	
-	S3Fuse fuse(args.at(0), args.at(1));
+	S3FS s3clfs(args.at(0).toLocal8Bit(), args.at(1).toLocal8Bit());
 
 	return app.exec();
 }

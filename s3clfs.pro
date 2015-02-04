@@ -58,7 +58,8 @@ CPP_CLASSES = \
 	core/QtFuseNode \
 	core/QtFuseRequest \
 	core/S3Fuse \
-	core/S3FuseNode
+	core/S3FuseNode \
+	core/S3FS
 
 equals(BUILD_TYPE,cli) {
 	TARGET = s3clfs

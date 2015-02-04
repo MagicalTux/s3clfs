@@ -22,7 +22,7 @@ class QtFuseRequest;
 class QtFuse: public QObject {
 	Q_OBJECT;
 public:
-	QtFuse(QString mp);
+	QtFuse(const QByteArray &mp);
 	~QtFuse();
 	void init();
 
@@ -42,13 +42,13 @@ protected:
 	virtual void fuse_getattr(QtFuseRequest *req, QtFuseNode *node, struct fuse_file_info *fi);
 	virtual void fuse_setattr(QtFuseRequest *req, QtFuseNode *node, struct stat *attr, int to_set, struct fuse_file_info *fi);
 	virtual void fuse_readlink(QtFuseRequest *req, QtFuseNode *node);
-	virtual void fuse_mkdir(QtFuseRequest *req, QtFuseNode *parent, QString name, int mode);
-	virtual void fuse_unlink(QtFuseRequest *req, QtFuseNode *parent, QString name);
-	virtual void fuse_rmdir(QtFuseRequest *req, QtFuseNode *parent, QString name);
-	virtual void fuse_symlink(QtFuseRequest *req, QString link, QtFuseNode *parent, QString name);
-	virtual void fuse_rename(QtFuseRequest *req, QtFuseNode *parent, QString name, QtFuseNode *newparent, QString newname);
-	virtual void fuse_link(QtFuseRequest *req, QtFuseNode *ino, QtFuseNode *newparent, QString newname);
-	virtual void fuse_mknod(QtFuseRequest *req, QtFuseNode *parent, QString name, mode_t mode, dev_t dev);
+	virtual void fuse_mkdir(QtFuseRequest *req, QtFuseNode *parent, const QByteArray &name, int mode);
+	virtual void fuse_unlink(QtFuseRequest *req, QtFuseNode *parent, const QByteArray &name);
+	virtual void fuse_rmdir(QtFuseRequest *req, QtFuseNode *parent, const QByteArray &name);
+	virtual void fuse_symlink(QtFuseRequest *req, const QByteArray &link, QtFuseNode *parent, const QByteArray &name);
+	virtual void fuse_rename(QtFuseRequest *req, QtFuseNode *parent, const QByteArray &name, QtFuseNode *newparent, const QByteArray &newname);
+	virtual void fuse_link(QtFuseRequest *req, QtFuseNode *ino, QtFuseNode *newparent, const QByteArray &newname);
+	virtual void fuse_mknod(QtFuseRequest *req, QtFuseNode *parent, const QByteArray &name, mode_t mode, dev_t dev);
 	virtual void fuse_open(QtFuseRequest *req, QtFuseNode *ino, struct fuse_file_info *fi);
 	virtual void fuse_read(QtFuseRequest *req, QtFuseNode *ino, size_t size, off_t offset, struct fuse_file_info *fi);
 	virtual void fuse_write(QtFuseRequest *req, QtFuseNode *ino, const char *buf, size_t size, off_t offset, struct fuse_file_info *fi);
@@ -77,12 +77,12 @@ protected:
 	virtual void fuse_flock(QtFuseRequest *req, QtFuseNode *ino, struct fuse_file_info *fi, int op);
 	virtual void fuse_fallocate(QtFuseRequest *req, QtFuseNode *ino, int mode, off_t offset, off_t length, struct fuse_file_info *fi);
 
-	virtual QtFuseNode *fuse_make_node(struct stat *attr, QString name, QtFuseNode *parent, fuse_ino_t ino=0);
+	virtual QtFuseNode *fuse_make_node(struct stat *attr, const QByteArray &name, QtFuseNode *parent, fuse_ino_t ino=0);
 	QMap<long int, QtFuseNode*> inode_map;
 	long int inode_map_idx;
 	int inode_map_generation;
 private:
-	QString mp; // mount point
+	QByteArray mp; // mount point
 	pthread_t thread;
 
 	static void *qtfuse_start_thread(void *_c);
