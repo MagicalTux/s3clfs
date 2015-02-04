@@ -1,6 +1,5 @@
 #include "QtFuse.hpp"
 #include "QtFuseRequest.hpp"
-#include "QtFuseNode.hpp"
 
 QtFuseRequest::QtFuseRequest(fuse_req_t _req, QtFuse &_parent): QObject(&_parent), parent(_parent) {
 	req = _req;
@@ -37,13 +36,12 @@ void QtFuseRequest::none() {
 	deleteLater();
 }
 
-void QtFuseRequest::entry(const QtFuseNode*node) {
+void QtFuseRequest::entry(const struct stat*attr) {
 	if (answered) return;
 	answered = true;
 	struct fuse_entry_param e;
 	memset(&e, 0, sizeof(struct fuse_entry_param));
 
-	const struct stat *attr = node->getAttr();
 	e.ino = attr->st_ino;
 	e.generation = 1;
 	e.attr = *attr;

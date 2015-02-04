@@ -10,8 +10,8 @@ public:
 	S3Fuse(const QByteArray &path, S3FS*parent);
 
 protected:
-	virtual QtFuseNode *fuse_make_root_node(struct stat *attr);
-	virtual void fuse_lookup(QtFuseRequest *req, QtFuseNode *parent, const QByteArray &name);
+	virtual void fuse_getattr(QtFuseRequest *req, fuse_ino_t node, struct fuse_file_info *fi);
+	virtual void fuse_lookup(QtFuseRequest *req, fuse_ino_t parent, const QByteArray &name);
 
 private:
 	S3FS *parent;

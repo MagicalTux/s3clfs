@@ -57,10 +57,8 @@ CPP_CLASSES = \
 	core/Keyval \
 	core/KeyvalIterator \
 	core/QtFuse \
-	core/QtFuseNode \
 	core/QtFuseRequest \
 	core/S3Fuse \
-	core/S3FuseNode \
 	core/S3FS
 
 equals(BUILD_TYPE,cli) {

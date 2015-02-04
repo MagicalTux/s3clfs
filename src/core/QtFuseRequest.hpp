@@ -16,7 +16,7 @@ public slots:
 	void none();
 
 public:
-	void entry(const QtFuseNode*);
+	void entry(const struct stat*);
 	void create(const struct fuse_entry_param *e, const struct fuse_file_info *fi);
 	void attr(const struct stat*, double attr_timeout = 0);
 	void readlink(const QString &link);
