@@ -1,10 +1,9 @@
-#ifndef __HEADER_QTFUSEREQUEST_H
-#define __HEADER_QTFUSEREQUEST_H
-
 #include "QtFuse.hpp"
 #include <QObject>
 
-class QtFuseRequest: private QObject {
+#pragma once
+
+class QtFuseRequest: public QObject {
 	Q_OBJECT;
 
 public:
@@ -46,4 +45,3 @@ private:
 	size_t buf_pos, buf_size;
 };
 
-#endif /* __HEADER_QTFUSEREQUEST_H */

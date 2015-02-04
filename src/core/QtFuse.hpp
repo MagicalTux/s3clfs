@@ -134,3 +134,5 @@ private:
 	int fuse_buf_len;
 };
 
+Q_DECLARE_METATYPE(QtFuse*);
+Q_DECLARE_METATYPE(fuse_ino_t);

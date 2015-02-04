@@ -38,7 +38,7 @@ void S3FS::fuse_getattr(QtFuseRequest *req, fuse_ino_t ino, struct fuse_file_inf
 }
 
 void S3FS::real_fuse_getattr(QtFuseRequest *req, fuse_ino_t ino, struct fuse_file_info *) {
-	qDebug("S3FS::getattr for inode %ld", ino);
+	qDebug("S3FS::getattr for inode %ld req=%p", ino, req);
 	if (ino != 1) {
 		req->error(ENOSYS);
 		return;

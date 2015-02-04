@@ -1,6 +1,7 @@
 #include <QObject>
 #include <QGenericArgument>
 #include <QPointer>
+#include <QVariant>
 
 class Callback: public QObject {
 	Q_OBJECT
@@ -23,6 +24,7 @@ public slots:
 private:
 	QPointer<QObject> obj;
 	QByteArray member; // using QByteArray to ensure copy is kept
-	QGenericArgument val0, val1, val2, val3, val4, val5, val6, val7, val8, val9;
+	QVariant v0, v1, v2, v3, v4, v5, v6, v7, v8, v9;
+	QByteArray n0, n1, n2, n3, n4, n5, n6, n7, n8, n9;
 };
 
