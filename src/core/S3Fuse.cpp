@@ -16,9 +16,9 @@ QtFuseNode *S3Fuse::fuse_make_root_node(struct stat *attr) {
 	return node;
 }
 
-void S3Fuse::fuse_lookup(QtFuseRequest *req, QtFuseNode *, const QByteArray &path) {
+void S3Fuse::fuse_lookup(QtFuseRequest *req, QtFuseNode *ino, const QByteArray &path) {
 	// valid response can be "entry" or "error"
-	qDebug("Request for lookup of %s", path.data());
+	qDebug("Request for lookup of %s from inode %ld", path.data(), ino->getIno());
 	req->error(ENOENT);
 }
 

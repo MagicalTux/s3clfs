@@ -12,16 +12,16 @@ including hash algo in use, version, encryption, block size, etc.
 Metadata also contains hashed data, especially a file at metadata/0/00/0000...
 which contains files from the root directory. Meta-data are stored as inodes,
 which are generated through microtime precision integers. The directory name
-is actually the uint64 value with bytes reversed.
+is actually the uint64 value.
 
 For example storing a file under inode 142288133207962 would result in a file
 name of:
 
-	metadata/9/9a/9ab7a20969810000
+	metadata/a/9a/0000816909a2b79a
 
-Root directory is stored at:
+Root directory is stored at inode 1:
 
-	metadata/0/00/0000000000000000
+	metadata/1/01/0000000000000001
 
 Each metadata subdir contains latest version of the contents of the dir, and
 details on what caused the change to happen. When a directory is changed, a
