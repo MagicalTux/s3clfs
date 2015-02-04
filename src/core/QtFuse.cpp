@@ -37,8 +37,7 @@ void QtFuse::priv_qtfuse_lookup(fuse_req_t req, fuse_ino_t parent, const char *n
 	c->fuse_lookup(QTFUSE_REQ(), QTFUSE_GET_INODE(parent), name);
 }
 
-void QtFuse::fuse_lookup(QtFuseRequest *req, QtFuseNode *, const QByteArray &s) {
-	qDebug("Not implemented: lookup of %s", s.data());
+void QtFuse::fuse_lookup(QtFuseRequest *req, QtFuseNode *, const QByteArray &) {
 	QTFUSE_NOT_IMPL(ENOENT);
 }
 
