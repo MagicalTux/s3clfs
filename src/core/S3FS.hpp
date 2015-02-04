@@ -1,5 +1,6 @@
 #include <QObject>
 #include "S3Fuse.hpp"
+#include "S3FS_Store.hpp"
 #include "Keyval.hpp"
 
 #pragma once
@@ -9,7 +10,6 @@ class S3FS: public QObject {
 
 public:
 	S3FS(const QByteArray &bucket, const QByteArray &path);
-	~S3FS();
 	void format();
 	bool isReady() const;
 
@@ -22,9 +22,8 @@ public slots:
 
 private:
 	S3Fuse fuse;
+	S3FS_Store store;
 	QByteArray bucket;
-	QString kv_location;
-	Keyval kv; // local cache
 	bool is_ready;
 };
 

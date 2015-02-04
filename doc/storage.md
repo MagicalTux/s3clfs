@@ -1,10 +1,10 @@
 Storage on S3 includes two prefixes:
 
-- data/
-- metadata/
+- metadata/ (0x01 prefix in leveldb)
+- data/ (0x02 prefix in leveldb)
 
 Files under data are named after hash (depending on hash algo), for example
-data/a/ab/abcdef0123456789.
+data/9/89/abcdef0123456789.
 
 A file named metadata/format.json contains details on the exact storage format
 including hash algo in use, version, encryption, block size, etc.

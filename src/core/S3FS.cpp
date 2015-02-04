@@ -1,35 +1,18 @@
 #include "S3FS.hpp"
 #include "S3FS_Obj.hpp"
 #include "QtFuseRequest.hpp"
-#include <QDir>
-#include <QUuid>
 #include <QTimer>
 #include "Callback.hpp"
 
 #define WAIT_READY(...) if (!is_ready) { Callback *cb = new Callback(this, __func__, __VA_ARGS__); connect(this, SIGNAL(ready()), cb, SLOT(trigger())); return; }
 
-S3FS::S3FS(const QByteArray &_bucket, const QByteArray &path): fuse(path, this) {
+S3FS::S3FS(const QByteArray &_bucket, const QByteArray &path): fuse(path, this), store(_bucket) {
 	bucket = _bucket;
 	is_ready = false;
-
-	// generate filename
-	kv_location = QDir::temp().filePath(QString("s3clfs-")+QUuid::createUuid().toRfc4122().toHex());
-	qDebug("S3FS: Keyval location: %s", qPrintable(kv_location));
-
-	if (!kv.create(kv_location)) {
-		qFatal("S3FS: Failed to open cache");
-	}
 
 	QTimer::singleShot(1000, this, SLOT(test_setready()));
 
 	fuse.init();
-}
-
-S3FS::~S3FS() {
-	if (kv.isValid()) {
-		kv.close();
-		Keyval::destroy(kv_location);
-	}
 }
 
 bool S3FS::isReady() const {
