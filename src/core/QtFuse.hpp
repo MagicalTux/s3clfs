@@ -36,7 +36,7 @@ public slots:
 protected:
 	virtual void fuse_init(struct fuse_conn_info *);
 	virtual void fuse_destroy();
-	virtual void fuse_lookup(QtFuseRequest *req, QtFuseNode *parent, QString name);
+	virtual void fuse_lookup(QtFuseRequest *req, QtFuseNode *parent, const QByteArray &name);
 	virtual void fuse_lookup_root(QtFuseRequest *req); // called to lookup the root node
 	virtual void fuse_forget(QtFuseRequest *req, QtFuseNode *node, unsigned long nlookup);
 	virtual void fuse_getattr(QtFuseRequest *req, QtFuseNode *node, struct fuse_file_info *fi);

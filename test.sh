@@ -9,4 +9,8 @@ fi
 
 "$QMAKE" CONFIG+="cli debug"
 make
-exec ./s3clfs s3clfs /mnt/tmp/
+if [ ! -d fuse ]; then
+	mkdir fuse
+fi
+
+exec ./s3clfs s3clfs fuse

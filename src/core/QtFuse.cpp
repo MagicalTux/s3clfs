@@ -19,7 +19,7 @@ void QtFuse::priv_qtfuse_init(void *userdata, struct fuse_conn_info *conn) {
 }
 
 void QtFuse::fuse_init(struct fuse_conn_info *) {
-	qDebug("fuse: init");
+	qDebug("QtFuse: init");
 }
 
 void QtFuse::priv_qtfuse_destroy(void *userdata) {
@@ -28,16 +28,17 @@ void QtFuse::priv_qtfuse_destroy(void *userdata) {
 }
 
 void QtFuse::fuse_destroy() {
-	qDebug("fuse: destroy");
+	qDebug("QtFuse: destroy");
 }
 
 void QtFuse::priv_qtfuse_lookup(fuse_req_t req, fuse_ino_t parent, const char *name) {
 	QTFUSE_OBJ_FROM_REQ();
 	QTFUSE_CHECK_INODE(parent);
-	c->fuse_lookup(QTFUSE_REQ(), QTFUSE_GET_INODE(parent), QString::fromUtf8(name));
+	c->fuse_lookup(QTFUSE_REQ(), QTFUSE_GET_INODE(parent), name);
 }
 
-void QtFuse::fuse_lookup(QtFuseRequest *req, QtFuseNode *, QString) {
+void QtFuse::fuse_lookup(QtFuseRequest *req, QtFuseNode *, const QByteArray &s) {
+	qDebug("Not implemented: lookup of %s", s.data());
 	QTFUSE_NOT_IMPL(ENOENT);
 }
 
