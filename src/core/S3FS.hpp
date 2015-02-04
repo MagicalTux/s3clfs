@@ -10,6 +10,10 @@ class S3FS: public QObject {
 public:
 	S3FS(const QByteArray &bucket, const QByteArray &path);
 	~S3FS();
+	void format();
+
+public slots:
+	void fuse_getattr(QtFuseRequest *req, fuse_ino_t node, struct fuse_file_info *fi);
 
 private:
 	S3Fuse fuse;

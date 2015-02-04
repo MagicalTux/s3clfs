@@ -36,14 +36,14 @@ void QtFuseRequest::none() {
 	deleteLater();
 }
 
-void QtFuseRequest::entry(const struct stat*attr) {
+void QtFuseRequest::entry(const struct stat*attr, int generation) {
 	if (answered) return;
 	answered = true;
 	struct fuse_entry_param e;
 	memset(&e, 0, sizeof(struct fuse_entry_param));
 
 	e.ino = attr->st_ino;
-	e.generation = 1;
+	e.generation = generation;
 	e.attr = *attr;
 
 	fuse_reply_entry(req, &e);

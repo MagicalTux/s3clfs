@@ -1,4 +1,5 @@
 #include "S3FS.hpp"
+#include "QtFuseRequest.hpp"
 #include <QDir>
 #include <QUuid>
 
@@ -21,5 +22,34 @@ S3FS::~S3FS() {
 		kv.close();
 		Keyval::destroy(kv_location);
 	}
+}
+
+void S3FS::format() {
+	// create empty directory inode 1, increments generation
+}
+
+void S3FS::fuse_getattr(QtFuseRequest *req, fuse_ino_t ino, struct fuse_file_info *) {
+	qDebug("S3FS::getattr for inode %ld", ino);
+	if (ino != 1) {
+		req->error(ENOSYS);
+		return;
+	}
+
+	struct stat attr;
+	attr.st_dev = 0x1337;
+	attr.st_ino = 1;
+	attr.st_mode = 0755 | S_IFDIR;
+	attr.st_nlink = 1;
+	attr.st_uid = 0;
+	attr.st_gid = 0;
+	attr.st_rdev = 0;
+	attr.st_size = 0;
+	attr.st_blksize = 512;
+	attr.st_blocks = 0;
+	attr.st_atime = 0;
+	attr.st_mtime = 0;
+	attr.st_ctime = 0;
+
+	req->attr(&attr);
 }
 
