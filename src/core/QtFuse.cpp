@@ -553,6 +553,13 @@ void QtFuse::priv_fuse_session_process() {
 }
 
 QtFuse::QtFuse(const QByteArray &_mp) {
+	// required in some cases by Qt
+	qRegisterMetaType<QtFuse*>("QtFuse*");
+	qRegisterMetaType<QtFuseRequest*>("QtFuseRequest*");
+	qRegisterMetaType<fuse_ino_t>("fuse_ino_t");
+	qRegisterMetaType<struct fuse_file_info *>("struct fuse_file_info *");
+	qRegisterMetaType<struct flock *>("struct flock *");
+
 	mp = _mp;
 	// so we can catch ^C and killed processes, make those signal call QCoreApplication::quit()
 	if (!signals_set) {

@@ -1,16 +1,11 @@
 #include <QCoreApplication>
 #include <QCommandLineParser>
 #include <S3FS.hpp>
-#include <QtFuseRequest.hpp>
 
 int main(int argc, char *argv[]) {
 	QCoreApplication app(argc, argv);
 	QCoreApplication::setApplicationName("s3clfs");
 	QCoreApplication::setApplicationVersion("1.0");
-
-	qRegisterMetaType<QtFuse*>("QtFuse*");
-	qRegisterMetaType<QtFuseRequest*>("QtFuseRequest*");
-	qRegisterMetaType<fuse_ino_t>("fuse_ino_t");
 
 	// arguments
 	QCommandLineParser parser;

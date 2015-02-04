@@ -45,3 +45,5 @@ private:
 	size_t buf_pos, buf_size;
 };
 
+Q_DECLARE_METATYPE(QtFuseRequest*);
+
