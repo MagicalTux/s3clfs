@@ -54,6 +54,8 @@ QMAKE_MACOSX_DEPLOYMENT_TARGET = 10.9
 QMAKE_MAC_SDK=macosx10.9
 
 CPP_CLASSES = \
+	core/Keyval \
+	core/KeyvalIterator \
 	core/QtFuse \
 	core/QtFuseNode \
 	core/QtFuseRequest \
