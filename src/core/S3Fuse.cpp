@@ -1,22 +1,24 @@
 #include "S3Fuse.hpp"
 #include "S3FuseNode.hpp"
+#include "S3FS.hpp"
 
-S3Fuse::S3Fuse(const QByteArray &path): QtFuse(path) {
+S3Fuse::S3Fuse(const QByteArray &path, S3FS *_parent): QtFuse(path) {
+	parent = _parent;
 }
 
-QtFuseNode *S3Fuse::fuse_make_node(struct stat *attr, QString name, QtFuseNode *parent, fuse_ino_t ino) {
-	qDebug("S3Fuse::fuse_make_node(%p,%s,%p,%ld)", attr, qPrintable(name), parent, ino);
-
-	if ((ino == 0) || (inode_map.contains(ino))) {
-		// need to allocate inode number
-		for(; inode_map.contains(inode_map_idx); inode_map_idx++);
-		ino = inode_map_idx;
-	}
-	attr->st_ino = ino;
+QtFuseNode *S3Fuse::fuse_make_root_node(struct stat *attr) {
+	if (inode_map.contains(1)) return inode_map.value(1);
+	attr->st_ino = 1;
 	inode_map_generation = 1;
 	inode_map_idx = 2;
-	QtFuseNode *node = new S3FuseNode(*this, attr, name, parent);
-	inode_map.insert(ino, node);
+	QtFuseNode *node = new S3FuseNode(*this, attr, "", NULL);
+	inode_map.insert(1, node);
 	return node;
+}
+
+void S3Fuse::fuse_lookup(QtFuseRequest *req, QtFuseNode *, const QByteArray &path) {
+	// valid response can be "entry" or "error"
+	qDebug("Request for lookup of %s", path.data());
+	req->error(ENOENT);
 }
 

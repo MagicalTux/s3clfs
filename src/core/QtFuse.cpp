@@ -6,12 +6,20 @@
 #include <QCoreApplication>
 
 #define QTFUSE_OBJ_FROM_REQ() QtFuse *c = (QtFuse*)fuse_req_userdata(req)
-#define QTFUSE_CHECK_INODE(ino) if (!c->inode_map.contains(ino)) { fuse_reply_err(req, EINVAL); return; }
-#define QTFUSE_CHECK_INODE2(ino) if (!inode_map.contains(ino)) { req->error(EINVAL); return; }
-#define QTFUSE_GET_INODE(ino) (c->inode_map.value(ino))
-#define QTFUSE_GET_INODE2(ino) (inode_map.value(ino))
+#define QTFUSE_CHECK_INODE(ino) if (!c->inode_exists(ino)) { fuse_reply_err(req, EINVAL); return; }
+#define QTFUSE_CHECK_INODE2(ino) if (!inode_exists(ino)) { req->error(EINVAL); return; }
+#define QTFUSE_GET_INODE(ino) (c->inode_get(ino))
+#define QTFUSE_GET_INODE2(ino) (inode_get(ino))
 #define QTFUSE_REQ() (new QtFuseRequest(req, *c))
 #define QTFUSE_NOT_IMPL(e) qDebug("fuse: %s not implemented, returning " #e, __FUNCTION__); req->error(e)
+
+bool QtFuse::inode_exists(fuse_ino_t ino) {
+	return inode_map.contains(ino);
+}
+
+QtFuseNode *QtFuse::inode_get(fuse_ino_t ino) {
+	return inode_map.value(ino);
+}
 
 void QtFuse::priv_qtfuse_init(void *userdata, struct fuse_conn_info *conn) {
 	QtFuse *c = (QtFuse*) userdata;
@@ -56,7 +64,7 @@ void QtFuse::fuse_lookup_root(QtFuseRequest *req) {
 	attr.st_atime = 0;
 	attr.st_mtime = 0;
 	attr.st_ctime = 0;
-	QtFuseNode *node = fuse_make_node(&attr, QByteArray(), NULL, 1);
+	QtFuseNode *node = fuse_make_root_node(&attr);
 
 	if (req) req->entry(node);
 }
@@ -503,17 +511,14 @@ struct fuse_lowlevel_ops QtFuse::qtfuse_op = {
 	priv_qtfuse_fallocate,
 };
 
-QtFuseNode *QtFuse::fuse_make_node(struct stat *attr, const QByteArray &name, QtFuseNode *parent, fuse_ino_t ino) {
-	qDebug("QtFuse::fuse_make_node");
-	if ((ino == 0) || (inode_map.contains(ino))) {
-		for(; inode_map.contains(inode_map_idx); inode_map_idx++);
-		ino = inode_map_idx;
-	}
-	attr->st_ino = ino;
+QtFuseNode *QtFuse::fuse_make_root_node(struct stat *attr) {
+	if (inode_map.contains(1)) return inode_map.value(1);
+	qDebug("QtFuse::fuse_make_root_node");
+	attr->st_ino = 1;
 	inode_map_generation = 1;
 	inode_map_idx = 2;
-	QtFuseNode *node = new QtFuseNode(*this, attr, name, parent);
-	inode_map.insert(ino, node);
+	QtFuseNode *node = new QtFuseNode(*this, attr, "", NULL);
+	inode_map.insert(1, node);
 	return node;
 }
 

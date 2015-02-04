@@ -77,7 +77,10 @@ protected:
 	virtual void fuse_flock(QtFuseRequest *req, QtFuseNode *ino, struct fuse_file_info *fi, int op);
 	virtual void fuse_fallocate(QtFuseRequest *req, QtFuseNode *ino, int mode, off_t offset, off_t length, struct fuse_file_info *fi);
 
-	virtual QtFuseNode *fuse_make_node(struct stat *attr, const QByteArray &name, QtFuseNode *parent, fuse_ino_t ino=0);
+	virtual bool inode_exists(fuse_ino_t);
+	virtual QtFuseNode *inode_get(fuse_ino_t);
+
+	virtual QtFuseNode *fuse_make_root_node(struct stat *attr);
 	QMap<long int, QtFuseNode*> inode_map;
 	long int inode_map_idx;
 	int inode_map_generation;
