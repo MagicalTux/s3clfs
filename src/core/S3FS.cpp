@@ -2,6 +2,8 @@
 #include "QtFuseRequest.hpp"
 #include <QDir>
 #include <QUuid>
+#include <QTimer>
+#include "Callback.hpp"
 
 S3FS::S3FS(const QByteArray &_bucket, const QByteArray &path): fuse(path, this) {
 	bucket = _bucket;
@@ -28,7 +30,14 @@ void S3FS::format() {
 	// create empty directory inode 1, increments generation
 }
 
-void S3FS::fuse_getattr(QtFuseRequest *req, fuse_ino_t ino, struct fuse_file_info *) {
+void S3FS::fuse_getattr(QtFuseRequest *req, fuse_ino_t ino, struct fuse_file_info *fi) {
+	// delay test
+	Callback *cb = new Callback(this, "real_fuse_getattr", Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, ino), Q_ARG(struct fuse_file_info *, fi));
+
+	QTimer::singleShot(1000, cb, SLOT(trigger()));
+}
+
+void S3FS::real_fuse_getattr(QtFuseRequest *req, fuse_ino_t ino, struct fuse_file_info *) {
 	qDebug("S3FS::getattr for inode %ld", ino);
 	if (ino != 1) {
 		req->error(ENOSYS);
