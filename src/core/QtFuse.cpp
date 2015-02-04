@@ -557,8 +557,8 @@ QtFuse::QtFuse(const QByteArray &_mp) {
 	qRegisterMetaType<QtFuse*>("QtFuse*");
 	qRegisterMetaType<QtFuseRequest*>("QtFuseRequest*");
 	qRegisterMetaType<fuse_ino_t>("fuse_ino_t");
-	qRegisterMetaType<struct fuse_file_info *>("struct fuse_file_info *");
-	qRegisterMetaType<struct flock *>("struct flock *");
+	qRegisterMetaType<struct fuse_file_info *>("struct fuse_file_info*");
+	qRegisterMetaType<struct flock *>("struct flock*");
 
 	mp = _mp;
 	// so we can catch ^C and killed processes, make those signal call QCoreApplication::quit()
