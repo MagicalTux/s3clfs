@@ -2,6 +2,7 @@
 #include "S3FS_Obj.hpp"
 #include "QtFuseRequest.hpp"
 #include "Callback.hpp"
+#include <QDateTime>
 
 #define METHOD_ARGS(...) QList<QGenericArgument> func_args = {__VA_ARGS__}
 #define WAIT_READY() if (!is_ready) { Callback *cb = new Callback(this, __func__, func_args); connect(this, SIGNAL(ready()), cb, SLOT(trigger())); return; }
@@ -113,6 +114,30 @@ void S3FS::fuse_getattr(QtFuseRequest *req, fuse_ino_t ino, struct fuse_file_inf
 	req->attr(&(ino_o.constAttr()));
 }
 
+void S3FS::fuse_mkdir(QtFuseRequest *req, fuse_ino_t parent, const QByteArray &name, int mode) {
+	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, parent), Q_ARG(const QByteArray &,name), Q_ARG(int,mode));
+	WAIT_READY();
+	GET_INODE(parent);
+
+	if (store.hasInodeMeta(parent, name)) {
+		req->error(EEXIST);
+		return;
+	}
+
+	qDebug("mkdir %s mode %x in inode %lu", qPrintable(name), mode, parent);
+
+	S3FS_Obj new_dir;
+	new_dir.makeDir(makeInode(), mode, req->context()->uid, req->context()->gid);
+	store.storeInode(new_dir);
+
+	// store dir entry
+	QByteArray ino_k;
+	QDataStream(&ino_k, QIODevice::WriteOnly) << new_dir.getInode();
+	store.setInodeMeta(parent, name, ino_k);
+
+	req->entry(&new_dir.constAttr());
+}
+
 void S3FS::fuse_opendir(QtFuseRequest *req, fuse_ino_t ino, struct fuse_file_info *fi) {
 	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, ino), Q_ARG(struct fuse_file_info *, fi));
 	WAIT_READY();
@@ -132,5 +157,15 @@ void S3FS::fuse_releasedir(QtFuseRequest *req, fuse_ino_t ino, struct fuse_file_
 	GET_INODE(ino);
 
 	req->error(0); // success
+}
+
+quint64 S3FS::makeInode() {
+	quint64 new_inode = QDateTime::currentMSecsSinceEpoch()*1000;
+
+	if (new_inode <= last_inode) { // ensure we are incremental
+		new_inode = last_inode+100;
+	}
+	last_inode = new_inode;
+	return new_inode;
 }
 

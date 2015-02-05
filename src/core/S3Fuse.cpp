@@ -27,6 +27,10 @@ void S3Fuse::fuse_getattr(QtFuseRequest *req, fuse_ino_t ino, struct fuse_file_i
 	parent->fuse_getattr(req, ino, fi);
 }
 
+void S3Fuse::fuse_mkdir(QtFuseRequest *req, fuse_ino_t parent_ino, const QByteArray &name, int mode) {
+	parent->fuse_mkdir(req, parent_ino, name, mode);
+}
+
 void S3Fuse::fuse_opendir(QtFuseRequest *req, fuse_ino_t ino, struct fuse_file_info *fi) {
 	parent->fuse_opendir(req, ino, fi);
 }

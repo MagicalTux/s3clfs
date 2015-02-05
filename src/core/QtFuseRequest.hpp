@@ -28,6 +28,8 @@ public:
 	void lock(struct flock *lock);
 	void bmap(uint64_t idx);
 
+	const struct fuse_ctx *context() const;
+
 	bool dir_add(const QByteArray &name, const struct stat *stbuf, off_t next_offset);
 	void dir_send();
 

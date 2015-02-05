@@ -13,6 +13,10 @@ QtFuseRequest::~QtFuseRequest() {
 	if (data_buf != NULL) delete data_buf;
 }
 
+const struct fuse_ctx *QtFuseRequest::context() const {
+	return fuse_req_ctx(req);
+}
+
 void QtFuseRequest::prepareBuffer(size_t size) {
 	if (buf_size != 0)
 		delete data_buf;
