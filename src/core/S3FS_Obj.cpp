@@ -117,7 +117,7 @@ void S3FS_Obj::setAttr(const struct stat &s) {
 	attr = s;
 }
 
-mode_t S3FS_Obj::getFiletype() const {
+quint32 S3FS_Obj::getFiletype() const {
 	return attr.st_mode & S_IFMT;
 }
 

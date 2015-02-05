@@ -4,9 +4,11 @@ Inodes contain base information, and possibly extra information.
 
 Extra information depend on the inode type (found in the base information).
 
-- Directories: extra information is a table of <filename> => <inodes> streamed as file by file (QByteArray filename, quint64 inode)
-- Files: extra info is table of <offset> => <data hash> streamed as quint64 offset => QByteArray hash
-- Symlink: extra info is symlink target stored in key+"\x00", streamed as QByteArray
+All storage is done big endian.
+
+- Directories: extra information is a table of <filename> => <inodes> streamed as file by file (QByteArray filename, QByteArray(quint64 inode+quint32 type))
+- Files: extra info is table of <offset> => <data hash> streamed as QByteArray(quint64 offset) => QByteArray(hash)
+- Symlink: extra info is symlink target stored in "\x00" => value, streamed as QByteArray("\x00") => QByteArray(value)
 
 ## storage on S3
 

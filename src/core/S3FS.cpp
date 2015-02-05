@@ -47,6 +47,12 @@ void S3FS::format() {
 	qDebug("S3FS: Created root block");
 
 	store.storeInode(root);
+
+	// add . and ..
+	QByteArray dir_entry;
+	QDataStream(&dir_entry, QIODevice::WriteOnly) << root.getInode() << root.getFiletype();
+	store.setInodeMeta(1, ".", dir_entry);
+	store.setInodeMeta(1, "..", dir_entry);
 }
 
 void S3FS::fuse_lookup(QtFuseRequest *req, fuse_ino_t ino, const QByteArray &path) {
@@ -125,16 +131,14 @@ void S3FS::fuse_mkdir(QtFuseRequest *req, fuse_ino_t parent, const QByteArray &n
 		return;
 	}
 
-	qDebug("mkdir %s mode %x in inode %lu", qPrintable(name), mode, parent);
-
 	S3FS_Obj new_dir;
 	new_dir.makeDir(makeInode(), mode, req->context()->uid, req->context()->gid);
 	store.storeInode(new_dir);
 
 	// store dir entry
-	QByteArray ino_k;
-	QDataStream(&ino_k, QIODevice::WriteOnly) << new_dir.getInode();
-	store.setInodeMeta(parent, name, ino_k);
+	QByteArray dir_entry;
+	QDataStream(&dir_entry, QIODevice::WriteOnly) << new_dir.getInode() << new_dir.getFiletype();
+	store.setInodeMeta(parent, name, dir_entry);
 
 	req->entry(&new_dir.constAttr());
 }
@@ -152,6 +156,51 @@ void S3FS::fuse_opendir(QtFuseRequest *req, fuse_ino_t ino, struct fuse_file_inf
 	fi->fh = (uintptr_t)store.getInodeMetaIterator(ino); // next entry to read
 
 	req->open(fi);
+}
+
+void S3FS::fuse_readdir(QtFuseRequest *req, fuse_ino_t ino, off_t off, struct fuse_file_info *fi) {
+	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, ino), Q_ARG(off_t, off), Q_ARG(struct fuse_file_info *,fi));
+	WAIT_READY();
+	GET_INODE(ino);
+
+	if (!ino_o.isDir()) {
+		req->error(ENOTDIR);
+		return;
+	}
+
+	S3FS_Store_MetaIterator *fh = (S3FS_Store_MetaIterator*)fi->fh;
+	if (!fh) {
+		req->error(EBADF);
+		return;
+	}
+
+	while(true) {
+		if (!fh->isValid()) {
+			req->dir_send();
+			return;
+		}
+		if (fh->key() == "") { // first entry
+			if (!fh->next()) { // no next entry?
+				req->dir_send(); // send as is
+				return;
+			}
+		}
+		struct stat s;
+		quint64 ino_n; quint32 mode_n;
+		QDataStream(fh->value()) >> ino_n >> mode_n;
+		s.st_ino = ino_n;
+		s.st_mode = mode_n;
+		if (!req->dir_add(fh->key(), &s, ++off)) {
+			// out of memory
+			req->dir_send();
+			return;
+		}
+		if (!fh->next()) {
+			// end
+			req->dir_send();
+			return;
+		}
+	}
 }
 
 void S3FS::fuse_releasedir(QtFuseRequest *req, fuse_ino_t ino, struct fuse_file_info *fi) {

@@ -51,6 +51,7 @@ QByteArray KeyvalIterator::nextKey() {
 			i->Next();
 	}
 	location = 1;
+	if (!i->Valid()) return QByteArray();
 	const auto &k = i->key();
 	return QByteArray(k.data(), k.size());
 }
@@ -94,6 +95,8 @@ QByteArray KeyvalIterator::key() {
 		case -1: i->Next(); break;
 	}
 	location = 0;
+
+	if (!i->Valid()) return QByteArray();
 
 	const auto &k = i->key();
 	return QByteArray(k.data(), k.size());

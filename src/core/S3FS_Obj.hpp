@@ -18,7 +18,7 @@ public:
 	bool isFile() const;
 	bool isSymlink() const;
 	bool isSocket() const;
-	mode_t getFiletype() const;
+	quint32 getFiletype() const;
 
 	void reset();
 	void makeRoot(); // configure object to act as root

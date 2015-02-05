@@ -35,6 +35,10 @@ void S3Fuse::fuse_opendir(QtFuseRequest *req, fuse_ino_t ino, struct fuse_file_i
 	parent->fuse_opendir(req, ino, fi);
 }
 
+void S3Fuse::fuse_readdir(QtFuseRequest *req, fuse_ino_t ino, off_t off, struct fuse_file_info *fi) {
+	parent->fuse_readdir(req, ino, off, fi);
+}
+
 void S3Fuse::fuse_releasedir(QtFuseRequest *req, fuse_ino_t ino, struct fuse_file_info *fi) {
 	parent->fuse_releasedir(req, ino, fi);
 }
