@@ -18,7 +18,7 @@ signals:
 
 public slots:
 	void fuse_getattr(QtFuseRequest *req, fuse_ino_t node, struct fuse_file_info *fi);
-	void test_setready();
+	void storeIsReady();
 
 private:
 	S3Fuse fuse;
