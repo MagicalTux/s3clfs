@@ -67,3 +67,21 @@ void S3FS_Store::callbackOnInodeCached(quint64, Callback*) {
 	// TODO
 }
 
+QByteArray S3FS_Store::hasInodeMeta(quint64 ino, const QByteArray &key_sub) {
+	INT_TO_BYTES(ino);
+	QByteArray key = QByteArray("\x01", 1) + ino_b;
+	return kv.contains(key+key_sub);
+}
+
+QByteArray S3FS_Store::getInodeMeta(quint64 ino, const QByteArray &key_sub) {
+	INT_TO_BYTES(ino);
+	QByteArray key = QByteArray("\x01", 1) + ino_b;
+	return kv.value(key+key_sub);
+}
+
+bool S3FS_Store::setInodeMeta(quint64 ino, const QByteArray &key_sub, const QByteArray &value) {
+	INT_TO_BYTES(ino);
+	QByteArray key = QByteArray("\x01", 1) + ino_b;
+	return kv.insert(key+key_sub, value);
+}
+

@@ -19,6 +19,10 @@ public:
 	bool hasInodeLocally(quint64);
 	void callbackOnInodeCached(quint64, Callback*);
 
+	bool hasInodeMeta(quint64 ino, const QByteArray &key);
+	QByteArray getInodeMeta(quint64 ino, const QByteArray &key);
+	bool setInodeMeta(quint64 ino, const QByteArray &key, const QByteArray &value);
+
 signals:
 	void ready();
 
