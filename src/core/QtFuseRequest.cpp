@@ -66,11 +66,11 @@ void QtFuseRequest::attr(const struct stat *attr, double attr_timeout) {
 	deleteLater();
 }
 
-void QtFuseRequest::readlink(const QString &link) {
+void QtFuseRequest::readlink(const QByteArray &link) {
 	if (answered) return;
 	answered = true;
 
-	fuse_reply_readlink(req, link.toUtf8().constData());
+	fuse_reply_readlink(req, link.constData());
 	deleteLater();
 }
 
@@ -138,13 +138,13 @@ void QtFuseRequest::bmap(uint64_t idx) {
 	deleteLater();
 }
 
-bool QtFuseRequest::dir_add(const QString &name, const struct stat *stbuf, off_t next_offset) {
+bool QtFuseRequest::dir_add(const QByteArray &name, const struct stat *stbuf, off_t next_offset) {
 	if (data_buf == NULL) return false;
 
-	size_t len = fuse_add_direntry(req, NULL, 0, name.toUtf8().constData(), stbuf, 0);
+	size_t len = fuse_add_direntry(req, NULL, 0, name.constData(), stbuf, 0);
 	if (len > buf_size-buf_pos) return false; // not enough room
 
-	buf_pos += fuse_add_direntry(req, data_buf+buf_pos, buf_size-buf_pos, name.toUtf8().constData(), stbuf, next_offset);
+	buf_pos += fuse_add_direntry(req, data_buf+buf_pos, buf_size-buf_pos, name.constData(), stbuf, next_offset);
 
 	return true;
 }

@@ -56,8 +56,10 @@ S3FS_Obj S3FS_Store::getInode(quint64 ino) {
 	return S3FS_Obj(kv.value(key));
 }
 
-bool S3FS_Store::hasInodeLocally(quint64) {
-	return true; // TODO
+bool S3FS_Store::hasInodeLocally(quint64 ino) {
+	INT_TO_BYTES(ino);
+	QByteArray key = QByteArray("\x01", 1) + ino_b;
+	return (kv.value(key).length() > 0); // if length == 0, means we don't have this locally
 }
 
 void S3FS_Store::callbackOnInodeCached(quint64, Callback*) {

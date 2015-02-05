@@ -18,7 +18,7 @@ public:
 	void entry(const struct stat*, int generation = 1);
 	void create(const struct fuse_entry_param *e, const struct fuse_file_info *fi);
 	void attr(const struct stat*, double attr_timeout = 0);
-	void readlink(const QString &link);
+	void readlink(const QByteArray &link);
 	void open(const struct fuse_file_info *fi);
 	void write(size_t count);
 	void buf(const QByteArray &data);
@@ -28,7 +28,7 @@ public:
 	void lock(struct flock *lock);
 	void bmap(uint64_t idx);
 
-	bool dir_add(const QString &name, const struct stat *stbuf, off_t next_offset);
+	bool dir_add(const QByteArray &name, const struct stat *stbuf, off_t next_offset);
 	void dir_send();
 
 protected:
