@@ -13,6 +13,7 @@ public:
 	~KeyvalIterator();
 	QByteArray key();
 	QByteArray value();
+	QByteArray nextKey();
 
 	bool hasNext();
 	bool next();

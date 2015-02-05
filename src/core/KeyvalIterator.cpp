@@ -43,6 +43,18 @@ bool KeyvalIterator::hasNext() {
 	return i->Valid();
 }
 
+QByteArray KeyvalIterator::nextKey() {
+	switch(location) {
+		case -1:
+			i->Next();
+		case 0:
+			i->Next();
+	}
+	location = 1;
+	const auto &k = i->key();
+	return QByteArray(k.data(), k.size());
+}
+
 bool KeyvalIterator::next() {
 	switch(location) {
 		case -1:
