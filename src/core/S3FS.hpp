@@ -17,7 +17,10 @@ signals:
 	void ready();
 
 public slots:
+	void fuse_lookup(QtFuseRequest *req, fuse_ino_t ino, const QByteArray &path);
 	void fuse_getattr(QtFuseRequest *req, fuse_ino_t node, struct fuse_file_info *fi);
+	void fuse_opendir(QtFuseRequest *req, fuse_ino_t ino, struct fuse_file_info *fi);
+	void fuse_releasedir(QtFuseRequest *req, fuse_ino_t ino, struct fuse_file_info *fi);
 	void storeIsReady();
 
 private:

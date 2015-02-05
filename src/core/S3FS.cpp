@@ -3,8 +3,12 @@
 #include "QtFuseRequest.hpp"
 #include "Callback.hpp"
 
-#define WAIT_READY(...) if (!is_ready) { Callback *cb = new Callback(this, __func__, __VA_ARGS__); connect(this, SIGNAL(ready()), cb, SLOT(trigger())); return; }
-#define GET_INODE(ino, ...) if (!store.hasInodeLocally(ino)) { Callback *cb = new Callback(this, __func__, __VA_ARGS__); store.callbackOnInodeCached(ino, cb); } S3FS_Obj ino ## _o = store.getInode(ino)
+#define METHOD_ARGS(...) QList<QGenericArgument> func_args = {__VA_ARGS__}
+#define WAIT_READY() if (!is_ready) { Callback *cb = new Callback(this, __func__, func_args); connect(this, SIGNAL(ready()), cb, SLOT(trigger())); return; }
+#define GET_INODE(ino) \
+	if (!store.hasInode(ino)) { req->error(ENOENT); return; } \
+	if (!store.hasInodeLocally(ino)) { Callback *cb = new Callback(this, __func__, func_args); store.callbackOnInodeCached(ino, cb); } S3FS_Obj ino ## _o = store.getInode(ino); \
+	if (!ino ## _o.isValid()) { req->error(ENOENT); return; }
 
 S3FS::S3FS(const QByteArray &_bucket, const QByteArray &path): fuse(path, this), store(_bucket) {
 	bucket = _bucket;
@@ -39,21 +43,47 @@ void S3FS::format() {
 	store.storeInode(root);
 }
 
+void S3FS::fuse_lookup(QtFuseRequest *req, fuse_ino_t ino, const QByteArray &path) {
+	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, ino), Q_ARG(const QByteArray&, path));
+	WAIT_READY();
+	GET_INODE(ino);
+
+	if (!ino_o.isDir()) {
+		req->error(ENOTDIR);
+		return;
+	}
+
+	qDebug("S3FS: TODO lookup entry %s from inode %lu", qPrintable(path), ino);
+
+	req->error(ENOENT);
+}
+
 void S3FS::fuse_getattr(QtFuseRequest *req, fuse_ino_t ino, struct fuse_file_info *fi) {
-	WAIT_READY(Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, ino), Q_ARG(struct fuse_file_info *, fi));
-
-	if (!store.hasInode(ino)) {
-		req->error(ENOENT);
-		return;
-	}
-
-	GET_INODE(ino, Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, ino), Q_ARG(struct fuse_file_info *, fi));
-
-	if (!ino_o.isValid()) {
-		req->error(ENOENT);
-		return;
-	}
+	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, ino), Q_ARG(struct fuse_file_info *, fi));
+	WAIT_READY();
+	GET_INODE(ino);
 
 	req->attr(&(ino_o.constAttr()));
+}
+
+void S3FS::fuse_opendir(QtFuseRequest *req, fuse_ino_t ino, struct fuse_file_info *fi) {
+	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, ino), Q_ARG(struct fuse_file_info *, fi));
+	WAIT_READY();
+	GET_INODE(ino);
+
+	if (!ino_o.isDir()) {
+		req->error(ENOTDIR);
+		return;
+	}
+
+	req->open(fi);
+}
+
+void S3FS::fuse_releasedir(QtFuseRequest *req, fuse_ino_t ino, struct fuse_file_info *fi) {
+	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, ino), Q_ARG(struct fuse_file_info *, fi));
+	WAIT_READY();
+	GET_INODE(ino);
+
+	req->error(0); // success
 }
 

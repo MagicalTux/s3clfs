@@ -20,6 +20,24 @@ Callback::Callback(QObject *_obj, const char *_member, QGenericArgument _val0, Q
 	STORE_VAL(9);
 }
 
+Callback::Callback(QObject *_obj, const char *_member, const QList<QGenericArgument>&args) {
+	obj = _obj;
+	member = _member;
+
+	#define STORE_VAL2(_x) if (args.length() > _x) { v ## _x = QVariant(QVariant::nameToType(args.at(_x).name()), args.at(_x).data()); n ## _x = args.at(_x).name(); }
+
+	STORE_VAL2(0);
+	STORE_VAL2(1);
+	STORE_VAL2(2);
+	STORE_VAL2(3);
+	STORE_VAL2(4);
+	STORE_VAL2(5);
+	STORE_VAL2(6);
+	STORE_VAL2(7);
+	STORE_VAL2(8);
+	STORE_VAL2(9);
+}
+
 void Callback::trigger() {
 	if (obj.isNull()) return;
 

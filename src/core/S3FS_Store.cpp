@@ -17,11 +17,12 @@ S3FS_Store::S3FS_Store(const QByteArray &_bucket, QObject *parent): QObject(pare
 	QTimer::singleShot(1000, this, SLOT(test_setready()));
 
 	if (!kv.create(kv_location)) {
-		qFatal("S3FS: Failed to open cache");
+		qFatal("S3FS_Store: Failed to open cache");
 	}
 }
 
 void S3FS_Store::test_setready() {
+	qDebug("S3FS_Store: Ready!");
 	ready();
 }
 

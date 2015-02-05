@@ -18,6 +18,8 @@ public:
 		QGenericArgument val8 = QGenericArgument(),
 		QGenericArgument val9 = QGenericArgument());
 
+	Callback(QObject *obj, const char *member, const QList<QGenericArgument>&);
+
 public slots:
 	void trigger();
 
