@@ -4,6 +4,7 @@
 
 class S3FS_Obj; // inode
 class Callback;
+class S3FS_Store_MetaIterator;
 
 class S3FS_Store: public QObject {
 	Q_OBJECT
@@ -22,6 +23,7 @@ public:
 	bool hasInodeMeta(quint64 ino, const QByteArray &key);
 	QByteArray getInodeMeta(quint64 ino, const QByteArray &key);
 	bool setInodeMeta(quint64 ino, const QByteArray &key, const QByteArray &value);
+	S3FS_Store_MetaIterator *getInodeMetaIterator(quint64 ino);
 
 signals:
 	void ready();

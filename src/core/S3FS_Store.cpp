@@ -1,5 +1,6 @@
 #include "S3FS_Store.hpp"
 #include "S3FS_Obj.hpp"
+#include "S3FS_Store_MetaIterator.hpp"
 #include <QDir>
 #include <QUuid>
 #include <QTimer>
@@ -85,3 +86,8 @@ bool S3FS_Store::setInodeMeta(quint64 ino, const QByteArray &key_sub, const QByt
 	return kv.insert(key+key_sub, value);
 }
 
+S3FS_Store_MetaIterator *S3FS_Store::getInodeMetaIterator(quint64 ino) {
+	INT_TO_BYTES(ino);
+	QByteArray key = QByteArray("\x01", 1) + ino_b;
+	return new S3FS_Store_MetaIterator(&kv, key);
+}

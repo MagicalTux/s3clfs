@@ -2,6 +2,7 @@
 #include "S3FS_Obj.hpp"
 #include "QtFuseRequest.hpp"
 #include "Callback.hpp"
+#include "S3FS_Store_MetaIterator.hpp"
 #include <QDateTime>
 
 #define METHOD_ARGS(...) QList<QGenericArgument> func_args = {__VA_ARGS__}
@@ -148,6 +149,8 @@ void S3FS::fuse_opendir(QtFuseRequest *req, fuse_ino_t ino, struct fuse_file_inf
 		return;
 	}
 
+	fi->fh = (uintptr_t)store.getInodeMetaIterator(ino); // next entry to read
+
 	req->open(fi);
 }
 
@@ -155,6 +158,10 @@ void S3FS::fuse_releasedir(QtFuseRequest *req, fuse_ino_t ino, struct fuse_file_
 	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, ino), Q_ARG(struct fuse_file_info *, fi));
 	WAIT_READY();
 	GET_INODE(ino);
+
+	S3FS_Store_MetaIterator *fh = (S3FS_Store_MetaIterator*)fi->fh;
+	if (fh)
+		delete fh;
 
 	req->error(0); // success
 }
