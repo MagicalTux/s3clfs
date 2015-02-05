@@ -25,6 +25,7 @@ public:
 	bool decode(const QByteArray &);
 
 	const struct stat &constAttr() const;
+	void setAttr(const struct stat &s);
 
 private:
 	struct stat attr;

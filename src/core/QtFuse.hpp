@@ -21,7 +21,7 @@ class QtFuseRequest;
 class QtFuse: public QObject {
 	Q_OBJECT;
 public:
-	QtFuse(const QByteArray &mp);
+	QtFuse(const QByteArray &mp, const QByteArray &src = QByteArray("QtFuse"));
 	~QtFuse();
 	void init();
 
@@ -79,7 +79,9 @@ protected:
 
 private:
 	QByteArray mp; // mount point
+	QByteArray src;
 	pthread_t thread;
+	bool fuse_cleaned;
 
 	static void *qtfuse_start_thread(void *_c);
 	static void priv_qtfuse_init(void *userdata, struct fuse_conn_info *conn);
@@ -134,5 +136,8 @@ private:
 	int fuse_buf_len;
 };
 
+typedef struct stat struct_stat;
+
 Q_DECLARE_METATYPE(QtFuse*);
 Q_DECLARE_METATYPE(fuse_ino_t);
+Q_DECLARE_METATYPE(struct_stat*);

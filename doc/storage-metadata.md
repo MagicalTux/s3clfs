@@ -4,7 +4,7 @@ Inodes contain base information, and possibly extra information.
 
 Extra information depend on the inode type (found in the base information).
 
-- Directories: extra information is a table of <hash of filename> => <list of files matching and inodes> streamed as file by file (quint64 inode, QByteArray filename)
+- Directories: extra information is a table of <filename> => <inodes> streamed as file by file (QByteArray filename, quint64 inode)
 - Files: extra info is table of <offset> => <data hash> streamed as quint64 offset => QByteArray hash
 - Symlink: extra info is symlink target stored in key+"\x00", streamed as QByteArray
 

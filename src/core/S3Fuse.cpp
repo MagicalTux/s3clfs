@@ -2,7 +2,7 @@
 #include "S3FS.hpp"
 #include "QtFuseRequest.hpp"
 
-S3Fuse::S3Fuse(const QByteArray &path, S3FS *_parent): QtFuse(path) {
+S3Fuse::S3Fuse(const QByteArray &bucket, const QByteArray &path, S3FS *_parent): QtFuse(path, bucket) {
 	parent = _parent;
 }
 
@@ -17,6 +17,10 @@ void S3Fuse::fuse_init(struct fuse_conn_info *ci) {
 
 void S3Fuse::fuse_lookup(QtFuseRequest *req, fuse_ino_t ino, const QByteArray &path) {
 	parent->fuse_lookup(req, ino, path);
+}
+
+void S3Fuse::fuse_setattr(QtFuseRequest *req, fuse_ino_t node, struct stat *attr, int to_set, struct fuse_file_info *fi) {
+	parent->fuse_setattr(req, node, attr, to_set, fi);
 }
 
 void S3Fuse::fuse_getattr(QtFuseRequest *req, fuse_ino_t ino, struct fuse_file_info *fi) {
