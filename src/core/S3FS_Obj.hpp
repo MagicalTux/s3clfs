@@ -30,7 +30,7 @@ public:
 	const struct stat &constAttr() const;
 	void setAttr(const struct stat &s);
 
-	ssize_t size() const;
+	size_t size() const;
 	void setSize(size_t);
 
 private:

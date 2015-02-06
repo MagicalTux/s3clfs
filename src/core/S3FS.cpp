@@ -5,11 +5,12 @@
 #include "S3FS_Store_MetaIterator.hpp"
 #include <QDateTime>
 
+#define CALLBACK() new Callback(this, __func__, func_args)
 #define METHOD_ARGS(...) QList<QGenericArgument> func_args = {__VA_ARGS__}
-#define WAIT_READY() if (!is_ready) { Callback *cb = new Callback(this, __func__, func_args); connect(this, SIGNAL(ready()), cb, SLOT(trigger())); return; }
+#define WAIT_READY() if (!is_ready) { connect(this, SIGNAL(ready()), CALLBACK(), SLOT(trigger())); return; }
 #define GET_INODE(ino) \
 	if (!store.hasInode(ino)) { req->error(ENOENT); return; } \
-	if (!store.hasInodeLocally(ino)) { Callback *cb = new Callback(this, __func__, func_args); store.callbackOnInodeCached(ino, cb); } S3FS_Obj ino ## _o = store.getInode(ino); \
+	if (!store.hasInodeLocally(ino)) { store.callbackOnInodeCached(ino, CALLBACK()); } S3FS_Obj ino ## _o = store.getInode(ino); \
 	if (!ino ## _o.isValid()) { req->error(ENOENT); return; }
 
 S3FS::S3FS(const QByteArray &_bucket, const QByteArray &path): fuse(_bucket, path, this), store(_bucket) {
@@ -386,11 +387,9 @@ void S3FS::fuse_read(QtFuseRequest *req, fuse_ino_t ino, size_t size, off_t offs
 	WAIT_READY();
 	GET_INODE(ino);
 
-	qDebug("fuse_read request, inode=%ld size=%lu offset=%lu", ino, size, offset);
-
 	QByteArray buf;
 
-	if (offset >= ino_o.size()) {
+	if ((quint64)offset >= ino_o.size()) {
 		req->buf(QByteArray()); // no data
 		return;
 	}
@@ -416,8 +415,7 @@ void S3FS::fuse_read(QtFuseRequest *req, fuse_ino_t ino, size_t size, off_t offs
 
 			if (!store.hasBlockLocally(block_id)) {
 				// need to get block & retry
-				Callback *cb = new Callback(this, __func__, func_args);
-				store.callbackOnBlockCached(block_id, cb);
+				store.callbackOnBlockCached(block_id, CALLBACK());
 				return;
 			}
 			quint64 block_pos = pos % S3FUSE_BLOCK_SIZE;
@@ -429,11 +427,8 @@ void S3FS::fuse_read(QtFuseRequest *req, fuse_ino_t ino, size_t size, off_t offs
 			quint64 block_pos = pos % S3FUSE_BLOCK_SIZE;
 			tmp_buf = QByteArray(S3FUSE_BLOCK_SIZE - block_pos, '\0');
 		}
-		if (tmp_buf.length() > final_pos-pos)
+		if ((quint64)tmp_buf.length() > final_pos-pos)
 			tmp_buf.resize(final_pos-pos);
-
-		qDebug("position %ld/%ld", pos, final_pos);
-		qDebug("read %d bytes", tmp_buf.length());
 
 		if (tmp_buf.length() == 0) abort();
 
@@ -522,12 +517,12 @@ inline bool S3FS::real_write(S3FS_Obj &ino, const QByteArray &buf, off_t offset,
 		QByteArray block_id = store.writeBlock(buf);
 		store.setInodeMeta(ino.getInode(), offset_block_b, block_id);
 		// update size if needed
-		if ((offset + S3FUSE_BLOCK_SIZE) > ino.size())
+		if (((quint64)offset + S3FUSE_BLOCK_SIZE) > ino.size())
 			ino.setSize(offset + S3FUSE_BLOCK_SIZE);
 		return true;
 	}
 
-	if ((offset == offset_block) && ((buf.length() + offset) >= ino.size())) {
+	if ((offset == offset_block) && ((quint64)(buf.length() + offset) >= ino.size())) {
 		// writing a block that will be at the end of this file, easy
 		QByteArray block_id = store.writeBlock(buf);
 		store.setInodeMeta(ino.getInode(), offset_block_b, block_id);
@@ -561,7 +556,7 @@ inline bool S3FS::real_write(S3FS_Obj &ino, const QByteArray &buf, off_t offset,
 		QByteArray block_id = store.writeBlock(block_data);
 		store.setInodeMeta(ino.getInode(), offset_block_b, block_id);
 		// it is quite likely we caused file size to change
-		if ((offset + buf.length()) > ino.size())
+		if ((quint64)(offset + buf.length()) > ino.size())
 			ino.setSize(offset + buf.length());
 		return true;
 	}
@@ -572,7 +567,7 @@ inline bool S3FS::real_write(S3FS_Obj &ino, const QByteArray &buf, off_t offset,
 	block_data.append(buf);
 	QByteArray block_id = store.writeBlock(block_data);
 	store.setInodeMeta(ino.getInode(), offset_block_b, block_id);
-	if ((offset + buf.length()) > ino.size())
+	if ((quint64)(offset + buf.length()) > ino.size())
 		ino.setSize(offset + buf.length());
 	return true;
 }

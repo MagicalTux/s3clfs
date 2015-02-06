@@ -149,7 +149,7 @@ bool S3FS_Obj::isSocket() const {
 	return (attr.st_mode & S_IFMT) == S_IFSOCK;
 }
 
-ssize_t S3FS_Obj::size() const {
+size_t S3FS_Obj::size() const {
 	return attr.st_size;
 }
 
