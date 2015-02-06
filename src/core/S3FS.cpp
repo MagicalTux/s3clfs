@@ -385,6 +385,7 @@ void S3FS::fuse_write(QtFuseRequest *req, fuse_ino_t ino, const QByteArray &buf,
 	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, ino), Q_ARG(const QByteArray&,buf), Q_ARG(off_t,offset), Q_ARG(struct fuse_file_info *,fi));
 	WAIT_READY();
 	GET_INODE(ino);
+	bool need_wait = false;
 
 	// write data
 	if (buf.isEmpty()) {
@@ -392,21 +393,125 @@ void S3FS::fuse_write(QtFuseRequest *req, fuse_ino_t ino, const QByteArray &buf,
 		return;
 	}
 
-	// try to locate good position too see if we already have blocks there
-	auto i = store.getInodeMetaIterator(ino);
-	if (offset > S3FUSE_BLOCK_SIZE) {
-		quint64 safe_pos = offset - S3FUSE_BLOCK_SIZE;
-		QByteArray safe_pos_b;
-		QDataStream(&safe_pos_b, QIODevice::WriteOnly) << safe_pos;
-		i->find(safe_pos_b);
+	// OK, now cut buffer into pieces that fit into S3FUSE_BLOCK_SIZE
+	size_t pos = 0;
+	
+	if (offset % S3FUSE_BLOCK_SIZE) {
+		qint64 maxlen = S3FUSE_BLOCK_SIZE - (offset % S3FUSE_BLOCK_SIZE);
+		if (buf.length() < maxlen) {
+			if (!real_write(ino_o, buf, offset, func_args, need_wait)) {
+				store.storeInode(ino_o);
+				if (need_wait) return;
+				req->error(EIO);
+				return;
+			}
+			store.storeInode(ino_o);
+			req->write(buf.length());
+			return;
+		}
+		// too bad, buf doesn't fit
+		if (!real_write(ino_o, buf.left(maxlen), offset, func_args, need_wait)) {
+			store.storeInode(ino_o);
+			if (need_wait) return;
+			req->error(EIO);
+			return;
+		}
+		pos = maxlen;
 	}
 
-	delete i;
+	size_t len = buf.length();
 
-	qDebug("S3FS::write called");
-	qDebug("data to write: %d bytes", buf.length());
+	while(pos < len) {
+		if (pos + S3FUSE_BLOCK_SIZE > len) {
+			// final block
+			if (!real_write(ino_o, buf.mid(pos), offset+pos, func_args, need_wait)) {
+				store.storeInode(ino_o);
+				if (need_wait) return;
+				req->error(EIO);
+				return;
+			}
+			store.storeInode(ino_o);
+			req->write(len);
+			return;
+		}
+		// middle write
+		if (!real_write(ino_o, buf.mid(pos, S3FUSE_BLOCK_SIZE), offset+pos, func_args, need_wait)) {
+			store.storeInode(ino_o);
+			if (need_wait) return;
+			req->error(EIO);
+			return;
+		}
+		pos += S3FUSE_BLOCK_SIZE;
+	}
+	store.storeInode(ino_o);
+	req->write(pos); // if len was a multiple of S3FUSE_BLOCK_SIZE
+}
 
-	req->error(ENOSYS);
+// hing this as inline for optimization
+inline bool S3FS::real_write(S3FS_Obj &ino, const QByteArray &buf, off_t offset, QList<QGenericArgument> &func_args, bool &need_wait) {
+	qint64 offset_block = offset - (offset % S3FUSE_BLOCK_SIZE);
+
+	QByteArray offset_block_b;
+	QDataStream(&offset_block_b, QIODevice::WriteOnly) << offset_block;
+
+	if ((offset == offset_block) && (buf.length() == S3FUSE_BLOCK_SIZE)) {
+		// ok, that's easy
+		QByteArray block_id = store.writeBlock(buf);
+		store.setInodeMeta(ino.getInode(), offset_block_b, block_id);
+		// update size if needed
+		if ((offset + S3FUSE_BLOCK_SIZE) > ino.size())
+			ino.setSize(offset + S3FUSE_BLOCK_SIZE);
+		return true;
+	}
+
+	if ((offset == offset_block) && ((buf.length() + offset) >= ino.size())) {
+		// writing a block that will be at the end of this file, easy
+		QByteArray block_id = store.writeBlock(buf);
+		store.setInodeMeta(ino.getInode(), offset_block_b, block_id);
+		ino.setSize(offset + buf.length());
+		return true;
+	}
+
+	if (store.hasInodeMeta(ino.getInode(), offset_block_b)) {
+		// need to get that block, update it, and write it again
+		QByteArray old_block_id = store.getInodeMeta(ino.getInode(), offset_block_b);
+		if (!store.hasBlockLocally(old_block_id)) {
+			// need to get block & retry
+			Callback *cb = new Callback(this, "fuse_write", func_args);
+			store.callbackOnBlockCached(old_block_id, cb);
+			need_wait = true;
+			return false;
+		}
+		QByteArray block_data = store.readBlock(old_block_id);
+
+		if (block_data.length() < offset) {
+			// add zeroes (note, we could have used block_data.resize() but then empty data would be undefined, we want it to be zeroes)
+			block_data.append(QByteArray(offset-block_data.length(), '\0'));
+		} else if (block_data.length() > offset) {
+			// need to replace existing data with new data
+			block_data = block_data.mid(0, offset);
+		}
+		// add actual data
+		block_data.append(buf);
+
+		// store new block
+		QByteArray block_id = store.writeBlock(block_data);
+		store.setInodeMeta(ino.getInode(), offset_block_b, block_id);
+		// it is quite likely we caused file size to change
+		if ((offset + buf.length()) > ino.size())
+			ino.setSize(offset + buf.length());
+		return true;
+	}
+
+	// there was no data here, create a block to hold the data we received
+	// possibly prefix zeroes because offset is not at block start
+	QByteArray block_data(offset-offset_block, '\0');
+	block_data.append(buf);
+	QByteArray block_id = store.writeBlock(block_data);
+	store.setInodeMeta(ino.getInode(), offset_block_b, block_id);
+	if ((offset + buf.length()) > ino.size())
+		ino.setSize(offset + buf.length());
+	return true;
 }
 
 void S3FS::fuse_write_buf(QtFuseRequest *req, fuse_ino_t ino, struct fuse_bufvec *bufv, off_t off, struct fuse_file_info *fi) {

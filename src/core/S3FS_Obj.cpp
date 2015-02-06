@@ -61,6 +61,7 @@ QByteArray S3FS_Obj::encode() const {
 	STORE_VAL_T(ctime, quint64);
 	STORE_VAL_T(mtime, qint64);
 	STORE_VAL_T(atime, qint64);
+	STORE_VAL_T(size, quint64);
 
 	QVariantMap props;
 	props.insert("version", (quint32)0);
@@ -99,6 +100,7 @@ bool S3FS_Obj::decode(const QByteArray &buf) {
 	attr.st_ctime = attrs.value("ctime").toULongLong();
 	attr.st_mtime = attrs.value("mtime").toULongLong();
 	attr.st_atime = attrs.value("atime").toULongLong();
+	attr.st_size = attrs.value("size").toULongLong();
 
 	return true;
 }
@@ -145,5 +147,13 @@ bool S3FS_Obj::isSymlink() const {
 
 bool S3FS_Obj::isSocket() const {
 	return (attr.st_mode & S_IFMT) == S_IFSOCK;
+}
+
+ssize_t S3FS_Obj::size() const {
+	return attr.st_size;
+}
+
+void S3FS_Obj::setSize(size_t s) {
+	attr.st_size = s;
 }
 

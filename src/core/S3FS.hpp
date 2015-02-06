@@ -38,6 +38,7 @@ public slots:
 
 protected:
 	quint64 makeInode();
+	bool real_write(S3FS_Obj &ino, const QByteArray &buf, off_t offset, QList<QGenericArgument>&, bool &wait);
 
 private:
 	S3Fuse fuse;
