@@ -18,9 +18,12 @@ protected:
 	virtual void fuse_forget(QtFuseRequest *req, fuse_ino_t ino, unsigned long nlookup);
 	virtual void fuse_setattr(QtFuseRequest *req, fuse_ino_t node, struct stat *attr, int to_set, struct fuse_file_info *fi);
 	virtual void fuse_unlink(QtFuseRequest *req, fuse_ino_t parent, const QByteArray &name);
+	virtual void fuse_readlink(QtFuseRequest *req, fuse_ino_t node);
 	virtual void fuse_mkdir(QtFuseRequest *req, fuse_ino_t parent, const QByteArray &name, int mode);
 	virtual void fuse_rmdir(QtFuseRequest *req, fuse_ino_t parent, const QByteArray &name);
+	virtual void fuse_symlink(QtFuseRequest *req, const QByteArray &link, fuse_ino_t parent, const QByteArray &name);
 	virtual void fuse_rename(QtFuseRequest *req, fuse_ino_t parent, const QByteArray &name, fuse_ino_t newparent, const QByteArray &newname);
+	virtual void fuse_link(QtFuseRequest *req, fuse_ino_t ino, fuse_ino_t newparent, const QByteArray &newname);
 	virtual void fuse_flush(QtFuseRequest *req, fuse_ino_t ino, struct fuse_file_info *fi);
 	virtual void fuse_release(QtFuseRequest *req, fuse_ino_t ino, struct fuse_file_info *fi);
 	virtual void fuse_open(QtFuseRequest *req, fuse_ino_t ino, struct fuse_file_info *fi);

@@ -23,9 +23,12 @@ public slots:
 	void fuse_setattr(QtFuseRequest *req, fuse_ino_t node, struct_stat *attr, int to_set, struct fuse_file_info *fi);
 	void fuse_getattr(QtFuseRequest *req, fuse_ino_t node, struct fuse_file_info *fi);
 	void fuse_unlink(QtFuseRequest *req, fuse_ino_t parent_ino, const QByteArray &name);
+	void fuse_readlink(QtFuseRequest *req, fuse_ino_t node);
 	void fuse_mkdir(QtFuseRequest *req, fuse_ino_t parent, const QByteArray &name, int mode);
 	void fuse_rmdir(QtFuseRequest *req, fuse_ino_t parent, const QByteArray &name);
+	void fuse_symlink(QtFuseRequest *req, const QByteArray &link, fuse_ino_t parent, const QByteArray &name);
 	void fuse_rename(QtFuseRequest *req, fuse_ino_t parent, const QByteArray &name, fuse_ino_t newparent, const QByteArray &newname);
+	void fuse_link(QtFuseRequest *req, fuse_ino_t ino, fuse_ino_t newparent, const QByteArray &newname);
 	void fuse_flush(QtFuseRequest *req, fuse_ino_t ino, struct fuse_file_info *fi);
 	void fuse_release(QtFuseRequest *req, fuse_ino_t ino, struct fuse_file_info *fi);
 	void fuse_open(QtFuseRequest *req, fuse_ino_t ino, struct fuse_file_info *fi);

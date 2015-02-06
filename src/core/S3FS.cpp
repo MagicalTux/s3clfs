@@ -166,6 +166,19 @@ void S3FS::fuse_unlink(QtFuseRequest *req, fuse_ino_t parent, const QByteArray &
 	req->error(0);
 }
 
+void S3FS::fuse_readlink(QtFuseRequest *req, fuse_ino_t node) {
+	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, node));
+	WAIT_READY();
+	GET_INODE(node);
+
+	if (!node_o.isSymlink()) {
+		req->error(EINVAL);
+		return;
+	}
+
+	req->readlink(store.getInodeMeta(node, QByteArray("\x00", 1)));
+}
+
 void S3FS::fuse_mkdir(QtFuseRequest *req, fuse_ino_t parent, const QByteArray &name, int mode) {
 	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, parent), Q_ARG(const QByteArray &,name), Q_ARG(int,mode));
 	WAIT_READY();
@@ -251,11 +264,40 @@ void S3FS::fuse_rmdir(QtFuseRequest *req, fuse_ino_t parent, const QByteArray &n
 	req->error(0);
 }
 
+void S3FS::fuse_symlink(QtFuseRequest *req, const QByteArray &link, fuse_ino_t parent, const QByteArray &name) {
+	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(const QByteArray&,link), Q_ARG(fuse_ino_t,parent), Q_ARG(const QByteArray&,name));
+	WAIT_READY();
+	GET_INODE(parent);
+
+	if (store.hasInodeMeta(parent, name)) {
+		req->error(EEXIST);
+		return;
+	}
+
+	S3FS_Obj symlink;
+	symlink.makeEntry(makeInode(), S_IFLNK, 0777, req->context()->uid, req->context()->gid);
+
+	store.storeInode(symlink);
+	store.setInodeMeta(symlink.getInode(), QByteArray("\x00", 1), link);
+
+	// store dir entry
+	QByteArray dir_entry;
+	QDataStream(&dir_entry, QIODevice::WriteOnly) << symlink.getInode() << symlink.getFiletype();
+	store.setInodeMeta(parent, name, dir_entry);
+
+	req->entry(&symlink.constAttr());
+}
+
 void S3FS::fuse_rename(QtFuseRequest *req, fuse_ino_t parent, const QByteArray &name, fuse_ino_t newparent, const QByteArray &newname) {
 	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, parent), Q_ARG(const QByteArray &,name), Q_ARG(fuse_ino_t, newparent), Q_ARG(const QByteArray &,newname));
 	WAIT_READY();
 	GET_INODE(parent);
 	GET_INODE(newparent);
+
+	if (!newparent_o.isDir()) {
+		req->error(ENOTDIR);
+		return;
+	}
 
 	if (!store.hasInodeMeta(parent, name)) {
 		req->error(ENOENT);
@@ -307,6 +349,35 @@ void S3FS::fuse_rename(QtFuseRequest *req, fuse_ino_t parent, const QByteArray &
 	}
 	store.removeInodeMeta(parent, name);
 	req->error(0);
+}
+
+void S3FS::fuse_link(QtFuseRequest *req, fuse_ino_t ino, fuse_ino_t newparent, const QByteArray &newname) {
+	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, ino), Q_ARG(fuse_ino_t, newparent), Q_ARG(const QByteArray &,newname));
+	WAIT_READY();
+	GET_INODE(ino);
+	GET_INODE(newparent);
+
+	if (!newparent_o.isDir()) {
+		req->error(ENOTDIR);
+		return;
+	}
+
+	if (!ino_o.isFile()) {
+		req->error(EINVAL);
+		return;
+	}
+
+	if (store.hasInodeMeta(newparent, newname)) {
+		req->error(EEXIST);
+		return;
+	}
+
+	// store dir entry
+	QByteArray dir_entry;
+	QDataStream(&dir_entry, QIODevice::WriteOnly) << ino_o.getInode() << ino_o.getFiletype();
+	store.setInodeMeta(newparent, newname, dir_entry);
+
+	req->entry(&ino_o.constAttr());
 }
 
 void S3FS::fuse_flush(QtFuseRequest *req, fuse_ino_t, struct fuse_file_info *) {
