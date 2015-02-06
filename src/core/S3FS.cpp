@@ -60,6 +60,8 @@ void S3FS::fuse_lookup(QtFuseRequest *req, fuse_ino_t ino, const QByteArray &pat
 	WAIT_READY();
 	GET_INODE(ino);
 
+//	qDebug("S3FS: lookup(%s) from inode %lu", qPrintable(path), ino);
+
 	if (!ino_o.isDir()) {
 		req->error(ENOTDIR);
 		return;
@@ -90,7 +92,7 @@ void S3FS::fuse_setattr(QtFuseRequest *req, fuse_ino_t ino, struct stat *attr, i
 	WAIT_READY();
 	GET_INODE(ino);
 
-	qDebug("S3FS: about to setattr on inode %lu", ino);
+//	qDebug("S3FS: about to setattr on inode %lu", ino);
 
 	struct stat s = ino_o.constAttr();
 

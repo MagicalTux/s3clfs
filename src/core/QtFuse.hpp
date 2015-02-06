@@ -75,8 +75,6 @@ protected:
 	virtual void fuse_flock(QtFuseRequest *req, fuse_ino_t ino, struct fuse_file_info *fi, int op);
 	virtual void fuse_fallocate(QtFuseRequest *req, fuse_ino_t ino, int mode, off_t offset, off_t length, struct fuse_file_info *fi);
 
-	virtual bool inode_exists(fuse_ino_t);
-
 private:
 	QByteArray mp; // mount point
 	QByteArray src;
