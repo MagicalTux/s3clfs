@@ -44,6 +44,10 @@ void S3Fuse::fuse_rmdir(QtFuseRequest *req, fuse_ino_t parent_ino, const QByteAr
 	parent->fuse_rmdir(req, parent_ino, name);
 }
 
+void S3Fuse::fuse_rename(QtFuseRequest *req, fuse_ino_t parent_ino, const QByteArray &name, fuse_ino_t newparent, const QByteArray &newname) {
+	parent->fuse_rename(req, parent_ino, name, newparent, newname);
+}
+
 void S3Fuse::fuse_flush(QtFuseRequest *req, fuse_ino_t ino, struct fuse_file_info *fi) {
 	parent->fuse_flush(req, ino, fi);
 }

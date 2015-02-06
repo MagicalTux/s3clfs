@@ -251,6 +251,64 @@ void S3FS::fuse_rmdir(QtFuseRequest *req, fuse_ino_t parent, const QByteArray &n
 	req->error(0);
 }
 
+void S3FS::fuse_rename(QtFuseRequest *req, fuse_ino_t parent, const QByteArray &name, fuse_ino_t newparent, const QByteArray &newname) {
+	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, parent), Q_ARG(const QByteArray &,name), Q_ARG(fuse_ino_t, newparent), Q_ARG(const QByteArray &,newname));
+	WAIT_READY();
+	GET_INODE(parent);
+	GET_INODE(newparent);
+
+	if (!store.hasInodeMeta(parent, name)) {
+		req->error(ENOENT);
+		return;
+	}
+
+	QByteArray file_ino_type = store.getInodeMeta(parent, name);
+
+	if (!store.hasInodeMeta(newparent, newname)) {
+		// most simple, rename target doesn't exist
+		if (!store.setInodeMeta(newparent, newname, file_ino_type)) {
+			req->error(EIO);
+			return;
+		}
+		store.removeInodeMeta(parent, name);
+		req->error(0);
+		return;
+	}
+
+	quint64 file_ino, file_type;
+	QDataStream(file_ino_type) >> file_ino >> file_type;
+
+	quint64 newfile_ino, newfile_type;
+	QByteArray newfile_ino_type = store.getInodeMeta(newparent, newname);
+	QDataStream(newfile_ino_type) >> newfile_ino >> newfile_type;
+
+	if (file_ino == newfile_ino) {
+		// actually the same file, just remove old name & be done with it
+		store.removeInodeMeta(parent, name);
+		req->error(0);
+		return;
+	}
+
+	if (((file_type & S_IFMT) != S_IFDIR) && (newfile_type & S_IFMT) == S_IFDIR) {
+		// trying to overwrite a directory with something else than a directory? nope.
+		req->error(EISDIR);
+		return;
+	}
+	if (((file_type & S_IFMT) == S_IFDIR) && (newfile_type & S_IFMT) != S_IFDIR) {
+		// trying to overwrite something else than a directory with a directory? nope.
+		req->error(ENOTDIR);
+		return;
+	}
+
+	// TODO: if both are directories, check that target dir is empty
+	if (!store.setInodeMeta(newparent, newname, file_ino_type)) {
+		req->error(EIO);
+		return;
+	}
+	store.removeInodeMeta(parent, name);
+	req->error(0);
+}
+
 void S3FS::fuse_flush(QtFuseRequest *req, fuse_ino_t, struct fuse_file_info *) {
 	// nothing here for now
 	req->error(0);
