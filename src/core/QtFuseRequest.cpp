@@ -54,11 +54,18 @@ void QtFuseRequest::entry(const struct stat*attr, int generation) {
 	deleteLater();
 }
 
-void QtFuseRequest::create(const struct fuse_entry_param *e, const struct fuse_file_info *fi) {
+void QtFuseRequest::create(const struct stat *attr, const struct fuse_file_info *fi, int generation) {
 	if (answered) return;
 	answered = true;
 
-	fuse_reply_create(req, e, fi);
+	struct fuse_entry_param e;
+	memset(&e, 0, sizeof(struct fuse_entry_param));
+
+	e.ino = attr->st_ino;
+	e.generation = generation;
+	e.attr = *attr;
+
+	fuse_reply_create(req, &e, fi);
 	deleteLater();
 }
 

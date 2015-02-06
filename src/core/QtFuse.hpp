@@ -138,4 +138,5 @@ typedef struct stat struct_stat;
 
 Q_DECLARE_METATYPE(QtFuse*);
 Q_DECLARE_METATYPE(fuse_ino_t);
+Q_DECLARE_METATYPE(mode_t);
 Q_DECLARE_METATYPE(struct_stat*);

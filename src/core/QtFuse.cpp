@@ -519,6 +519,7 @@ QtFuse::QtFuse(const QByteArray &_mp, const QByteArray &_src) {
 	qRegisterMetaType<QtFuse*>("QtFuse*");
 	qRegisterMetaType<QtFuseRequest*>("QtFuseRequest*");
 	qRegisterMetaType<fuse_ino_t>("fuse_ino_t");
+	qRegisterMetaType<mode_t>("mode_t");
 	qRegisterMetaType<struct fuse_file_info *>("struct fuse_file_info*");
 	qRegisterMetaType<struct flock *>("struct flock*");
 	qRegisterMetaType<struct stat *>("struct stat*");

@@ -91,3 +91,9 @@ S3FS_Store_MetaIterator *S3FS_Store::getInodeMetaIterator(quint64 ino) {
 	QByteArray key = QByteArray("\x01", 1) + ino_b;
 	return new S3FS_Store_MetaIterator(&kv, key);
 }
+
+bool S3FS_Store::removeInodeMeta(quint64 ino, const QByteArray &key_sub) {
+	INT_TO_BYTES(ino);
+	QByteArray key = QByteArray("\x01", 1) + ino_b;
+	return kv.remove(key+key_sub);
+}

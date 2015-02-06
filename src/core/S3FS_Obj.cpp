@@ -24,25 +24,23 @@ void S3FS_Obj::reset() {
 }
 
 void S3FS_Obj::makeRoot() {
-	quint64 t = time(NULL);
-
-	reset();
-	attr.st_ino = 1;
-	attr.st_mode = 0755 | S_IFDIR;
-	attr.st_uid = getuid();
-	attr.st_gid = getgid();
-	attr.st_size = 0;
-	attr.st_ctime = t;
-	attr.st_mtime = t;
-	attr.st_atime = t;
+	makeEntry(1, S_IFDIR, 0755, getuid(), getgid());
 }
 
 void S3FS_Obj::makeDir(quint64 ino, int mode, int uid, int gid) {
+	makeEntry(ino, S_IFDIR, mode, uid, gid);
+}
+
+void S3FS_Obj::makeFile(quint64 ino, int mode, int uid, int gid) {
+	makeEntry(ino, S_IFREG, mode, uid, gid);
+}
+
+void S3FS_Obj::makeEntry(quint64 ino, int type, int mode, int uid, int gid) {
 	quint64 t = time(NULL);
 
 	reset();
 	attr.st_ino = ino;
-	attr.st_mode = (mode & ~S_IFMT) | S_IFDIR;
+	attr.st_mode = (mode & ~S_IFMT) | (type & S_IFMT);
 	attr.st_uid = uid;
 	attr.st_gid = gid;
 	attr.st_size = 0;

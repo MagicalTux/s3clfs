@@ -24,6 +24,7 @@ public:
 	QByteArray getInodeMeta(quint64 ino, const QByteArray &key);
 	bool setInodeMeta(quint64 ino, const QByteArray &key, const QByteArray &value);
 	S3FS_Store_MetaIterator *getInodeMetaIterator(quint64 ino);
+	bool removeInodeMeta(quint64 ino, const QByteArray &key);
 
 signals:
 	void ready();

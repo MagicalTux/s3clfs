@@ -23,6 +23,8 @@ public:
 	void reset();
 	void makeRoot(); // configure object to act as root
 	void makeDir(quint64 ino, int mode, int uid, int gid);
+	void makeFile(quint64 ino, int mode, int uid, int gid);
+	void makeEntry(quint64 ino, int type, int mode, int uid, int gid);
 	bool decode(const QByteArray &);
 
 	const struct stat &constAttr() const;

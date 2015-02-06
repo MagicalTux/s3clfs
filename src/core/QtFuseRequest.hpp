@@ -16,7 +16,7 @@ public slots:
 
 public:
 	void entry(const struct stat*, int generation = 1);
-	void create(const struct fuse_entry_param *e, const struct fuse_file_info *fi);
+	void create(const struct stat*, const struct fuse_file_info *fi, int generation = 1);
 	void attr(const struct stat*, double attr_timeout = 0);
 	void readlink(const QByteArray &link);
 	void open(const struct fuse_file_info *fi);

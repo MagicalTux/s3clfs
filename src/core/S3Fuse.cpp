@@ -27,8 +27,20 @@ void S3Fuse::fuse_getattr(QtFuseRequest *req, fuse_ino_t ino, struct fuse_file_i
 	parent->fuse_getattr(req, ino, fi);
 }
 
+void S3Fuse::fuse_unlink(QtFuseRequest *req, fuse_ino_t parent_ino, const QByteArray &name) {
+	parent->fuse_unlink(req, parent_ino, name);
+}
+
 void S3Fuse::fuse_mkdir(QtFuseRequest *req, fuse_ino_t parent_ino, const QByteArray &name, int mode) {
 	parent->fuse_mkdir(req, parent_ino, name, mode);
+}
+
+void S3Fuse::fuse_flush(QtFuseRequest *req, fuse_ino_t ino, struct fuse_file_info *fi) {
+	parent->fuse_flush(req, ino, fi);
+}
+
+void S3Fuse::fuse_release(QtFuseRequest *req, fuse_ino_t ino, struct fuse_file_info *fi) {
+	parent->fuse_release(req, ino, fi);
 }
 
 void S3Fuse::fuse_opendir(QtFuseRequest *req, fuse_ino_t ino, struct fuse_file_info *fi) {
@@ -43,3 +55,6 @@ void S3Fuse::fuse_releasedir(QtFuseRequest *req, fuse_ino_t ino, struct fuse_fil
 	parent->fuse_releasedir(req, ino, fi);
 }
 
+void S3Fuse::fuse_create(QtFuseRequest *req, fuse_ino_t parent_ino, const char *name, mode_t mode, struct fuse_file_info *fi) {
+	parent->fuse_create(req, parent_ino, name, mode, fi);
+}

@@ -123,6 +123,38 @@ void S3FS::fuse_getattr(QtFuseRequest *req, fuse_ino_t ino, struct fuse_file_inf
 	req->attr(&(ino_o.constAttr()));
 }
 
+void S3FS::fuse_unlink(QtFuseRequest *req, fuse_ino_t parent, const QByteArray &name) {
+	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, parent), Q_ARG(const QByteArray &,name));
+	WAIT_READY();
+	GET_INODE(parent);
+
+	if (!store.hasInodeMeta(parent, name)) {
+		req->error(ENOENT);
+		return;
+	}
+
+	quint64 ino_n;
+	quint32 type_n;
+	QDataStream(store.getInodeMeta(parent, name)) >> ino_n >> type_n;
+	if (ino_n <= 1) {
+		qDebug("S3FS: filesystem seems corrupted, please run fsck");
+		req->error(ENOENT);
+		return;
+	}
+
+	if ((type_n & S_IFMT) == S_IFDIR) {
+		req->error(EISDIR);
+		return;
+	}
+
+	if (!store.removeInodeMeta(parent, name)) {
+		req->error(EIO);
+		return;
+	}
+
+	req->error(0);
+}
+
 void S3FS::fuse_mkdir(QtFuseRequest *req, fuse_ino_t parent, const QByteArray &name, int mode) {
 	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, parent), Q_ARG(const QByteArray &,name), Q_ARG(int,mode));
 	WAIT_READY();
@@ -152,6 +184,16 @@ void S3FS::fuse_mkdir(QtFuseRequest *req, fuse_ino_t parent, const QByteArray &n
 	store.setInodeMeta(new_dir.getInode(), "..", dir_entry);
 
 	req->entry(&new_dir.constAttr());
+}
+
+void S3FS::fuse_flush(QtFuseRequest *req, fuse_ino_t, struct fuse_file_info *) {
+	// nothing here for now
+	req->error(0);
+}
+
+void S3FS::fuse_release(QtFuseRequest *req, fuse_ino_t, struct fuse_file_info *) {
+	// nothing here for now
+	req->error(0);
 }
 
 void S3FS::fuse_opendir(QtFuseRequest *req, fuse_ino_t ino, struct fuse_file_info *fi) {
@@ -224,6 +266,36 @@ void S3FS::fuse_releasedir(QtFuseRequest *req, fuse_ino_t ino, struct fuse_file_
 		delete fh;
 
 	req->error(0); // success
+}
+
+void S3FS::fuse_create(QtFuseRequest *req, fuse_ino_t parent, const char *name, mode_t mode, struct fuse_file_info *fi) {
+	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, parent), Q_ARG(const char*,name), Q_ARG(mode_t,mode), Q_ARG(struct fuse_file_info *,fi));
+	WAIT_READY();
+	GET_INODE(parent);
+
+	// check if file exists
+	if (store.hasInodeMeta(parent, name)) {
+		// TODO handle fi->flags (open file)
+		quint64 child_ino;
+		QDataStream(store.getInodeMeta(parent, name)) >> child_ino;
+		if (child_ino > 1) {
+			GET_INODE(child_ino);
+			req->create(&child_ino_o.constAttr(), fi);
+			return;
+		}
+	}
+
+	// store inode
+	S3FS_Obj new_file;
+	new_file.makeFile(makeInode(), mode, req->context()->uid, req->context()->gid);
+	store.storeInode(new_file);
+
+	// store dir entry
+	QByteArray dir_entry;
+	QDataStream(&dir_entry, QIODevice::WriteOnly) << new_file.getInode() << new_file.getFiletype();
+	store.setInodeMeta(parent, name, dir_entry);
+
+	req->create(&new_file.constAttr(), fi);
 }
 
 quint64 S3FS::makeInode() {
