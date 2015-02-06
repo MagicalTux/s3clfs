@@ -2,7 +2,7 @@
 
 S3FS_Store_MetaIterator::S3FS_Store_MetaIterator(Keyval*kv, const QByteArray &_prefix): KeyvalIterator(kv) {
 	prefix = _prefix;
-	find(prefix);
+	KeyvalIterator::find(prefix);
 }
 
 bool S3FS_Store_MetaIterator::isValid() {
@@ -25,5 +25,5 @@ QByteArray S3FS_Store_MetaIterator::value() {
 }
 
 bool S3FS_Store_MetaIterator::find(const QByteArray &k) {
-	return find(prefix+k);
+	return KeyvalIterator::find(prefix+k);
 }
