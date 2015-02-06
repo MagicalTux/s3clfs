@@ -87,6 +87,10 @@ void S3FS::fuse_lookup(QtFuseRequest *req, fuse_ino_t ino, const QByteArray &pat
 	req->entry(&res_ino_o.constAttr());
 }
 
+void S3FS::fuse_forget(QtFuseRequest *req, fuse_ino_t, unsigned long) {
+	req->none();
+}
+
 void S3FS::fuse_setattr(QtFuseRequest *req, fuse_ino_t ino, struct stat *attr, int to_set, struct fuse_file_info *fi) {
 	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, ino), Q_ARG(struct stat*, attr), Q_ARG(int, to_set), Q_ARG(struct fuse_file_info *, fi));
 	WAIT_READY();
@@ -184,6 +188,60 @@ void S3FS::fuse_mkdir(QtFuseRequest *req, fuse_ino_t parent, const QByteArray &n
 	store.setInodeMeta(new_dir.getInode(), "..", dir_entry);
 
 	req->entry(&new_dir.constAttr());
+}
+
+void S3FS::fuse_rmdir(QtFuseRequest *req, fuse_ino_t parent, const QByteArray &name) {
+	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, parent), Q_ARG(const QByteArray &,name));
+	WAIT_READY();
+	GET_INODE(parent);
+
+	if (!store.hasInodeMeta(parent, name)) {
+		req->error(ENOENT);
+		return;
+	}
+
+	if ((name == ".") || (name == "..")) {
+		req->error(EINVAL);
+		return;
+	}
+
+	quint64 ino_n;
+	quint32 type_n;
+	QDataStream(store.getInodeMeta(parent, name)) >> ino_n >> type_n;
+	if (ino_n <= 1) {
+		qDebug("S3FS: filesystem seems corrupted, please run fsck");
+		req->error(ENOENT);
+		return;
+	}
+
+	if ((type_n & S_IFMT) != S_IFDIR) {
+		req->error(ENOTDIR);
+		return;
+	}
+
+	// check if not empty
+	GET_INODE(ino_n);
+	auto i = store.getInodeMetaIterator(ino_n);
+	bool is_empty = true;
+	do {
+		if ((i->key() != "") && (i->key() != ".") && (i->key() != "..")) {
+			is_empty = false;
+			break;
+		}
+	} while(i->next());
+	delete i;
+
+	if (!is_empty) {
+		req->error(ENOTEMPTY);
+		return;
+	}
+
+	if (!store.removeInodeMeta(parent, name)) {
+		req->error(EIO);
+		return;
+	}
+
+	req->error(0);
 }
 
 void S3FS::fuse_flush(QtFuseRequest *req, fuse_ino_t, struct fuse_file_info *) {

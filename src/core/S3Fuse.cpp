@@ -19,6 +19,10 @@ void S3Fuse::fuse_lookup(QtFuseRequest *req, fuse_ino_t ino, const QByteArray &p
 	parent->fuse_lookup(req, ino, path);
 }
 
+void S3Fuse::fuse_forget(QtFuseRequest *req, fuse_ino_t ino, unsigned long nlookup) {
+	parent->fuse_forget(req, ino, nlookup);
+}
+
 void S3Fuse::fuse_setattr(QtFuseRequest *req, fuse_ino_t node, struct stat *attr, int to_set, struct fuse_file_info *fi) {
 	parent->fuse_setattr(req, node, attr, to_set, fi);
 }
@@ -33,6 +37,10 @@ void S3Fuse::fuse_unlink(QtFuseRequest *req, fuse_ino_t parent_ino, const QByteA
 
 void S3Fuse::fuse_mkdir(QtFuseRequest *req, fuse_ino_t parent_ino, const QByteArray &name, int mode) {
 	parent->fuse_mkdir(req, parent_ino, name, mode);
+}
+
+void S3Fuse::fuse_rmdir(QtFuseRequest *req, fuse_ino_t parent_ino, const QByteArray &name) {
+	parent->fuse_rmdir(req, parent_ino, name);
 }
 
 void S3Fuse::fuse_flush(QtFuseRequest *req, fuse_ino_t ino, struct fuse_file_info *fi) {
