@@ -49,7 +49,7 @@ protected:
 	virtual void fuse_mknod(QtFuseRequest *req, fuse_ino_t parent, const QByteArray &name, mode_t mode, dev_t dev);
 	virtual void fuse_open(QtFuseRequest *req, fuse_ino_t ino, struct fuse_file_info *fi);
 	virtual void fuse_read(QtFuseRequest *req, fuse_ino_t ino, size_t size, off_t offset, struct fuse_file_info *fi);
-	virtual void fuse_write(QtFuseRequest *req, fuse_ino_t ino, const char *buf, size_t size, off_t offset, struct fuse_file_info *fi);
+	virtual void fuse_write(QtFuseRequest *req, fuse_ino_t ino, const QByteArray&, off_t offset, struct fuse_file_info *fi);
 	virtual void fuse_flush(QtFuseRequest *req, fuse_ino_t ino, struct fuse_file_info *fi);
 	virtual void fuse_release(QtFuseRequest *req, fuse_ino_t ino, struct fuse_file_info *fi);
 	virtual void fuse_fsync(QtFuseRequest *req, fuse_ino_t ino, int datasync, struct fuse_file_info *fi);
@@ -140,3 +140,4 @@ Q_DECLARE_METATYPE(QtFuse*);
 Q_DECLARE_METATYPE(fuse_ino_t);
 Q_DECLARE_METATYPE(mode_t);
 Q_DECLARE_METATYPE(struct_stat*);
+Q_DECLARE_METATYPE(struct fuse_bufvec*);

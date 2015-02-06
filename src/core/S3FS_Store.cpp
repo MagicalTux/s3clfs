@@ -22,6 +22,29 @@ S3FS_Store::S3FS_Store(const QByteArray &_bucket, QObject *parent): QObject(pare
 	}
 }
 
+const QVariantMap &S3FS_Store::getConfig() {
+	return config;
+}
+
+bool S3FS_Store::readConfig() {
+	QVariant c;
+	QDataStream kv_val(kv.value(QByteArray("\x01", 1))); kv_val >> c;
+	if (!c.isValid()) return false;
+	if (c.type() != QVariant::Map) return false;
+	config = c.toMap();
+	return true;
+}
+
+bool S3FS_Store::setConfig(const QVariantMap&c) {
+	QByteArray buf;
+	QDataStream buf_stream(&buf, QIODevice::WriteOnly); buf_stream << (QVariant)c;
+	if (!kv.insert(QByteArray("\x01", 1), buf)) {
+		return false;
+	}
+	config = c;
+	return true;
+}
+
 void S3FS_Store::test_setready() {
 	qDebug("S3FS_Store: Ready!");
 	ready();
@@ -67,6 +90,34 @@ void S3FS_Store::callbackOnInodeCached(quint64, Callback*) {
 	qFatal("Not expected to reach this");
 	// TODO
 }
+
+QByteArray S3FS_Store::writeBlock(const QByteArray &buf) {
+	if (buf.isEmpty()) return QByteArray();
+
+	// compute hash
+	QByteArray hash = QCryptographicHash::hash(buf, algo);
+
+	if (hasBlockLocally(hash)) return hash;
+
+	if (!kv.insert(QByteArray("\x02")+hash, buf))
+		return QByteArray();
+
+	return hash;
+}
+
+QByteArray S3FS_Store::readBlock(const QByteArray &hash) {
+	return kv.value(QByteArray("\x02")+hash);
+}
+
+bool S3FS_Store::hasBlockLocally(const QByteArray &hash) {
+	return kv.contains(QByteArray("\x02")+hash);
+}
+
+void S3FS_Store::callbackOnBlockCached(const QByteArray&, Callback*) {
+	qFatal("Not expected to reach this");
+	// TODO
+}
+
 
 bool S3FS_Store::hasInodeMeta(quint64 ino, const QByteArray &key_sub) {
 	INT_TO_BYTES(ino);

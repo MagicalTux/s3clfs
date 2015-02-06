@@ -40,12 +40,18 @@ void S3FS::storeIsReady() {
 }
 
 void S3FS::format() {
+	qDebug("S3FS: Formatting...");
+
+	// create config
+	QVariantMap cfg;
+	cfg.insert("block_size", S3FUSE_BLOCK_SIZE);
+	cfg.insert("hash_algo", "SHA3_256");
+
+	store.setConfig(cfg);
+
 	// create empty directory inode 1, increments generation
 	S3FS_Obj root;
 	root.makeRoot();
-
-	qDebug("S3FS: Created root block");
-
 	store.storeInode(root);
 
 	// add . and ..
@@ -254,6 +260,25 @@ void S3FS::fuse_release(QtFuseRequest *req, fuse_ino_t, struct fuse_file_info *)
 	req->error(0);
 }
 
+void S3FS::fuse_open(QtFuseRequest *req, fuse_ino_t ino, struct fuse_file_info *fi) {
+	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, ino), Q_ARG(struct fuse_file_info *, fi));
+	WAIT_READY();
+	GET_INODE(ino);
+
+	if (ino_o.isDir()) {
+		req->error(EISDIR);
+		return;
+	}
+
+	if (!ino_o.isFile()) {
+		req->error(ENODEV); // TODO is this the best errno for this case?
+		return;
+	}
+
+	// TODO check fi->flags
+	req->open(fi);
+}
+
 void S3FS::fuse_opendir(QtFuseRequest *req, fuse_ino_t ino, struct fuse_file_info *fi) {
 	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, ino), Q_ARG(struct fuse_file_info *, fi));
 	WAIT_READY();
@@ -354,6 +379,61 @@ void S3FS::fuse_create(QtFuseRequest *req, fuse_ino_t parent, const char *name, 
 	store.setInodeMeta(parent, name, dir_entry);
 
 	req->create(&new_file.constAttr(), fi);
+}
+
+void S3FS::fuse_write(QtFuseRequest *req, fuse_ino_t ino, const QByteArray &buf, off_t offset, struct fuse_file_info *fi) {
+	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, ino), Q_ARG(const QByteArray&,buf), Q_ARG(off_t,offset), Q_ARG(struct fuse_file_info *,fi));
+	WAIT_READY();
+	GET_INODE(ino);
+
+	// write data
+	if (buf.isEmpty()) {
+		req->error(EINVAL);
+		return;
+	}
+
+	// try to locate good position too see if we already have blocks there
+	auto i = store.getInodeMetaIterator(ino);
+	if (offset > S3FUSE_BLOCK_SIZE) {
+		quint64 safe_pos = offset - S3FUSE_BLOCK_SIZE;
+		QByteArray safe_pos_b;
+		QDataStream(&safe_pos_b, QIODevice::WriteOnly) << safe_pos;
+		i->find(safe_pos_b);
+	}
+
+	delete i;
+
+	qDebug("S3FS::write called");
+	qDebug("data to write: %d bytes", buf.length());
+
+	req->error(ENOSYS);
+}
+
+void S3FS::fuse_write_buf(QtFuseRequest *req, fuse_ino_t ino, struct fuse_bufvec *bufv, off_t off, struct fuse_file_info *fi) {
+	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, ino), Q_ARG(struct fuse_bufvec*,bufv), Q_ARG(off_t,off), Q_ARG(struct fuse_file_info *,fi));
+	WAIT_READY();
+	GET_INODE(ino);
+
+//	qDebug("S3FS::write_buf called");
+//	qDebug("S3FS::write_buf count=%ld idx=%ld off=%ld", bufv->count, bufv->idx, bufv->off);
+
+//	TODO we might want to handle fuse's bufvec format for efficient writing. In the meantime we'll just do this the easy way
+
+	struct fuse_bufvec dst = FUSE_BUFVEC_INIT(fuse_buf_size(bufv));
+	QByteArray dst_buf;
+	dst_buf.resize(fuse_buf_size(bufv));
+	dst.buf[0].mem = dst_buf.data();
+
+	ssize_t res = fuse_buf_copy(&dst, bufv, FUSE_BUF_NO_SPLICE);
+
+	if (res < 0) {
+		req->error(-res);
+		return;
+	}
+
+	dst_buf.resize(res);
+
+	fuse_write(req, ino, dst_buf, off, fi);
 }
 
 quint64 S3FS::makeInode() {

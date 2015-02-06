@@ -160,10 +160,10 @@ void QtFuse::fuse_read(QtFuseRequest *req, fuse_ino_t, size_t, off_t, struct fus
 
 void QtFuse::priv_qtfuse_write(fuse_req_t req, fuse_ino_t ino, const char *buf, size_t size, off_t off, struct fuse_file_info *fi) {
 	QTFUSE_OBJ_FROM_REQ();
-	c->fuse_write(QTFUSE_REQ(), ino, buf, size, off, fi);
+	c->fuse_write(QTFUSE_REQ(), ino, QByteArray(buf, size), off, fi);
 }
 
-void QtFuse::fuse_write(QtFuseRequest *req, fuse_ino_t, const char *, size_t, off_t, struct fuse_file_info *) {
+void QtFuse::fuse_write(QtFuseRequest *req, fuse_ino_t, const QByteArray&, off_t, struct fuse_file_info *) {
 	QTFUSE_NOT_IMPL(ENOSYS);
 }
 
@@ -520,9 +520,10 @@ QtFuse::QtFuse(const QByteArray &_mp, const QByteArray &_src) {
 	qRegisterMetaType<QtFuseRequest*>("QtFuseRequest*");
 	qRegisterMetaType<fuse_ino_t>("fuse_ino_t");
 	qRegisterMetaType<mode_t>("mode_t");
-	qRegisterMetaType<struct fuse_file_info *>("struct fuse_file_info*");
+	qRegisterMetaType<struct fuse_file_info*>("struct fuse_file_info*");
 	qRegisterMetaType<struct flock *>("struct flock*");
 	qRegisterMetaType<struct stat *>("struct stat*");
+	qRegisterMetaType<struct fuse_bufvec*>("struct fuse_bufvec*");
 
 	mp = _mp;
 	src = _src;

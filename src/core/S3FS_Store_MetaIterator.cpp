@@ -24,3 +24,6 @@ QByteArray S3FS_Store_MetaIterator::value() {
 	return KeyvalIterator::value();
 }
 
+bool S3FS_Store_MetaIterator::find(const QByteArray &k) {
+	return find(prefix+k);
+}

@@ -10,6 +10,7 @@ public:
 
 	bool next();
 	bool isValid();
+	bool find(const QByteArray &);
 
 private:
 	QByteArray prefix;
