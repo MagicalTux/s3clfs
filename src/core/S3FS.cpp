@@ -381,6 +381,69 @@ void S3FS::fuse_create(QtFuseRequest *req, fuse_ino_t parent, const char *name, 
 	req->create(&new_file.constAttr(), fi);
 }
 
+void S3FS::fuse_read(QtFuseRequest *req, fuse_ino_t ino, size_t size, off_t offset, struct fuse_file_info *fi) {
+	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, ino), Q_ARG(size_t,size), Q_ARG(off_t,offset), Q_ARG(struct fuse_file_info *,fi));
+	WAIT_READY();
+	GET_INODE(ino);
+
+	qDebug("fuse_read request, inode=%ld size=%lu offset=%lu", ino, size, offset);
+
+	QByteArray buf;
+
+	if (offset >= ino_o.size()) {
+		req->buf(QByteArray()); // no data
+		return;
+	}
+
+	if (size + offset > ino_o.size()) {
+		size = ino_o.size() - offset;
+	}
+
+	// check for block(s)
+	quint64 pos = offset;
+	quint64 final_pos = offset+size;
+
+	// read while we need to read more
+	while(pos < final_pos) {
+		qint64 offset_block = pos - (pos % S3FUSE_BLOCK_SIZE);
+
+		QByteArray offset_block_b;
+		QDataStream(&offset_block_b, QIODevice::WriteOnly) << offset_block;
+		QByteArray tmp_buf;
+
+		if (store.hasInodeMeta(ino, offset_block_b)) {
+			QByteArray block_id = store.getInodeMeta(ino, offset_block_b);
+
+			if (!store.hasBlockLocally(block_id)) {
+				// need to get block & retry
+				Callback *cb = new Callback(this, __func__, func_args);
+				store.callbackOnBlockCached(block_id, cb);
+				return;
+			}
+			quint64 block_pos = pos % S3FUSE_BLOCK_SIZE;
+			tmp_buf = store.readBlock(block_id).mid(block_pos, S3FUSE_BLOCK_SIZE - block_pos);
+
+			quint64 need_add = S3FUSE_BLOCK_SIZE - block_pos - tmp_buf.length();
+			if (need_add) tmp_buf.append(QByteArray(need_add, '\0'));
+		} else {
+			quint64 block_pos = pos % S3FUSE_BLOCK_SIZE;
+			tmp_buf = QByteArray(S3FUSE_BLOCK_SIZE - block_pos, '\0');
+		}
+		if (tmp_buf.length() > final_pos-pos)
+			tmp_buf.resize(final_pos-pos);
+
+		qDebug("position %ld/%ld", pos, final_pos);
+		qDebug("read %d bytes", tmp_buf.length());
+
+		if (tmp_buf.length() == 0) abort();
+
+		buf += tmp_buf;
+		pos += tmp_buf.length();
+	}
+
+	req->buf(buf);
+}
+
 void S3FS::fuse_write(QtFuseRequest *req, fuse_ino_t ino, const QByteArray &buf, off_t offset, struct fuse_file_info *fi) {
 	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, ino), Q_ARG(const QByteArray&,buf), Q_ARG(off_t,offset), Q_ARG(struct fuse_file_info *,fi));
 	WAIT_READY();

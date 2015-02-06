@@ -72,6 +72,10 @@ void S3Fuse::fuse_create(QtFuseRequest *req, fuse_ino_t parent_ino, const char *
 	parent->fuse_create(req, parent_ino, name, mode, fi);
 }
 
+void S3Fuse::fuse_read(QtFuseRequest *req, fuse_ino_t ino, size_t size, off_t offset, struct fuse_file_info *fi) {
+	parent->fuse_read(req, ino, size, offset, fi);
+}
+
 void S3Fuse::fuse_write(QtFuseRequest *req, fuse_ino_t ino, const QByteArray &buf, off_t offset, struct fuse_file_info *fi) {
 	parent->fuse_write(req, ino, buf, offset, fi);
 }
