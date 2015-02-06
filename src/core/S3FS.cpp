@@ -133,14 +133,23 @@ void S3FS::fuse_mkdir(QtFuseRequest *req, fuse_ino_t parent, const QByteArray &n
 		return;
 	}
 
+	// store inode
 	S3FS_Obj new_dir;
 	new_dir.makeDir(makeInode(), mode, req->context()->uid, req->context()->gid);
 	store.storeInode(new_dir);
 
-	// store dir entry
+	// add .
 	QByteArray dir_entry;
 	QDataStream(&dir_entry, QIODevice::WriteOnly) << new_dir.getInode() << new_dir.getFiletype();
+	store.setInodeMeta(new_dir.getInode(), ".", dir_entry);
+
+	// store dir entry
 	store.setInodeMeta(parent, name, dir_entry);
+
+	// add ..
+	dir_entry.clear();
+	QDataStream(&dir_entry, QIODevice::WriteOnly) << parent_o.getInode() << parent_o.getFiletype();
+	store.setInodeMeta(new_dir.getInode(), "..", dir_entry);
 
 	req->entry(&new_dir.constAttr());
 }
