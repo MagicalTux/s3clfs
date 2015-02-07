@@ -73,7 +73,7 @@ bool S3FS_Aws_S3::putFile(const QByteArray &path, const QByteArray &data) {
 	QUrl url("https://"+bucket+".s3.amazonaws.com/"+path);
 	request = QNetworkRequest(url);
 	request.setHeader(QNetworkRequest::ContentTypeHeader, "application/octet-stream"); // RFC 2046
-	request.setRawHeader("Content-MD5", QCryptographicHash::hash(data, QCryptographicHash::Md5));
+	request.setRawHeader("Content-MD5", QCryptographicHash::hash(data, QCryptographicHash::Md5).toBase64());
 
 	// keep request body around in case we need to retry
 	request_body = data;
