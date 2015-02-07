@@ -155,14 +155,18 @@ bool S3FS_Store::removeInodeMeta(quint64 ino, const QByteArray &key_sub) {
 
 bool S3FS_Store::clearInodeMeta(quint64 ino) {
 	auto i = getInodeMetaIterator(ino);
-	while(i->isValid()) {
-		if (i->key() == "") {
-			i->next();
-			continue;
-		}
-		if (!removeInodeMeta(ino, i->key())) return false;
-		if (!i->next()) break;
+	if (!i->isValid()) {
+		delete i;
+		return false;
 	}
+	do {
+		if (i->key() == "") continue;
+		if (!removeInodeMeta(ino, i->key())) {
+			delete i;
+			return false;
+		}
+	} while(i->next());
+	delete i;
 	return true;
 }
 
