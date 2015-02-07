@@ -10,3 +10,8 @@ accessing at the same time.
 	/usr/lib/qt5/bin/qmake
 	make
 
+## Configuring
+
+If you use AWS command line, configuration can be as easy as:
+
+	ln -s ../.aws ~/.config/aws

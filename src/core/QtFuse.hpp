@@ -21,7 +21,7 @@ class QtFuseRequest;
 class QtFuse: public QObject {
 	Q_OBJECT;
 public:
-	QtFuse(const QByteArray &mp, const QByteArray &src = QByteArray("QtFuse"));
+	QtFuse(const QByteArray &mp, const QByteArray &src = QByteArrayLiteral("QtFuse"));
 	~QtFuse();
 	void init();
 

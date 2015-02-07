@@ -49,6 +49,8 @@ void QtFuseRequest::entry(const struct stat*attr, int generation) {
 	e.ino = attr->st_ino;
 	e.generation = generation;
 	e.attr = *attr;
+	e.attr_timeout = 1;
+	e.entry_timeout = 1;
 
 	fuse_reply_entry(req, &e);
 	deleteLater();

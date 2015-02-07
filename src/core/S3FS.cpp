@@ -176,7 +176,7 @@ void S3FS::fuse_readlink(QtFuseRequest *req, fuse_ino_t node) {
 		return;
 	}
 
-	req->readlink(store.getInodeMeta(node, QByteArray("\x00", 1)));
+	req->readlink(store.getInodeMeta(node, QByteArrayLiteral("\x00")));
 }
 
 void S3FS::fuse_mkdir(QtFuseRequest *req, fuse_ino_t parent, const QByteArray &name, int mode) {
@@ -278,7 +278,7 @@ void S3FS::fuse_symlink(QtFuseRequest *req, const QByteArray &link, fuse_ino_t p
 	symlink.makeEntry(makeInode(), S_IFLNK, 0777, req->context()->uid, req->context()->gid);
 
 	store.storeInode(symlink);
-	store.setInodeMeta(symlink.getInode(), QByteArray("\x00", 1), link);
+	store.setInodeMeta(symlink.getInode(), QByteArrayLiteral("\x00"), link);
 
 	// store dir entry
 	QByteArray dir_entry;
@@ -646,7 +646,6 @@ void S3FS::fuse_write(QtFuseRequest *req, fuse_ino_t ino, const QByteArray &buf,
 
 // hing this as inline for optimization
 inline bool S3FS::real_write(S3FS_Obj &ino, const QByteArray &buf, off_t offset, QList<QGenericArgument> &func_args, bool &need_wait) {
-	qDebug("WRITE: writing piece at %ld ~ %ld", offset, offset+buf.length());
 	qint64 offset_block = offset - (offset % S3FUSE_BLOCK_SIZE);
 	qint64 offset_in_block = offset - offset_block;
 
