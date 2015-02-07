@@ -19,6 +19,10 @@ S3FS_Store::S3FS_Store(const QByteArray &_bucket, QObject *parent): QObject(pare
 	// initialize AWS
 	aws = new S3FS_Aws(this);
 
+	// test
+	S3FS_Aws_S3::listFiles(bucket, "metadata/", aws);
+	S3FS_Aws_S3::getFile(bucket, "metadata/format.dat", aws);
+
 	QTimer::singleShot(1000, this, SLOT(test_setready()));
 
 	if (!kv.create(kv_location)) {
@@ -45,6 +49,7 @@ bool S3FS_Store::setConfig(const QVariantMap&c) {
 	if (!kv.insert(QByteArrayLiteral("\x01"), buf)) {
 		return false;
 	}
+	S3FS_Aws_S3::putFile(bucket, "metadata/format.dat", buf, aws);
 	config = c;
 	return true;
 }

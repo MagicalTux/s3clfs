@@ -26,7 +26,7 @@ bool S3FS_Aws::isValid() {
 	return !id.isEmpty();
 }
 
-QByteArray S3FS_Aws::sign(const QByteArray &string) {
+QByteArray S3FS_Aws::signV2(const QByteArray &string) {
 	// generate signature of string as "AWS AWSAccessKeyId:Signature"
 	QByteArray sig = QMessageAuthenticationCode::hash(string, key, QCryptographicHash::Sha1);
 
