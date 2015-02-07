@@ -406,6 +406,11 @@ void S3FS::fuse_open(QtFuseRequest *req, fuse_ino_t ino, struct fuse_file_info *
 	}
 
 	// TODO check fi->flags
+	if (fi->flags & O_TRUNC) {
+		// need to truncate whole file
+		store.clearInodeMeta(ino);
+	}
+
 	req->open(fi);
 }
 
@@ -493,6 +498,11 @@ void S3FS::fuse_create(QtFuseRequest *req, fuse_ino_t parent, const char *name, 
 		QDataStream(store.getInodeMeta(parent, name)) >> child_ino;
 		if (child_ino > 1) {
 			GET_INODE(child_ino);
+			// should we truncate file?
+			if (fi->flags & O_TRUNC) {
+				// need to truncate whole file
+				store.clearInodeMeta(child_ino);
+			}
 			req->create(&child_ino_o.constAttr(), fi);
 			return;
 		}
@@ -636,7 +646,9 @@ void S3FS::fuse_write(QtFuseRequest *req, fuse_ino_t ino, const QByteArray &buf,
 
 // hing this as inline for optimization
 inline bool S3FS::real_write(S3FS_Obj &ino, const QByteArray &buf, off_t offset, QList<QGenericArgument> &func_args, bool &need_wait) {
+	qDebug("WRITE: writing piece at %ld ~ %ld", offset, offset+buf.length());
 	qint64 offset_block = offset - (offset % S3FUSE_BLOCK_SIZE);
+	qint64 offset_in_block = offset - offset_block;
 
 	QByteArray offset_block_b;
 	QDataStream(&offset_block_b, QIODevice::WriteOnly) << offset_block;
@@ -671,15 +683,20 @@ inline bool S3FS::real_write(S3FS_Obj &ino, const QByteArray &buf, off_t offset,
 		}
 		QByteArray block_data = store.readBlock(old_block_id);
 
-		if (block_data.length() < offset) {
+		if (block_data.length() <= offset_in_block) {
 			// add zeroes (note, we could have used block_data.resize() but then empty data would be undefined, we want it to be zeroes)
-			block_data.append(QByteArray(offset-block_data.length(), '\0'));
-		} else if (block_data.length() > offset) {
+			block_data.append(QByteArray(offset_in_block-block_data.length(), '\0'));
+			// add actual data
+			block_data.append(buf);
+		} else if (block_data.length() > (offset_in_block+buf.length())) {
+			// need to insert buf in there
+			block_data = block_data.mid(0, offset_in_block) + buf + block_data.mid(offset_in_block+buf.length());
+		} else if (block_data.length() > offset_in_block) {
 			// need to replace existing data with new data
-			block_data = block_data.mid(0, offset);
+			block_data = block_data.mid(0, offset_in_block);
+			// add actual data
+			block_data.append(buf);
 		}
-		// add actual data
-		block_data.append(buf);
 
 		// store new block
 		QByteArray block_id = store.writeBlock(block_data);

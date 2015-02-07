@@ -63,7 +63,9 @@ CPP_CLASSES = \
 	core/S3FS \
 	core/S3FS_Obj \
 	core/S3FS_Store \
-	core/S3FS_Store_MetaIterator
+	core/S3FS_Store_MetaIterator \
+	core/S3FS_Aws \
+	core/S3FS_Aws_S3
 
 equals(BUILD_TYPE,cli) {
 	TARGET = s3clfs

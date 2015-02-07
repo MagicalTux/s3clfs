@@ -4,6 +4,7 @@
 #include <QVariant>
 
 class S3FS_Obj; // inode
+class S3FS_Aws_S3;
 class Callback;
 class S3FS_Store_MetaIterator;
 
@@ -38,6 +39,7 @@ public:
 	bool setInodeMeta(quint64 ino, const QByteArray &key, const QByteArray &value);
 	S3FS_Store_MetaIterator *getInodeMetaIterator(quint64 ino);
 	bool removeInodeMeta(quint64 ino, const QByteArray &key);
+	bool clearInodeMeta(quint64 ino);
 
 signals:
 	void ready();
@@ -51,5 +53,6 @@ private:
 	QByteArray bucket;
 	QCryptographicHash::Algorithm algo;
 	QVariantMap config;
+	S3FS_Aws_S3 *s3;
 };
 

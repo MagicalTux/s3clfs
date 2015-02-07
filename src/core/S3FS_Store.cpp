@@ -1,5 +1,6 @@
 #include "S3FS_Store.hpp"
 #include "S3FS_Obj.hpp"
+#include "S3FS_Aws_S3.hpp"
 #include "S3FS_Store_MetaIterator.hpp"
 #include <QDir>
 #include <QUuid>
@@ -14,6 +15,9 @@ S3FS_Store::S3FS_Store(const QByteArray &_bucket, QObject *parent): QObject(pare
 	// generate filename
 	kv_location = QDir::temp().filePath(QString("s3clfs-")+QUuid::createUuid().toRfc4122().toHex());
 	qDebug("S3FS: Keyval location: %s", qPrintable(kv_location));
+
+	// initialize AWS substore
+	s3 = new S3FS_Aws_S3(bucket, this);
 
 	QTimer::singleShot(1000, this, SLOT(test_setready()));
 
@@ -148,3 +152,17 @@ bool S3FS_Store::removeInodeMeta(quint64 ino, const QByteArray &key_sub) {
 	QByteArray key = QByteArray("\x01", 1) + ino_b;
 	return kv.remove(key+key_sub);
 }
+
+bool S3FS_Store::clearInodeMeta(quint64 ino) {
+	auto i = getInodeMetaIterator(ino);
+	while(i->isValid()) {
+		if (i->key() == "") {
+			i->next();
+			continue;
+		}
+		if (!removeInodeMeta(ino, i->key())) return false;
+		if (!i->next()) break;
+	}
+	return true;
+}
+
