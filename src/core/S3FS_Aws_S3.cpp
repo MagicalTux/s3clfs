@@ -12,6 +12,7 @@ S3FS_Aws_S3::S3FS_Aws_S3(const QByteArray &_bucket, S3FS_Aws *parent): QObject(p
 }
 
 S3FS_Aws_S3 *S3FS_Aws_S3::getFile(const QByteArray &bucket, const QByteArray &path, S3FS_Aws *aws) {
+	if (!aws->isValid()) return NULL;
 	auto i = new S3FS_Aws_S3(bucket, aws);
 	if (!i->getFile(path)) {
 		delete i;
@@ -33,6 +34,7 @@ bool S3FS_Aws_S3::getFile(const QByteArray &path) {
 }
 
 S3FS_Aws_S3 *S3FS_Aws_S3::listFiles(const QByteArray &bucket, const QByteArray &path, S3FS_Aws *aws) {
+	if (!aws->isValid()) return NULL;
 	auto i = new S3FS_Aws_S3(bucket, aws);
 	if (!i->listFiles(path, QByteArrayLiteral(""))) {
 		delete i;
@@ -58,6 +60,7 @@ bool S3FS_Aws_S3::listFiles(const QByteArray &path, const QByteArray &resume) {
 }
 
 S3FS_Aws_S3 *S3FS_Aws_S3::putFile(const QByteArray &bucket, const QByteArray &path, const QByteArray &data, S3FS_Aws *aws) {
+	if (!aws->isValid()) return NULL;
 	auto i = new S3FS_Aws_S3(bucket, aws);
 	if (!i->putFile(path, data)) {
 		delete i;
@@ -69,7 +72,18 @@ S3FS_Aws_S3 *S3FS_Aws_S3::putFile(const QByteArray &bucket, const QByteArray &pa
 bool S3FS_Aws_S3::putFile(const QByteArray &path, const QByteArray &data) {
 	QUrl url("https://"+bucket+".s3.amazonaws.com/"+path);
 	request = QNetworkRequest(url);
-//	request.setHeader
+	request.setHeader(QNetworkRequest::ContentTypeHeader, "application/octet-stream"); // RFC 2046
+	request.setRawHeader("Content-MD5", QCryptographicHash::hash(data, QCryptographicHash::Md5));
+
+	// keep request body around in case we need to retry
+	request_body = data;
+
+	signRequest("PUT");
+
+	reply = aws->net.put(request, request_body);
+	if (!reply) return false;
+	connectReply();
+	return true;
 }
 
 void S3FS_Aws_S3::connectReply() {
@@ -77,7 +91,7 @@ void S3FS_Aws_S3::connectReply() {
 }
 
 void S3FS_Aws_S3::signRequest(const QByteArray &verb) {
-	qDebug("AWS S3: Request %s", request.url().toString().toLatin1().data());
+	qDebug("AWS S3: Request %s %s", verb.data(), request.url().toString().toLatin1().data());
 	QByteArray date_header = QDateTime::currentDateTime().toString(QStringLiteral("ddd, dd MMM yyyy hh:mm:ss t")).toLatin1();
 
 	QByteArray sign = verb+"\n";
@@ -86,8 +100,8 @@ void S3FS_Aws_S3::signRequest(const QByteArray &verb) {
 	} else {
 		sign += "\n";
 	}
-	if (request.hasHeader(QNetworkRequest::ContentTypeHeader)) {
-		sign += request.header(QNetworkRequest::ContentTypeHeader)+"\n";
+	if (request.header(QNetworkRequest::ContentTypeHeader).isValid()) {
+		sign += request.header(QNetworkRequest::ContentTypeHeader).toByteArray()+"\n";
 	} else {
 		sign += "\n";
 	}
