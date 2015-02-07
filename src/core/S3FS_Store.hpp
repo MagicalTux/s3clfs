@@ -4,7 +4,7 @@
 #include <QVariant>
 
 class S3FS_Obj; // inode
-class S3FS_Aws_S3;
+class S3FS_Aws;
 class Callback;
 class S3FS_Store_MetaIterator;
 
@@ -53,6 +53,6 @@ private:
 	QByteArray bucket;
 	QCryptographicHash::Algorithm algo;
 	QVariantMap config;
-	S3FS_Aws_S3 *s3;
+	S3FS_Aws *aws;
 };
 

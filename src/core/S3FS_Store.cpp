@@ -16,8 +16,8 @@ S3FS_Store::S3FS_Store(const QByteArray &_bucket, QObject *parent): QObject(pare
 	kv_location = QDir::temp().filePath(QString("s3clfs-")+QUuid::createUuid().toRfc4122().toHex());
 	qDebug("S3FS: Keyval location: %s", qPrintable(kv_location));
 
-	// initialize AWS substore
-	s3 = new S3FS_Aws_S3(bucket, this);
+	// initialize AWS
+	aws = new S3FS_Aws(this);
 
 	QTimer::singleShot(1000, this, SLOT(test_setready()));
 
