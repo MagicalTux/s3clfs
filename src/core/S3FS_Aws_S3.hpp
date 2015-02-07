@@ -11,6 +11,8 @@ public:
 	static S3FS_Aws_S3 *listFiles(const QByteArray &bucket, const QByteArray &path, S3FS_Aws *aws);
 	static S3FS_Aws_S3 *putFile(const QByteArray &bucket, const QByteArray &path, const QByteArray &data, S3FS_Aws *aws);
 
+	const QByteArray &body() const;
+
 public slots:
 	void requestFinished();
 

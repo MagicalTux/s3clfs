@@ -21,13 +21,23 @@ S3FS_Store::S3FS_Store(const QByteArray &_bucket, QObject *parent): QObject(pare
 
 	// test
 	S3FS_Aws_S3::listFiles(bucket, "metadata/", aws);
-	S3FS_Aws_S3::getFile(bucket, "metadata/format.dat", aws);
+	connect(S3FS_Aws_S3::getFile(bucket, "metadata/format.dat", aws), SIGNAL(finished(S3FS_Aws_S3*)), this, SLOT(receivedFormatFile(S3FS_Aws_S3*)));
 
 	QTimer::singleShot(1000, this, SLOT(test_setready()));
 
 	if (!kv.create(kv_location)) {
 		qFatal("S3FS_Store: Failed to open cache");
 	}
+}
+
+void S3FS_Store::receivedFormatFile(S3FS_Aws_S3 *r) {
+	QVariant c;
+	QDataStream kv_val(r->body()); kv_val >> c;
+	if (!c.isValid()) return;
+	if (c.type() != QVariant::Map) return;
+	config = c.toMap();
+
+	qDebug("S3FS_Store: got config from AWS");
 }
 
 const QVariantMap &S3FS_Store::getConfig() {

@@ -5,6 +5,7 @@
 
 class S3FS_Obj; // inode
 class S3FS_Aws;
+class S3FS_Aws_S3;
 class Callback;
 class S3FS_Store_MetaIterator;
 
@@ -46,6 +47,7 @@ signals:
 
 public slots:
 	void test_setready();
+	void receivedFormatFile(S3FS_Aws_S3*);
 
 private:
 	QString kv_location;

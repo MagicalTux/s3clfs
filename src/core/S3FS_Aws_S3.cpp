@@ -120,3 +120,7 @@ void S3FS_Aws_S3::requestFinished() {
 	deleteLater(); // so when this object will be erased will be later
 }
 
+const QByteArray &S3FS_Aws_S3::body() const {
+	return reply_body;
+}
+
