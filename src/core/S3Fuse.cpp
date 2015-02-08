@@ -9,7 +9,7 @@ S3Fuse::S3Fuse(const QByteArray &bucket, const QByteArray &path, S3FS *_parent):
 void S3Fuse::fuse_init(struct fuse_conn_info *ci) {
 	ci->async_read = 1;
 	ci->max_write = S3FUSE_BLOCK_SIZE;
-	ci->max_readahead = S3FUSE_BLOCK_SIZE;
+	ci->max_readahead = S3FUSE_BLOCK_SIZE * 32;
 	ci->capable &= ~FUSE_CAP_SPLICE_READ;
 	ci->want = FUSE_CAP_ASYNC_READ | FUSE_CAP_ATOMIC_O_TRUNC | FUSE_CAP_EXPORT_SUPPORT | FUSE_CAP_BIG_WRITES | FUSE_CAP_IOCTL_DIR;
 	ci->max_background = 16;

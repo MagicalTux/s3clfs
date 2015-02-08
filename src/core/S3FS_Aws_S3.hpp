@@ -3,10 +3,13 @@
 #include <QNetworkRequest>
 
 class QNetworkReply;
+class QBuffer;
 
 class S3FS_Aws_S3: public QObject {
 	Q_OBJECT
 public:
+	~S3FS_Aws_S3();
+
 	static S3FS_Aws_S3 *getFile(const QByteArray &bucket, const QByteArray &path, S3FS_Aws *aws);
 	static S3FS_Aws_S3 *listFiles(const QByteArray &bucket, const QByteArray &path, S3FS_Aws *aws);
 	static S3FS_Aws_S3 *putFile(const QByteArray &bucket, const QByteArray &path, const QByteArray &data, S3FS_Aws *aws);
@@ -19,6 +22,7 @@ public:
 
 public slots:
 	void requestFinished();
+	void requestStarted(QNetworkReply*);
 
 signals:
 	void finished(S3FS_Aws_S3*);
@@ -39,5 +43,6 @@ private:
 	S3FS_Aws *aws;
 	QNetworkRequest request;
 	QNetworkReply *reply;
+	QBuffer *request_body_buffer;
 };
 

@@ -43,6 +43,7 @@ S3FS_Store::S3FS_Store(const QByteArray &_bucket, QObject *parent): QObject(pare
 void S3FS_Store::receivedInodeList(S3FS_Aws_S3 *r) {
 	bool need_more;
 	QStringList list = r->parseListFiles(need_more);
+	qDebug("S3FS_Store: scanning inodes, got %d entries", list.size());
 	QString name;
 	// for example: metadata/1/01/0000000000000001.dat
 	// for example: metadata/0/c0/00050e8fc8c3bac0.dat
@@ -55,10 +56,17 @@ void S3FS_Store::receivedInodeList(S3FS_Aws_S3 *r) {
 			continue;
 		}
 		QByteArray fn = QByteArray::fromHex(match.cap(1).toLatin1());
-		kv.insert(QByteArrayLiteral("\x01")+fn, QByteArray());
+		if (kv.contains(QByteArrayLiteral("\x03")+fn)) {
+			// remove old file
+			QByteArray fn_hex = fn.toHex();
+			QByteArray rev_hex = kv.value(QByteArrayLiteral("\x03")+fn).toHex();
+			QByteArray old_path = "metadata/"+fn_hex.right(1)+"/"+fn_hex.right(2)+"/"+fn_hex+"/"+rev_hex+".dat";
+			S3FS_Aws_S3::deleteFile(bucket, old_path, aws);
+		}
 		kv.insert(QByteArrayLiteral("\x03")+fn, QByteArray::fromHex(match.cap(2).toLatin1()));
 	}
 	if (need_more) {
+		qDebug("NEED MORE");
 		connect(r->listMoreFiles("metadata/", list), SIGNAL(finished(S3FS_Aws_S3*)), this, SLOT(receivedInodeList(S3FS_Aws_S3*)));
 		return;
 	}
@@ -118,7 +126,7 @@ bool S3FS_Store::hasInode(quint64 ino) {
 	// transform quint64 to qbytearray (big endian)
 	INT_TO_BYTES(ino);
 
-	QByteArray key = QByteArrayLiteral("\x01") + ino_b; // where we should be storing cache info about this inode
+	QByteArray key = QByteArrayLiteral("\x03") + ino_b; // where we should be storing cache info about this inode
 	return kv.contains(key);
 }
 
@@ -128,6 +136,7 @@ bool S3FS_Store::storeInode(const S3FS_Obj&o) {
 
 	QByteArray key = QByteArrayLiteral("\x01") + ino_b;
 	if (!kv.insert(key, o.encode())) return false;
+	kv.insert(QByteArrayLiteral("\x03") + ino_b, QByteArray(8, '\0')); // default to zero
 
 	// send inode to aws
 	inodeUpdated(ino);
@@ -157,11 +166,14 @@ void S3FS_Store::sendInodeToAws(quint64 ino) {
 	QByteArray data;
 	QDataStream data_stream(&data, QIODevice::WriteOnly);
 	auto i = getInodeMetaIterator(ino);
+	int count = 0;
 	do {
 		data_stream << i->key();
 		data_stream << i->value();
+		count++;
 	} while(i->next());
 	delete i;
+	if (count == 0) data.clear();
 
 	quint64 ino_rev = makeInodeRev();
 	INT_TO_BYTES(ino_rev);
@@ -181,7 +193,8 @@ S3FS_Obj S3FS_Store::getInode(quint64 ino) {
 bool S3FS_Store::hasInodeLocally(quint64 ino) {
 	INT_TO_BYTES(ino);
 	QByteArray key = QByteArrayLiteral("\x01") + ino_b;
-	return (kv.value(key).length() > 0); // if length == 0, means we don't have this locally
+	return kv.contains(key);
+//	return (kv.value(key).length() > 0); // if length == 0, means we don't have this locally
 }
 
 void S3FS_Store::callbackOnInodeCached(quint64 ino, Callback *cb) {

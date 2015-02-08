@@ -12,6 +12,10 @@ S3FS_Aws_S3::S3FS_Aws_S3(const QByteArray &_bucket, S3FS_Aws *parent): QObject(p
 	reply = 0;
 }
 
+S3FS_Aws_S3::~S3FS_Aws_S3() {
+	if (reply) delete reply;
+}
+
 S3FS_Aws_S3 *S3FS_Aws_S3::getFile(const QByteArray &bucket, const QByteArray &path, S3FS_Aws *aws) {
 	if (!aws->isValid()) return NULL;
 	auto i = new S3FS_Aws_S3(bucket, aws);
@@ -22,15 +26,18 @@ S3FS_Aws_S3 *S3FS_Aws_S3::getFile(const QByteArray &bucket, const QByteArray &pa
 	return i;
 }
 
+void S3FS_Aws_S3::requestStarted(QNetworkReply *r) {
+	reply = r;
+	connectReply();
+}
+
 bool S3FS_Aws_S3::getFile(const QByteArray &path) {
 	// NOTE: if user is on aws, ssl might not be required?
 	QUrl url("https://"+bucket+".s3.amazonaws.com/"+path); // using bucketname.s3.amazonaws.com will ensure query is routed to appropriate region
 	request = QNetworkRequest(url);
 	signRequest();
 
-	reply = aws->net.get(request);
-	if (!reply) return false;
-	connectReply();
+	aws->http(this, QByteArrayLiteral("GET"), request);
 	return true;
 }
 
@@ -63,9 +70,7 @@ bool S3FS_Aws_S3::listFiles(const QByteArray &path, const QByteArray &resume) {
 	request = QNetworkRequest(url);
 	signRequest();
 
-	reply = aws->net.get(request);
-	if (!reply) return false;
-	connectReply();
+	aws->http(this, QByteArrayLiteral("GET"), request);
 	return true;
 }
 
@@ -87,12 +92,12 @@ bool S3FS_Aws_S3::putFile(const QByteArray &path, const QByteArray &data) {
 
 	// keep request body around in case we need to retry
 	request_body = data;
+	request_body_buffer = new QBuffer(&request_body, this);
+	request_body_buffer->open(QIODevice::ReadOnly);
 
 	signRequest("PUT");
 
-	reply = aws->net.put(request, request_body);
-	if (!reply) return false;
-	connectReply();
+	aws->http(this, QByteArrayLiteral("PUT"), request, request_body_buffer);
 	return true;
 }
 
@@ -112,9 +117,7 @@ bool S3FS_Aws_S3::deleteFile(const QByteArray &path) {
 
 	signRequest("DELETE");
 
-	reply = aws->net.deleteResource(request);
-	if (!reply) return false;
-	connectReply();
+	aws->http(this, QByteArrayLiteral("DELETE"), request);
 	return true;
 }
 
