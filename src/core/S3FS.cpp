@@ -10,7 +10,7 @@
 #define WAIT_READY() if (!is_ready) { connect(this, SIGNAL(ready()), CALLBACK(), SLOT(trigger())); return; }
 #define GET_INODE(ino) \
 	if (!store.hasInode(ino)) { req->error(ENOENT); return; } \
-	if (!store.hasInodeLocally(ino)) { store.callbackOnInodeCached(ino, CALLBACK()); } S3FS_Obj ino ## _o = store.getInode(ino); \
+	if (!store.hasInodeLocally(ino)) { store.callbackOnInodeCached(ino, CALLBACK()); return; } S3FS_Obj ino ## _o = store.getInode(ino); \
 	if (!ino ## _o.isValid()) { req->error(ENOENT); return; }
 
 S3FS::S3FS(const QByteArray &_bucket, const QByteArray &path): fuse(_bucket, path, this), store(_bucket) {

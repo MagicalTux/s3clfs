@@ -2,6 +2,7 @@
 #include "S3FS_Obj.hpp"
 #include "S3FS_Aws_S3.hpp"
 #include "S3FS_Store_MetaIterator.hpp"
+#include "Callback.hpp"
 #include <QDir>
 #include <QUuid>
 #include <QDataStream>
@@ -49,11 +50,13 @@ void S3FS_Store::receivedInodeList(S3FS_Aws_S3 *r) {
 	foreach(name, list) {
 		if (!match.exactMatch(name)) {
 			if (name == QStringLiteral("metadata/format.dat")) continue; // do not delete that file
-			qDebug("filename to delete: %s", qPrintable(name));
+			qDebug("S3FS_Store: deleting unknown file %s found on S3", qPrintable(name));
+			S3FS_Aws_S3::deleteFile(bucket, name.toUtf8(), aws);
 			continue;
 		}
 		QByteArray fn = QByteArray::fromHex(match.cap(1).toLatin1());
-		kv.insert(QByteArrayLiteral("\x01")+fn, QByteArrayLiteral(""));
+		kv.insert(QByteArrayLiteral("\x01")+fn, QByteArray());
+		kv.insert(QByteArrayLiteral("\x03")+fn, QByteArray::fromHex(match.cap(2).toLatin1()));
 	}
 	if (need_more) {
 		connect(r->listMoreFiles("metadata/", list), SIGNAL(finished(S3FS_Aws_S3*)), this, SLOT(receivedInodeList(S3FS_Aws_S3*)));
@@ -165,6 +168,7 @@ void S3FS_Store::sendInodeToAws(quint64 ino) {
 
 	QByteArray ino_hex = ino_b.toHex();
 	S3FS_Aws_S3::putFile(bucket, "metadata/"+ino_hex.right(1)+"/"+ino_hex.right(2)+"/"+ino_hex+"/"+ino_rev_b.toHex()+".dat", data, aws);
+	kv.insert(QByteArrayLiteral("\x03")+ino_b, ino_rev_b);
 }
 
 S3FS_Obj S3FS_Store::getInode(quint64 ino) {
@@ -182,11 +186,51 @@ bool S3FS_Store::hasInodeLocally(quint64 ino) {
 
 void S3FS_Store::callbackOnInodeCached(quint64 ino, Callback *cb) {
 	// we need to try to get that inode
-	if (!inode_download_callback.contains(ino))
-		inode_download_callback.insert(ino, QList<Callback*>());
-	inode_download_callback[ino].append(cb);
-	qFatal("Not expected to reach this");
-	// TODO
+	if (inode_download_callback.contains(ino)) {
+		inode_download_callback[ino].append(cb);
+		return;
+	}
+
+	// create wait queue
+	inode_download_callback.insert(ino, QList<Callback*>() << cb);
+
+	INT_TO_BYTES(ino);
+
+	QByteArray ino_rev = kv.value(QByteArrayLiteral("\x03")+ino_b);
+	if (ino_rev.isEmpty()) {
+		qFatal("Could not fetch inode!");
+	}
+
+	// send request
+	QByteArray ino_hex = ino_b.toHex();
+	QByteArray ino_rev_hex = ino_rev.toHex();
+	QByteArray path = QByteArrayLiteral("metadata/")+ino_hex.right(1)+QByteArrayLiteral("/")+ino_hex.right(2)+QByteArrayLiteral("/")+ino_hex+QByteArrayLiteral("/")+ino_rev_hex+QByteArrayLiteral(".dat");
+	S3FS_Aws_S3 *req = S3FS_Aws_S3::getFile(bucket, path, aws);
+	if (!req) {
+		qFatal("Could not make request to fetch inode");
+	}
+	req->setProperty("_inode_num", ino);
+	connect(req, SIGNAL(finished(S3FS_Aws_S3*)), this, SLOT(receivedInode(S3FS_Aws_S3*)));
+}
+
+void S3FS_Store::receivedInode(S3FS_Aws_S3*r) {
+	quint64 ino = r->property("_inode_num").toULongLong();
+	INT_TO_BYTES(ino);
+	QByteArray data = r->body();
+	QDataStream s(data);
+	qDebug("Received inode %llu", ino);
+
+	while(!s.atEnd()) {
+		QByteArray key, val;
+		s >> key >> val;
+		kv.insert(QByteArrayLiteral("\x01")+ino_b+key, val);
+	}
+
+	// call callbacks
+	QList<Callback*> list = inode_download_callback.take(ino);
+	Callback *cb;
+	foreach(cb, list)
+		cb->trigger();
 }
 
 QByteArray S3FS_Store::writeBlock(const QByteArray &buf) {

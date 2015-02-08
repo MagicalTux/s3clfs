@@ -33,5 +33,9 @@ meta-information (contents) of that file, and finally its recent history.
 
 ## storage on leveldb (local cache)
 
+Storage on leveldb has various prefixes.
 
+- 0x01: metadata
+- 0x02: data
+- 0x03: metadata meta information (latest revision info)
 

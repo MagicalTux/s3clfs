@@ -51,6 +51,7 @@ public slots:
 	void readyStateWithoutAws();
 	void receivedFormatFile(S3FS_Aws_S3*);
 	void receivedInodeList(S3FS_Aws_S3*);
+	void receivedInode(S3FS_Aws_S3*);
 	void updateInodes();
 
 private:

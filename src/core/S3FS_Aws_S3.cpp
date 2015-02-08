@@ -96,6 +96,28 @@ bool S3FS_Aws_S3::putFile(const QByteArray &path, const QByteArray &data) {
 	return true;
 }
 
+S3FS_Aws_S3 *S3FS_Aws_S3::deleteFile(const QByteArray &bucket, const QByteArray &path, S3FS_Aws *aws) {
+	if (!aws->isValid()) return NULL;
+	auto i = new S3FS_Aws_S3(bucket, aws);
+	if (!i->deleteFile(path)) {
+		delete i;
+		return NULL;
+	}
+	return i;
+}
+
+bool S3FS_Aws_S3::deleteFile(const QByteArray &path) {
+	QUrl url("https://"+bucket+".s3.amazonaws.com/"+path);
+	request = QNetworkRequest(url);
+
+	signRequest("DELETE");
+
+	reply = aws->net.deleteResource(request);
+	if (!reply) return false;
+	connectReply();
+	return true;
+}
+
 void S3FS_Aws_S3::connectReply() {
 	connect(reply, SIGNAL(finished()), this, SLOT(requestFinished()));
 }
