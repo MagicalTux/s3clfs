@@ -13,6 +13,9 @@ public:
 
 	const QByteArray &body() const;
 
+	QStringList parseListFiles(bool &need_more) const;
+	S3FS_Aws_S3 *listMoreFiles(const QByteArray &path, const QStringList &); // continue listing if parseListFiles said need_more=true
+
 public slots:
 	void requestFinished();
 

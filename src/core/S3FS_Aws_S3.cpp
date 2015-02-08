@@ -4,6 +4,7 @@
 #include <QUrlQuery>
 #include <QNetworkRequest>
 #include <QNetworkReply>
+#include <QtXmlPatterns>
 
 S3FS_Aws_S3::S3FS_Aws_S3(const QByteArray &_bucket, S3FS_Aws *parent): QObject(parent) {
 	bucket = _bucket;
@@ -37,6 +38,15 @@ S3FS_Aws_S3 *S3FS_Aws_S3::listFiles(const QByteArray &bucket, const QByteArray &
 	if (!aws->isValid()) return NULL;
 	auto i = new S3FS_Aws_S3(bucket, aws);
 	if (!i->listFiles(path, QByteArrayLiteral(""))) {
+		delete i;
+		return NULL;
+	}
+	return i;
+}
+
+S3FS_Aws_S3 *S3FS_Aws_S3::listMoreFiles(const QByteArray &path, const QStringList &latest) {
+	auto i = new S3FS_Aws_S3(bucket, aws);
+	if (!i->listFiles(path, latest.last().toUtf8())) {
 		delete i;
 		return NULL;
 	}
@@ -122,5 +132,44 @@ void S3FS_Aws_S3::requestFinished() {
 
 const QByteArray &S3FS_Aws_S3::body() const {
 	return reply_body;
+}
+
+QStringList S3FS_Aws_S3::parseListFiles(bool &need_more) const {
+	// Looks like Qt's way to parse XML document needs to involve some complex processing...
+	// Anyway, this works, but it feels overly complex
+	// (not mentionning support of xml namespaces in QXmlQuery kinda sucks)
+	QBuffer device;
+	device.setData(reply_body);
+	device.open(QIODevice::ReadOnly);
+
+	QXmlQuery query;
+	query.bindVariable("reply", &device);
+	query.setQuery("string(doc($reply)/*:ListBucketResult/*:IsTruncated)");
+	QStringList istruncated_result;
+	query.evaluateTo(&istruncated_result);
+
+	if (istruncated_result.at(0).trimmed() == "true") {
+		need_more = true;
+	} else {
+		need_more = false;
+	}
+
+	query.setQuery("doc($reply)/*:ListBucketResult/*:Contents/*:Key/text()");
+	QXmlResultItems contents_res;
+	query.evaluateTo(&contents_res);
+
+	QStringList final_result;
+
+	QXmlItem item(contents_res.next());
+	while (!item.isNull()) {
+		query.bindVariable("item", item);
+		query.setQuery("$item");
+		QString temp_value;
+		query.evaluateTo(&temp_value);
+		final_result << temp_value.trimmed();
+		item = contents_res.next();
+	}
+
+	return final_result;
 }
 

@@ -27,6 +27,7 @@ public:
 	S3FS_Obj getInode(quint64);
 	bool hasInodeLocally(quint64);
 	void callbackOnInodeCached(quint64, Callback*);
+	void sendInodeToAws(quint64);
 
 	// blocks
 	QByteArray writeBlock(const QByteArray &buf);
@@ -46,8 +47,9 @@ signals:
 	void ready();
 
 public slots:
-	void test_setready();
+	void readyStateWithoutAws();
 	void receivedFormatFile(S3FS_Aws_S3*);
+	void receivedInodeList(S3FS_Aws_S3*);
 
 private:
 	QString kv_location;

@@ -34,7 +34,7 @@ TEMPLATE = app
 DEPENDPATH += src/core
 INCLUDEPATH += src/core
 QMAKE_CXXFLAGS += -std=c++11
-QT += network
+QT += network xmlpatterns
 DEFINES += S3CLFS_$$upper($${BUILD_TYPE})
 SOURCES += src/$${BUILD_TYPE}/main.cpp
 CONFIG += silent

@@ -16,17 +16,35 @@ S3FS_Store::S3FS_Store(const QByteArray &_bucket, QObject *parent): QObject(pare
 	kv_location = QDir::temp().filePath(QString("s3clfs-")+QUuid::createUuid().toRfc4122().toHex());
 	qDebug("S3FS: Keyval location: %s", qPrintable(kv_location));
 
+	if (!kv.create(kv_location)) {
+		qFatal("S3FS_Store: Failed to open cache");
+	}
+
 	// initialize AWS
 	aws = new S3FS_Aws(this);
 
+	if (!aws->isValid()) {
+		QTimer::singleShot(1000, this, SLOT(readyStateWithoutAws()));
+		return;
+	}
+
 	// test
-	S3FS_Aws_S3::listFiles(bucket, "metadata/", aws);
+	connect(S3FS_Aws_S3::listFiles(bucket, "metadata/", aws), SIGNAL(finished(S3FS_Aws_S3*)), this, SLOT(receivedInodeList(S3FS_Aws_S3*)));
 	connect(S3FS_Aws_S3::getFile(bucket, "metadata/format.dat", aws), SIGNAL(finished(S3FS_Aws_S3*)), this, SLOT(receivedFormatFile(S3FS_Aws_S3*)));
 
-	QTimer::singleShot(1000, this, SLOT(test_setready()));
+	QTimer::singleShot(1000, this, SLOT(readyStateWithoutAws()));
+}
 
-	if (!kv.create(kv_location)) {
-		qFatal("S3FS_Store: Failed to open cache");
+void S3FS_Store::receivedInodeList(S3FS_Aws_S3 *r) {
+	bool need_more;
+	QStringList list = r->parseListFiles(need_more);
+	QString name;
+	foreach(name, list) {
+		qDebug("filename: %s", qPrintable(name));
+	}
+	if (need_more) {
+		connect(r->listMoreFiles("metadata/", list), SIGNAL(finished(S3FS_Aws_S3*)), this, SLOT(receivedInodeList(S3FS_Aws_S3*)));
+		return;
 	}
 }
 
@@ -64,8 +82,8 @@ bool S3FS_Store::setConfig(const QVariantMap&c) {
 	return true;
 }
 
-void S3FS_Store::test_setready() {
-	qDebug("S3FS_Store: Ready!");
+void S3FS_Store::readyStateWithoutAws() {
+	qDebug("S3FS_Store: Going ready without any actual backend storage!");
 	ready();
 }
 
@@ -89,7 +107,16 @@ bool S3FS_Store::storeInode(const S3FS_Obj&o) {
 	INT_TO_BYTES(ino);
 
 	QByteArray key = QByteArrayLiteral("\x01") + ino_b;
-	return kv.insert(key, o.encode());
+	if (!kv.insert(key, o.encode())) return false;
+
+	// send inode to aws
+	sendInodeToAws(ino);
+
+	return true;
+}
+
+void S3FS_Store::sendInodeToAws(quint64 ino) {
+	INT_TO_BYTES(ino);
 }
 
 S3FS_Obj S3FS_Store::getInode(quint64 ino) {
@@ -153,7 +180,9 @@ QByteArray S3FS_Store::getInodeMeta(quint64 ino, const QByteArray &key_sub) {
 bool S3FS_Store::setInodeMeta(quint64 ino, const QByteArray &key_sub, const QByteArray &value) {
 	INT_TO_BYTES(ino);
 	QByteArray key = QByteArrayLiteral("\x01") + ino_b;
-	return kv.insert(key+key_sub, value);
+	if (!kv.insert(key+key_sub, value)) return false;
+	sendInodeToAws(ino);
+	return true;
 }
 
 S3FS_Store_MetaIterator *S3FS_Store::getInodeMetaIterator(quint64 ino) {
@@ -165,7 +194,9 @@ S3FS_Store_MetaIterator *S3FS_Store::getInodeMetaIterator(quint64 ino) {
 bool S3FS_Store::removeInodeMeta(quint64 ino, const QByteArray &key_sub) {
 	INT_TO_BYTES(ino);
 	QByteArray key = QByteArrayLiteral("\x01") + ino_b;
-	return kv.remove(key+key_sub);
+	if (!kv.remove(key+key_sub)) return false;
+	sendInodeToAws(ino);
+	return true;
 }
 
 bool S3FS_Store::clearInodeMeta(quint64 ino) {
@@ -182,6 +213,7 @@ bool S3FS_Store::clearInodeMeta(quint64 ino) {
 		}
 	} while(i->next());
 	delete i;
+	sendInodeToAws(ino);
 	return true;
 }
 
