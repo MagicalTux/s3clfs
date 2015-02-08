@@ -12,6 +12,7 @@ S3FS_Store::S3FS_Store(const QByteArray &_bucket, QObject *parent): QObject(pare
 	bucket = _bucket;
 	aws_list_ready = false;
 	aws_format_ready = false;
+	last_inode_rev = 0;
 	algo = QCryptographicHash::Sha3_256; // default value
 	// generate filename
 	kv_location = QDir::temp().filePath(QString("s3clfs-")+QUuid::createUuid().toRfc4122().toHex());
@@ -44,7 +45,7 @@ void S3FS_Store::receivedInodeList(S3FS_Aws_S3 *r) {
 	QString name;
 	// for example: metadata/1/01/0000000000000001.dat
 	// for example: metadata/0/c0/00050e8fc8c3bac0.dat
-	QRegExp match("metadata/[0-9a-f]/[0-9a-f]{2}/([0-9a-f]{16})\\.dat");
+	QRegExp match("metadata/[0-9a-f]/[0-9a-f]{2}/([0-9a-f]{16})/([0-9a-f]{16})\\.dat");
 	foreach(name, list) {
 		if (!match.exactMatch(name)) {
 			if (name == QStringLiteral("metadata/format.dat")) continue; // do not delete that file
@@ -159,8 +160,11 @@ void S3FS_Store::sendInodeToAws(quint64 ino) {
 	} while(i->next());
 	delete i;
 
+	quint64 ino_rev = makeInodeRev();
+	INT_TO_BYTES(ino_rev);
+
 	QByteArray ino_hex = ino_b.toHex();
-	S3FS_Aws_S3::putFile(bucket, "metadata/"+ino_hex.right(1)+"/"+ino_hex.right(2)+"/"+ino_hex+".dat", data, aws);
+	S3FS_Aws_S3::putFile(bucket, "metadata/"+ino_hex.right(1)+"/"+ino_hex.right(2)+"/"+ino_hex+"/"+ino_rev_b.toHex()+".dat", data, aws);
 }
 
 S3FS_Obj S3FS_Store::getInode(quint64 ino) {
@@ -263,5 +267,15 @@ bool S3FS_Store::clearInodeMeta(quint64 ino) {
 	delete i;
 	inodeUpdated(ino);
 	return true;
+}
+
+quint64 S3FS_Store::makeInodeRev() {
+	quint64 new_inode_rev = QDateTime::currentMSecsSinceEpoch()*1000;
+
+	if (new_inode_rev <= last_inode_rev) { // ensure we are incremental
+		new_inode_rev = last_inode_rev+100;
+	}
+	last_inode_rev = new_inode_rev;
+	return new_inode_rev;
 }
 

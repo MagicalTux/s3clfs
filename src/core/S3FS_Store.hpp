@@ -57,6 +57,8 @@ private:
 	void sendInodeToAws(quint64);
 	void inodeUpdated(quint64);
 
+	quint64 makeInodeRev();
+
 	QSet<quint64> inodes_to_update_1;
 	QSet<quint64> inodes_to_update_2;
 	QTimer inodes_updater;
@@ -71,5 +73,6 @@ private:
 	QCryptographicHash::Algorithm algo;
 	QVariantMap config;
 	S3FS_Aws *aws;
+	quint64 last_inode_rev;
 };
 
