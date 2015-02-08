@@ -38,12 +38,19 @@ S3FS_Store::S3FS_Store(const QByteArray &_bucket, QObject *parent): QObject(pare
 	connect(&inodes_updater, SIGNAL(timeout()), this, SLOT(updateInodes()));
 	inodes_updater.setSingleShot(false);
 	inodes_updater.start(1000);
+
+	connect(&cache_updater, SIGNAL(timeout()), this, SLOT(getInodesList()));
+	cache_updater.setSingleShot(true);
+}
+
+void S3FS_Store::getInodesList() {
+	connect(S3FS_Aws_S3::listFiles(bucket, "metadata/", aws), SIGNAL(finished(S3FS_Aws_S3*)), this, SLOT(receivedInodeList(S3FS_Aws_S3*)));
 }
 
 void S3FS_Store::receivedInodeList(S3FS_Aws_S3 *r) {
 	bool need_more;
 	QStringList list = r->parseListFiles(need_more);
-	qDebug("S3FS_Store: scanning inodes, got %d entries", list.size());
+//	qDebug("S3FS_Store: scanning inodes, got %d entries", list.size());
 	QString name;
 	// for example: metadata/1/01/0000000000000001.dat
 	// for example: metadata/0/c0/00050e8fc8c3bac0.dat
@@ -56,20 +63,48 @@ void S3FS_Store::receivedInodeList(S3FS_Aws_S3 *r) {
 			continue;
 		}
 		QByteArray fn = QByteArray::fromHex(match.cap(1).toLatin1());
+		QByteArray newrev = QByteArray::fromHex(match.cap(2).toLatin1());
+
 		if (kv.contains(QByteArrayLiteral("\x03")+fn)) {
 			// remove old file
+			QByteArray rev = kv.value(QByteArrayLiteral("\x03")+fn);
+			if (rev == newrev) continue; // no change
+			if (rev < newrev) {
+				// our version is older, update our value and do not delete from S3
+				qDebug("S3FS_Store: inode %s update - our version %s, s3 has %s", fn.toHex().data(), rev.toHex().data(), newrev.toHex().data());
+				kv.insert(QByteArrayLiteral("\x03")+fn, newrev);
+				if (kv.contains(QByteArrayLiteral("\x01")+fn)) {
+					// clear this inode from cache
+					qDebug("S3FS_Store: Inode %s has changed, invalidating cache", fn.toHex().data());
+					auto i = new KeyvalIterator(&kv);
+					i->find(QByteArrayLiteral("\x01")+fn);
+					do {
+						if (i->key().left(fn.length()+1) == QByteArrayLiteral("\x01")+fn) {
+							kv.remove(i->key());
+						} else {
+							break;
+						}
+					} while(i->next());
+					delete i;
+				}
+				continue;
+			}
+			// our version is newer, delete old stuff
 			QByteArray fn_hex = fn.toHex();
-			QByteArray rev_hex = kv.value(QByteArrayLiteral("\x03")+fn).toHex();
-			QByteArray old_path = "metadata/"+fn_hex.right(1)+"/"+fn_hex.right(2)+"/"+fn_hex+"/"+rev_hex+".dat";
+			QByteArray rev_hex = rev.toHex();
+			QByteArray old_path = "metadata/"+fn_hex.right(1)+"/"+fn_hex.right(2)+"/"+fn_hex+"/"+newrev.toHex()+".dat";
 			S3FS_Aws_S3::deleteFile(bucket, old_path, aws);
+			continue;
 		}
-		kv.insert(QByteArrayLiteral("\x03")+fn, QByteArray::fromHex(match.cap(2).toLatin1()));
+		kv.insert(QByteArrayLiteral("\x03")+fn, newrev);
 	}
 	if (need_more) {
-		qDebug("NEED MORE");
 		connect(r->listMoreFiles("metadata/", list), SIGNAL(finished(S3FS_Aws_S3*)), this, SLOT(receivedInodeList(S3FS_Aws_S3*)));
 		return;
 	}
+
+	cache_updater.start(300000); // 5min
+	if (aws_list_ready) return;
 	aws_list_ready = true;
 	if (aws_format_ready && aws_list_ready) ready();
 }
