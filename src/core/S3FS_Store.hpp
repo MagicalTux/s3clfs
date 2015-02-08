@@ -60,6 +60,10 @@ private:
 	QSet<quint64> inodes_to_update_1;
 	QSet<quint64> inodes_to_update_2;
 	QTimer inodes_updater;
+	QMap<quint64, QList<Callback*> > inode_download_callback;
+
+	bool aws_list_ready;
+	bool aws_format_ready;
 
 	QString kv_location;
 	Keyval kv; // local cache

@@ -10,6 +10,7 @@ public:
 	static S3FS_Aws_S3 *getFile(const QByteArray &bucket, const QByteArray &path, S3FS_Aws *aws);
 	static S3FS_Aws_S3 *listFiles(const QByteArray &bucket, const QByteArray &path, S3FS_Aws *aws);
 	static S3FS_Aws_S3 *putFile(const QByteArray &bucket, const QByteArray &path, const QByteArray &data, S3FS_Aws *aws);
+	static S3FS_Aws_S3 *deleteFile(const QByteArray &bucket, const QByteArray &path, S3FS_Aws *aws);
 
 	const QByteArray &body() const;
 
@@ -27,6 +28,7 @@ private:
 	bool getFile(const QByteArray &path);
 	bool listFiles(const QByteArray &path, const QByteArray &resume);
 	bool putFile(const QByteArray &path, const QByteArray &data);
+	bool deleteFile(const QByteArray &path);
 
 	void signRequest(const QByteArray &verb = QByteArrayLiteral("GET"));
 	void connectReply();

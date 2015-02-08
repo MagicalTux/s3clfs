@@ -10,6 +10,8 @@
 
 S3FS_Store::S3FS_Store(const QByteArray &_bucket, QObject *parent): QObject(parent) {
 	bucket = _bucket;
+	aws_list_ready = false;
+	aws_format_ready = false;
 	algo = QCryptographicHash::Sha3_256; // default value
 	// generate filename
 	kv_location = QDir::temp().filePath(QString("s3clfs-")+QUuid::createUuid().toRfc4122().toHex());
@@ -34,21 +36,30 @@ S3FS_Store::S3FS_Store(const QByteArray &_bucket, QObject *parent): QObject(pare
 	connect(&inodes_updater, SIGNAL(timeout()), this, SLOT(updateInodes()));
 	inodes_updater.setSingleShot(false);
 	inodes_updater.start(1000);
-
-	QTimer::singleShot(1000, this, SLOT(readyStateWithoutAws()));
 }
 
 void S3FS_Store::receivedInodeList(S3FS_Aws_S3 *r) {
 	bool need_more;
 	QStringList list = r->parseListFiles(need_more);
 	QString name;
+	// for example: metadata/1/01/0000000000000001.dat
+	// for example: metadata/0/c0/00050e8fc8c3bac0.dat
+	QRegExp match("metadata/[0-9a-f]/[0-9a-f]{2}/([0-9a-f]{16})\\.dat");
 	foreach(name, list) {
-		qDebug("filename: %s", qPrintable(name));
+		if (!match.exactMatch(name)) {
+			if (name == QStringLiteral("metadata/format.dat")) continue; // do not delete that file
+			qDebug("filename to delete: %s", qPrintable(name));
+			continue;
+		}
+		QByteArray fn = QByteArray::fromHex(match.cap(1).toLatin1());
+		kv.insert(QByteArrayLiteral("\x01")+fn, QByteArrayLiteral(""));
 	}
 	if (need_more) {
 		connect(r->listMoreFiles("metadata/", list), SIGNAL(finished(S3FS_Aws_S3*)), this, SLOT(receivedInodeList(S3FS_Aws_S3*)));
 		return;
 	}
+	aws_list_ready = true;
+	if (aws_format_ready && aws_list_ready) ready();
 }
 
 void S3FS_Store::receivedFormatFile(S3FS_Aws_S3 *r) {
@@ -59,6 +70,8 @@ void S3FS_Store::receivedFormatFile(S3FS_Aws_S3 *r) {
 	config = c.toMap();
 
 	qDebug("S3FS_Store: got config from AWS");
+	aws_format_ready = true;
+	if (aws_format_ready && aws_list_ready) ready();
 }
 
 const QVariantMap &S3FS_Store::getConfig() {
@@ -163,7 +176,11 @@ bool S3FS_Store::hasInodeLocally(quint64 ino) {
 	return (kv.value(key).length() > 0); // if length == 0, means we don't have this locally
 }
 
-void S3FS_Store::callbackOnInodeCached(quint64, Callback*) {
+void S3FS_Store::callbackOnInodeCached(quint64 ino, Callback *cb) {
+	// we need to try to get that inode
+	if (!inode_download_callback.contains(ino))
+		inode_download_callback.insert(ino, QList<Callback*>());
+	inode_download_callback[ino].append(cb);
 	qFatal("Not expected to reach this");
 	// TODO
 }
