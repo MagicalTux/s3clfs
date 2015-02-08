@@ -244,6 +244,12 @@ QByteArray S3FS_Store::writeBlock(const QByteArray &buf) {
 	if (!kv.insert(QByteArrayLiteral("\x02")+hash, buf))
 		return QByteArray();
 
+	// storage
+	QByteArray hash_hex = hash.toHex();
+	QByteArray path = QByteArrayLiteral("data/")+hash_hex.right(1)+"/"+hash_hex.right(2)+"/"+hash_hex+".dat";
+
+	S3FS_Aws_S3::putFile(bucket, path, buf, aws);
+
 	return hash;
 }
 
@@ -255,9 +261,37 @@ bool S3FS_Store::hasBlockLocally(const QByteArray &hash) {
 	return kv.contains(QByteArrayLiteral("\x02")+hash);
 }
 
-void S3FS_Store::callbackOnBlockCached(const QByteArray&, Callback*) {
-	qFatal("Not expected to reach this");
-	// TODO
+void S3FS_Store::callbackOnBlockCached(const QByteArray &block, Callback *cb) {
+	// we need to try to get that block
+	if (block_download_callback.contains(block)) {
+		block_download_callback[block].append(cb);
+		return;
+	}
+
+	// create wait queue
+	block_download_callback.insert(block, QList<Callback*>() << cb);
+
+	// send request
+	QByteArray block_hex = block.toHex();
+	QByteArray path = QByteArrayLiteral("data/")+block_hex.right(1)+QByteArrayLiteral("/")+block_hex.right(2)+QByteArrayLiteral("/")+block_hex+QByteArrayLiteral(".dat");
+	S3FS_Aws_S3 *req = S3FS_Aws_S3::getFile(bucket, path, aws);
+	if (!req) {
+		qFatal("Could not make request to fetch block");
+	}
+	req->setProperty("_block_id", block);
+	connect(req, SIGNAL(finished(S3FS_Aws_S3*)), this, SLOT(receivedBlock(S3FS_Aws_S3*)));
+}
+
+void S3FS_Store::receivedBlock(S3FS_Aws_S3*r) {
+	QByteArray block = r->property("_block_id").toByteArray();
+	QByteArray data = r->body();
+	kv.insert(QByteArrayLiteral("\x02")+block, data);
+
+	// call callbacks
+	QList<Callback*> list = block_download_callback.take(block);
+	Callback *cb;
+	foreach(cb, list)
+		cb->trigger();
 }
 
 

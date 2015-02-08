@@ -52,6 +52,7 @@ public slots:
 	void receivedFormatFile(S3FS_Aws_S3*);
 	void receivedInodeList(S3FS_Aws_S3*);
 	void receivedInode(S3FS_Aws_S3*);
+	void receivedBlock(S3FS_Aws_S3*);
 	void updateInodes();
 
 private:
@@ -64,6 +65,7 @@ private:
 	QSet<quint64> inodes_to_update_2;
 	QTimer inodes_updater;
 	QMap<quint64, QList<Callback*> > inode_download_callback;
+	QMap<QByteArray, QList<Callback*> > block_download_callback;
 
 	bool aws_list_ready;
 	bool aws_format_ready;
