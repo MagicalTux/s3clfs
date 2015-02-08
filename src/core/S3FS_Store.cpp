@@ -112,8 +112,11 @@ void S3FS_Store::receivedInodeList(S3FS_Aws_S3 *r) {
 void S3FS_Store::receivedFormatFile(S3FS_Aws_S3 *r) {
 	QVariant c;
 	QDataStream kv_val(r->body()); kv_val >> c;
-	if (!c.isValid()) return;
-	if (c.type() != QVariant::Map) return;
+	if ((!c.isValid()) || (c.type() != QVariant::Map)) {
+		aws_format_ready = true;
+		if (aws_format_ready && aws_list_ready) ready();
+		return;
+	}
 	config = c.toMap();
 
 	qDebug("S3FS_Store: got config from AWS");
