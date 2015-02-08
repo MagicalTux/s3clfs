@@ -4,7 +4,6 @@
 #include "S3FS_Store_MetaIterator.hpp"
 #include <QDir>
 #include <QUuid>
-#include <QTimer>
 #include <QDataStream>
 
 #define INT_TO_BYTES(_x) QByteArray _x ## _b; { QDataStream s_tmp(&_x ## _b, QIODevice::WriteOnly); s_tmp << _x; }
@@ -31,6 +30,10 @@ S3FS_Store::S3FS_Store(const QByteArray &_bucket, QObject *parent): QObject(pare
 	// test
 	connect(S3FS_Aws_S3::listFiles(bucket, "metadata/", aws), SIGNAL(finished(S3FS_Aws_S3*)), this, SLOT(receivedInodeList(S3FS_Aws_S3*)));
 	connect(S3FS_Aws_S3::getFile(bucket, "metadata/format.dat", aws), SIGNAL(finished(S3FS_Aws_S3*)), this, SLOT(receivedFormatFile(S3FS_Aws_S3*)));
+
+	connect(&inodes_updater, SIGNAL(timeout()), this, SLOT(updateInodes()));
+	inodes_updater.setSingleShot(false);
+	inodes_updater.start(1000);
 
 	QTimer::singleShot(1000, this, SLOT(readyStateWithoutAws()));
 }
@@ -110,13 +113,41 @@ bool S3FS_Store::storeInode(const S3FS_Obj&o) {
 	if (!kv.insert(key, o.encode())) return false;
 
 	// send inode to aws
-	sendInodeToAws(ino);
+	inodeUpdated(ino);
 
 	return true;
 }
 
+void S3FS_Store::inodeUpdated(quint64 ino) {
+	if (inodes_to_update_1.contains(ino))
+		inodes_to_update_1.remove(ino);
+	inodes_to_update_2.insert(ino);
+}
+
+void S3FS_Store::updateInodes() {
+	quint64 ino;
+	foreach(ino, inodes_to_update_1)
+		sendInodeToAws(ino);
+	
+	inodes_to_update_1 = inodes_to_update_2;
+	inodes_to_update_2.clear();
+}
+
 void S3FS_Store::sendInodeToAws(quint64 ino) {
 	INT_TO_BYTES(ino);
+	// metadata/z/yz/xyz.dat
+
+	QByteArray data;
+	QDataStream data_stream(&data, QIODevice::WriteOnly);
+	auto i = getInodeMetaIterator(ino);
+	do {
+		data_stream << i->key();
+		data_stream << i->value();
+	} while(i->next());
+	delete i;
+
+	QByteArray ino_hex = ino_b.toHex();
+	S3FS_Aws_S3::putFile(bucket, "metadata/"+ino_hex.right(1)+"/"+ino_hex.right(2)+"/"+ino_hex+".dat", data, aws);
 }
 
 S3FS_Obj S3FS_Store::getInode(quint64 ino) {
@@ -181,7 +212,7 @@ bool S3FS_Store::setInodeMeta(quint64 ino, const QByteArray &key_sub, const QByt
 	INT_TO_BYTES(ino);
 	QByteArray key = QByteArrayLiteral("\x01") + ino_b;
 	if (!kv.insert(key+key_sub, value)) return false;
-	sendInodeToAws(ino);
+	inodeUpdated(ino);
 	return true;
 }
 
@@ -195,7 +226,7 @@ bool S3FS_Store::removeInodeMeta(quint64 ino, const QByteArray &key_sub) {
 	INT_TO_BYTES(ino);
 	QByteArray key = QByteArrayLiteral("\x01") + ino_b;
 	if (!kv.remove(key+key_sub)) return false;
-	sendInodeToAws(ino);
+	inodeUpdated(ino);
 	return true;
 }
 
@@ -213,7 +244,7 @@ bool S3FS_Store::clearInodeMeta(quint64 ino) {
 		}
 	} while(i->next());
 	delete i;
-	sendInodeToAws(ino);
+	inodeUpdated(ino);
 	return true;
 }
 

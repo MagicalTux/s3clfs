@@ -2,6 +2,8 @@
 #include <QCryptographicHash>
 #include "Keyval.hpp"
 #include <QVariant>
+#include <QSet>
+#include <QTimer>
 
 class S3FS_Obj; // inode
 class S3FS_Aws;
@@ -27,7 +29,6 @@ public:
 	S3FS_Obj getInode(quint64);
 	bool hasInodeLocally(quint64);
 	void callbackOnInodeCached(quint64, Callback*);
-	void sendInodeToAws(quint64);
 
 	// blocks
 	QByteArray writeBlock(const QByteArray &buf);
@@ -50,8 +51,16 @@ public slots:
 	void readyStateWithoutAws();
 	void receivedFormatFile(S3FS_Aws_S3*);
 	void receivedInodeList(S3FS_Aws_S3*);
+	void updateInodes();
 
 private:
+	void sendInodeToAws(quint64);
+	void inodeUpdated(quint64);
+
+	QSet<quint64> inodes_to_update_1;
+	QSet<quint64> inodes_to_update_2;
+	QTimer inodes_updater;
+
 	QString kv_location;
 	Keyval kv; // local cache
 	QByteArray bucket;
