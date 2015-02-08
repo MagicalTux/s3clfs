@@ -147,7 +147,7 @@ void S3FS_Aws_S3::signRequest(const QByteArray &verb) {
 
 void S3FS_Aws_S3::requestFinished() {
 	reply_body = reply->readAll();
-	qDebug("HTTP REPLY %s", reply_body.data());
+//	qDebug("HTTP REPLY %s", reply_body.data());
 	finished(this); // because we're in the same thread, signal will be called immediately
 	deleteLater(); // so when this object will be erased will be later
 }
