@@ -2,7 +2,7 @@
 #include "S3FS.hpp"
 #include "QtFuseRequest.hpp"
 
-S3Fuse::S3Fuse(const QByteArray &bucket, const QByteArray &path, S3FS *_parent): QtFuse(path, bucket) {
+S3Fuse::S3Fuse(const QByteArray &bucket, const QByteArray &path, const QByteArray &opts, S3FS *_parent): QtFuse(path, bucket, opts) {
 	parent = _parent;
 }
 

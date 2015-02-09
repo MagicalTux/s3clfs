@@ -9,7 +9,7 @@ class S3FS;
 class S3Fuse: public QtFuse {
 	Q_OBJECT
 public:
-	S3Fuse(const QByteArray &bucket, const QByteArray &path, S3FS*parent);
+	S3Fuse(const QByteArray &bucket, const QByteArray &path, const QByteArray &opts, S3FS*parent);
 
 protected:
 	virtual void fuse_init(struct fuse_conn_info *);

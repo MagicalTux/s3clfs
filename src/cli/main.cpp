@@ -26,7 +26,7 @@ int main(int argc, char *argv[]) {
 	}
 	// bucket is args.at(0), path is args.at(1)
 	
-	S3FS s3clfs(args.at(0).toLocal8Bit(), args.at(1).toLocal8Bit(), parser.value(QStringLiteral("queue")).toLocal8Bit());
+	S3FS s3clfs(args.at(0).toLocal8Bit(), args.at(1).toLocal8Bit(), parser.value(QStringLiteral("queue")).toLocal8Bit(), parser.value(QStringLiteral("options")).toLocal8Bit());
 
 	return app.exec();
 }
