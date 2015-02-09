@@ -10,6 +10,7 @@ S3FS_Aws_S3::S3FS_Aws_S3(const QByteArray &_bucket, S3FS_Aws *parent): QObject(p
 	bucket = _bucket;
 	aws = parent;
 	reply = 0;
+	request_body_buffer = 0;
 	verb = QByteArrayLiteral("GET"); // default
 }
 
@@ -153,6 +154,13 @@ void S3FS_Aws_S3::signRequest() {
 }
 
 void S3FS_Aws_S3::requestFinished() {
+	if (reply->error() == QNetworkReply::ContentNotFoundError) {
+		// file was not found
+		reply_body = QByteArray();
+		finished(this);
+		deleteLater();
+		return;
+	}
 	if (reply->error() != QNetworkReply::NoError) {
 		qDebug("Network error, re-queuing");
 		reply = NULL;
