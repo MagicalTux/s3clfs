@@ -181,3 +181,14 @@ void S3FS_Aws::replyDestroyed(QObject *obj) {
 	qDebug("S3FS_Aws: queries status %d/8 (%d in queue)", http_running.size(), http_queue.size());
 }
 
+QByteArray S3FS_Aws::getBucketRegion(const QByteArray&bucket) {
+	if (aws_bucket_region.contains(bucket)) {
+		return aws_bucket_region.value(bucket);
+	}
+	return "unknown";
+}
+
+void S3FS_Aws::setBucketRegion(const QByteArray&bucket, const QByteArray&region) {
+	aws_bucket_region.insert(bucket, region);
+}
+

@@ -11,7 +11,7 @@ S3FS_Aws_S3::S3FS_Aws_S3(const QByteArray &_bucket, S3FS_Aws *parent): QObject(p
 	reply = 0;
 	request_body_buffer = 0;
 	verb = QByteArrayLiteral("GET"); // default
-	subpath = "ap-northeast-1/s3"; // TODO
+	subpath = aws->getBucketRegion(bucket)+"/s3";
 }
 
 S3FS_Aws_S3::~S3FS_Aws_S3() {
@@ -133,6 +133,19 @@ void S3FS_Aws_S3::requestFinished() {
 		return;
 	}
 	if (reply->error() != QNetworkReply::NoError) {
+		QByteArray response = reply->readAll();
+		if (response.indexOf("AuthorizationHeaderMalformed")) {
+			// likely wrong region, good one is in the msg
+			QRegExp rx("<Region>([a-z0-9-]+)</Region>");
+			if (rx.indexIn(response)) {
+				qDebug("Detected correct region %s for bucket, retrying...", qPrintable(rx.cap(1)));
+				aws->setBucketRegion(bucket, rx.cap(1).toLatin1());
+				subpath = rx.cap(1).toLatin1()+"/s3";
+				QTimer::singleShot(1000, this, SLOT(retry()));
+				return;
+			}
+		}
+		qDebug("ERROR HTTP %s", reply->readAll().data());
 		qDebug("%s, re-queuing", qPrintable(reply->errorString()));
 		QTimer::singleShot(1000, this, SLOT(retry()));
 		return;
