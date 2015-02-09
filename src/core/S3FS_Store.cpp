@@ -155,6 +155,13 @@ void S3FS_Store::removeInodeFromCache(quint64 ino) {
 	delete i;
 }
 
+void S3FS_Store::brokenInode(quint64 ino) {
+	INT_TO_BYTES(ino);
+	// that inode is borked, for now let's just forget about it
+	removeInodeFromCache(ino);
+	kv.remove(QByteArrayLiteral("\x03")+ino_b); // next call checking if inode exists will fail
+}
+
 void S3FS_Store::receivedFormatFile(S3FS_Aws_S3 *r) {
 	QVariant c;
 	QDataStream kv_val(r->body()); kv_val >> c;

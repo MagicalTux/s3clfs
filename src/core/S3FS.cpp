@@ -11,7 +11,7 @@
 #define GET_INODE(ino) \
 	if (!store.hasInode(ino)) { req->error(ENOENT); return; } \
 	if (!store.hasInodeLocally(ino)) { store.callbackOnInodeCached(ino, CALLBACK()); return; } S3FS_Obj ino ## _o = store.getInode(ino); \
-	if (!ino ## _o.isValid()) { store.removeInodeFromCache(ino); req->error(ENOENT); return; }
+	if ((!ino ## _o.isValid()) || (ino ## _o.getInode() != ino)) { store.brokenInode(ino); QTimer::singleShot(100, CALLBACK(), SLOT(trigger())); return; }
 
 S3FS::S3FS(const QByteArray &_bucket, const QByteArray &path, const QByteArray &queue, const QByteArray &fuse_opts, const QString &cache): fuse(_bucket, path, fuse_opts, this), store(_bucket, queue, cache) {
 	bucket = _bucket;
@@ -85,6 +85,13 @@ void S3FS::fuse_lookup(QtFuseRequest *req, fuse_ino_t ino, const QByteArray &pat
 	QDataStream(res_ino_bin) >> res_ino;
 	if (res_ino <= 1) {
 		qDebug("S3FS: Corrupted filesystem, directory contains entry pointing to inode %llu", res_ino);
+		req->error(ENOENT);
+		return;
+	}
+	if (!store.hasInode(res_ino)) {
+		// corrupted inode?
+		qDebug("S3FS: Entry %s of inode %lu is corrupted, removed from tree", path.data(), ino);
+		store.removeInodeMeta(ino, path); // remove reference to inode
 		req->error(ENOENT);
 		return;
 	}

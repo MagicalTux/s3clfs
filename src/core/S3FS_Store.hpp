@@ -30,6 +30,7 @@ public:
 	bool hasInodeLocally(quint64);
 	void callbackOnInodeCached(quint64, Callback*);
 	void removeInodeFromCache(quint64);
+	void brokenInode(quint64);
 
 	// blocks
 	QByteArray writeBlock(const QByteArray &buf);
