@@ -4,6 +4,7 @@
 #include <QSettings>
 #include <QMessageAuthenticationCode>
 #include <QNetworkReply>
+#include <QBuffer>
 
 S3FS_Aws::S3FS_Aws(QObject *parent): QObject(parent) {
 	QString path = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation)+"/aws/credentials";
@@ -39,6 +40,7 @@ QByteArray S3FS_Aws::signV2(const QByteArray &string) {
 }
 
 QByteArray S3FS_Aws::signV4(const QByteArray &string, const QByteArray &path, const QByteArray &timestamp, QByteArray &algo) {
+	// generate the required elements to generate a V4 signature
 	QByteArray buffer = QByteArrayLiteral("AWS4") + key;
 	auto path_split = path.split('/');
 	QByteArray elem;
@@ -51,14 +53,13 @@ QByteArray S3FS_Aws::signV4(const QByteArray &string, const QByteArray &path, co
 	StringToSign += path + QByteArrayLiteral("\n"); // date/region/service/aws4_request
 	StringToSign += QCryptographicHash::hash(string, QCryptographicHash::Sha256).toHex();
 
-//	qDebug("** AWS ** StringToSign = %s", StringToSign.data());
-
 	return QMessageAuthenticationCode::hash(StringToSign, buffer, QCryptographicHash::Sha256);
 }
 
-QNetworkReply *S3FS_Aws::reqV4(const QByteArray &verb, const QByteArray &subpath, QNetworkRequest req) {
+QNetworkReply *S3FS_Aws::reqV4(const QByteArray &verb, const QByteArray &subpath, QNetworkRequest req, const QByteArray &data) {
 	QByteArray timestamp = QDateTime::currentDateTimeUtc().toString("yyyyMMddTHHmmssZ").toLatin1();
 
+	// at the very minimum, we need this header
 	req.setRawHeader("X-Amz-Date", timestamp);
 
 	// compute canonical url query
@@ -67,43 +68,74 @@ QNetworkReply *S3FS_Aws::reqV4(const QByteArray &verb, const QByteArray &subpath
 	std::sort(q_split.begin(), q_split.end());
 	canonical_query_string = q_split.join('&');
 
+	// gather headers that needs to be signed
 	QMap<QByteArray,QByteArray> headers;
 	auto raw_headers_list = req.rawHeaderList();
 	QByteArray tmp;
 	foreach(tmp, raw_headers_list)
 		headers.insert(tmp.toLower(), req.rawHeader(tmp));
 
-	// check other headers
+	// check also other headers
 	headers.insert("host", req.url().host().toLatin1());
 	if (req.header(QNetworkRequest::ContentTypeHeader).isValid())
 		headers.insert("content-type", req.header(QNetworkRequest::ContentTypeHeader).toByteArray());
 	if (req.header(QNetworkRequest::ContentLengthHeader).isValid())
 		headers.insert("content-length", req.header(QNetworkRequest::ContentLengthHeader).toByteArray());
 
-	// OK, so...
-	QByteArray CanonicalRequest = verb + QByteArrayLiteral("\n");
-	CanonicalRequest += req.url().path() + QByteArrayLiteral("\n");
-	CanonicalRequest += canonical_query_string + QByteArrayLiteral("\n");
-	// headers
+	// Generate the canonical request
+	QByteArray CanonicalRequest = verb + QByteArrayLiteral("\n"); // verb
+	CanonicalRequest += req.url().path() + QByteArrayLiteral("\n"); // path
+	CanonicalRequest += canonical_query_string + QByteArrayLiteral("\n"); // query string (sorted)
+	// add the headers
 	for(auto i = headers.begin(); i != headers.end(); i++)
 		CanonicalRequest += i.key()+":"+i.value()+QByteArrayLiteral("\n");
-	CanonicalRequest += QByteArrayLiteral("\n");
+	CanonicalRequest += QByteArrayLiteral("\n"); // an empty line
 
-	CanonicalRequest += headers.keys().join(";") + QByteArrayLiteral("\n");
-	CanonicalRequest += QCryptographicHash::hash("", QCryptographicHash::Sha256).toHex();
+	CanonicalRequest += headers.keys().join(";") + QByteArrayLiteral("\n"); // list of signed headers... 
+	CanonicalRequest += QCryptographicHash::hash(data, QCryptographicHash::Sha256).toHex(); // and hash of the request body
 
-	// generate signature
+//	qDebug("CANONICAL REQUEST: %s", CanonicalRequest.data());
+
+	// call signv4 to generate the signature
 	QByteArray algo;
 	QByteArray path = timestamp.left(8) + "/"+subpath+"/aws4_request";
 	QByteArray sign = signV4(CanonicalRequest, path, timestamp, algo);
 
+	// and put it in the Authorization header
 	QByteArray auth_header = algo+" Credential="+id+"/"+path+", SignedHeaders=host;x-amz-date, Signature="+sign.toHex();
-
 	req.setRawHeader("Authorization", auth_header);
 
-	qDebug("auth header = %s", auth_header.data());
+	QBuffer *data_dev = 0;
+	if (!data.isEmpty()) {
+		data_dev = new QBuffer();
+		data_dev->setData(data);
+		data_dev->open(QIODevice::ReadOnly);
+	}
+	auto res = net.sendCustomRequest(req, verb, data_dev);
 
-	return net.sendCustomRequest(req, verb);
+	if (data_dev) data_dev->setParent(res); // ensures QBuffer() will die
+
+	return res;
+}
+
+void S3FS_Aws::httpV4(QObject *caller, const QByteArray &verb, const QByteArray &subpath, const QNetworkRequest &req, const QByteArray &data) {
+	if (http_running.size() < 8) {
+		auto reply = reqV4(verb, subpath, req, data);
+		http_running.insert(reply);
+		connect(reply, SIGNAL(destroyed(QObject*)), this, SLOT(replyDestroyed(QObject*)));
+		qDebug("S3FS_Aws: queries status %d/8", http_running.size());
+		QMetaObject::invokeMethod(caller, "requestStarted", Q_ARG(QNetworkReply*, reply));
+		return;
+	}
+	// queue this
+	auto q = new S3FS_Aws_Queue_Entry;
+	q->req = req;
+	q->verb = verb;
+	q->subpath = subpath;
+	q->raw_data = data;
+	q->sender = caller;
+	q->sign = 4;
+	http_queue.append(q);
 }
 
 void S3FS_Aws::http(QObject *caller, const QByteArray &verb, const QNetworkRequest &req, QIODevice *data) {
@@ -128,7 +160,14 @@ void S3FS_Aws::replyDestroyed(QObject *obj) {
 	http_running.remove((QNetworkReply*)obj);
 	if (http_queue.size()) {
 		auto q = http_queue.takeFirst();
-		auto reply = net.sendCustomRequest(q->req, q->verb, q->data);
+		QNetworkReply *reply;
+		switch(q->sign) {
+			case 4: // signV4
+				reply = reqV4(q->verb, q->subpath, q->req, q->raw_data);
+				break;
+			default:
+				reply = net.sendCustomRequest(q->req, q->verb, q->data);
+		}
 		http_running.insert(reply);
 		connect(reply, SIGNAL(destroyed(QObject*)), this, SLOT(replyDestroyed(QObject*)));
 		QMetaObject::invokeMethod(q->sender, "requestStarted", Q_ARG(QNetworkReply*, reply));

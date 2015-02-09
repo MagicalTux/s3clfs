@@ -56,10 +56,12 @@ public slots:
 	void receivedBlock(S3FS_Aws_S3*);
 	void updateInodes();
 	void getInodesList();
+	void gotNewFile(const QString&,const QString&);
 
 private:
 	void sendInodeToAws(quint64);
 	void inodeUpdated(quint64);
+	void learnFile(const QString&, bool);
 
 	quint64 makeInodeRev();
 
@@ -81,5 +83,6 @@ private:
 	S3FS_Aws *aws;
 	S3FS_Aws_SQS *aws_sqs;
 	quint64 last_inode_rev;
+	QRegExp file_match;
 };
 

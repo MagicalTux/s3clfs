@@ -1,10 +1,5 @@
-Limit HTTP requests to X at the same time
 Make keyval store permanent
 Flush unused metadata/data from keyval store
-Update inodes list from times to times, invalidating cache of inodes that have changed
-=> run list every X (1min?)
-=> For every inode, if latest ID is higher than the one we know, remove cache
-=> alternatively, use amazon SNS?
 Handle HTTP errors (server unreachable, server error, etc) by retrying a bit later
 Handle HTTP errors (missing files) by sending EIO
 Automatic file system checks on idle

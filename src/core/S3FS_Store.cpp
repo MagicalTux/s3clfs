@@ -15,6 +15,7 @@ S3FS_Store::S3FS_Store(const QByteArray &_bucket, const QByteArray &queue, QObje
 	aws_list_ready = false;
 	aws_format_ready = false;
 	last_inode_rev = 0;
+	file_match = QRegExp("metadata/[0-9a-f]/[0-9a-f]{2}/([0-9a-f]{16})/([0-9a-f]{16})\\.dat");
 	algo = QCryptographicHash::Sha3_256; // default value
 	// generate filename
 	kv_location = QDir::temp().filePath(QString("s3clfs-")+QUuid::createUuid().toRfc4122().toHex());
@@ -34,6 +35,7 @@ S3FS_Store::S3FS_Store(const QByteArray &_bucket, const QByteArray &queue, QObje
 
 	if (!queue.isEmpty()) {
 		aws_sqs = new S3FS_Aws_SQS(queue, aws);
+		connect(aws_sqs, SIGNAL(newFile(const QString&,const QString&)), this, SLOT(gotNewFile(const QString&,const QString&)));
 	}
 
 	// test
@@ -48,6 +50,12 @@ S3FS_Store::S3FS_Store(const QByteArray &_bucket, const QByteArray &queue, QObje
 	cache_updater.setSingleShot(true);
 }
 
+void S3FS_Store::gotNewFile(const QString &_bucket, const QString &file) {
+	if (bucket != _bucket) return;
+	qDebug("GOT NEW FILES %s", qPrintable(file));
+	learnFile(file, false);
+}
+
 void S3FS_Store::getInodesList() {
 	connect(S3FS_Aws_S3::listFiles(bucket, "metadata/", aws), SIGNAL(finished(S3FS_Aws_S3*)), this, SLOT(receivedInodeList(S3FS_Aws_S3*)));
 }
@@ -57,51 +65,8 @@ void S3FS_Store::receivedInodeList(S3FS_Aws_S3 *r) {
 	QStringList list = r->parseListFiles(need_more);
 //	qDebug("S3FS_Store: scanning inodes, got %d entries", list.size());
 	QString name;
-	// for example: metadata/1/01/0000000000000001.dat
-	// for example: metadata/0/c0/00050e8fc8c3bac0.dat
-	QRegExp match("metadata/[0-9a-f]/[0-9a-f]{2}/([0-9a-f]{16})/([0-9a-f]{16})\\.dat");
 	foreach(name, list) {
-		if (!match.exactMatch(name)) {
-			if (name == QStringLiteral("metadata/format.dat")) continue; // do not delete that file
-			qDebug("S3FS_Store: deleting unknown file %s found on S3", qPrintable(name));
-			S3FS_Aws_S3::deleteFile(bucket, name.toUtf8(), aws);
-			continue;
-		}
-		QByteArray fn = QByteArray::fromHex(match.cap(1).toLatin1());
-		QByteArray newrev = QByteArray::fromHex(match.cap(2).toLatin1());
-
-		if (kv.contains(QByteArrayLiteral("\x03")+fn)) {
-			// remove old file
-			QByteArray rev = kv.value(QByteArrayLiteral("\x03")+fn);
-			if (rev == newrev) continue; // no change
-			if (rev < newrev) {
-				// our version is older, update our value and do not delete from S3
-				qDebug("S3FS_Store: inode %s update - our version %s, s3 has %s", fn.toHex().data(), rev.toHex().data(), newrev.toHex().data());
-				kv.insert(QByteArrayLiteral("\x03")+fn, newrev);
-				if (kv.contains(QByteArrayLiteral("\x01")+fn)) {
-					// clear this inode from cache
-					qDebug("S3FS_Store: Inode %s has changed, invalidating cache", fn.toHex().data());
-					auto i = new KeyvalIterator(&kv);
-					i->find(QByteArrayLiteral("\x01")+fn);
-					do {
-						if (i->key().left(fn.length()+1) == QByteArrayLiteral("\x01")+fn) {
-							kv.remove(i->key());
-						} else {
-							break;
-						}
-					} while(i->next());
-					delete i;
-				}
-				continue;
-			}
-			// our version is newer, delete old stuff
-			QByteArray fn_hex = fn.toHex();
-			QByteArray rev_hex = rev.toHex();
-			QByteArray old_path = "metadata/"+fn_hex.right(1)+"/"+fn_hex.right(2)+"/"+fn_hex+"/"+newrev.toHex()+".dat";
-			S3FS_Aws_S3::deleteFile(bucket, old_path, aws);
-			continue;
-		}
-		kv.insert(QByteArrayLiteral("\x03")+fn, newrev);
+		learnFile(name, true);
 	}
 	if (need_more) {
 		connect(r->listMoreFiles("metadata/", list), SIGNAL(finished(S3FS_Aws_S3*)), this, SLOT(receivedInodeList(S3FS_Aws_S3*)));
@@ -112,6 +77,55 @@ void S3FS_Store::receivedInodeList(S3FS_Aws_S3 *r) {
 	if (aws_list_ready) return;
 	aws_list_ready = true;
 	if (aws_format_ready && aws_list_ready) ready();
+}
+
+void S3FS_Store::learnFile(const QString &name, bool in_list) {
+	// metadata/1/01/0000000000000001/00050e9d900df750.dat
+	// metadata/0/70/00050e9d94651c70/00050e9d947721b8.dat
+	if (!file_match.exactMatch(name)) {
+		if (name == QStringLiteral("metadata/format.dat")) return; // do not delete that file
+		if (name.left(9) != QStringLiteral("metadata/")) return; // avoid deleting stuff outside of metadata
+		qDebug("S3FS_Store: deleting unknown file %s found on S3", qPrintable(name));
+		S3FS_Aws_S3::deleteFile(bucket, name.toUtf8(), aws);
+		return;
+	}
+	QByteArray fn = QByteArray::fromHex(file_match.cap(1).toLatin1());
+	QByteArray newrev = QByteArray::fromHex(file_match.cap(2).toLatin1());
+
+	if (kv.contains(QByteArrayLiteral("\x03")+fn)) {
+		// remove old file
+		QByteArray rev = kv.value(QByteArrayLiteral("\x03")+fn);
+		if (rev == newrev) return; // no change
+		if (rev < newrev) {
+			// our version is older, update our value and do not delete from S3
+			qDebug("S3FS_Store: inode %s update - our version %s, s3 has %s", fn.toHex().data(), rev.toHex().data(), newrev.toHex().data());
+			kv.insert(QByteArrayLiteral("\x03")+fn, newrev);
+			if (kv.contains(QByteArrayLiteral("\x01")+fn)) {
+				// clear this inode from cache
+				qDebug("S3FS_Store: Inode %s has changed, invalidating cache", fn.toHex().data());
+				auto i = new KeyvalIterator(&kv);
+				i->find(QByteArrayLiteral("\x01")+fn);
+				do {
+					if (i->key().left(fn.length()+1) == QByteArrayLiteral("\x01")+fn) {
+						kv.remove(i->key());
+					} else {
+						break;
+					}
+				} while(i->next());
+				delete i;
+			}
+			return;
+		}
+		// our version is newer, delete old stuff
+		if (in_list) {
+			QByteArray fn_hex = fn.toHex();
+			QByteArray rev_hex = rev.toHex();
+			QByteArray old_path = "metadata/"+fn_hex.right(1)+"/"+fn_hex.right(2)+"/"+fn_hex+"/"+newrev.toHex()+".dat";
+			S3FS_Aws_S3::deleteFile(bucket, old_path, aws);
+		}
+		return;
+	}
+	kv.insert(QByteArrayLiteral("\x03")+fn, newrev);
 }
 
 void S3FS_Store::receivedFormatFile(S3FS_Aws_S3 *r) {
