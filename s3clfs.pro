@@ -70,6 +70,8 @@ CPP_CLASSES = \
 
 equals(BUILD_TYPE,cli) {
 	TARGET = s3clfs
+	target.path = /usr/bin
+	INSTALLS += target
 	QT -= gui widgets
 	osx:CONFIG-=app_bundle
 	CPP_CLASSES += \
