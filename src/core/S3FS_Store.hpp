@@ -16,8 +16,7 @@ class S3FS_Store: public QObject {
 	Q_OBJECT
 
 public:
-	S3FS_Store(const QByteArray &bucket, const QByteArray &queue, QObject *parent = 0);
-	~S3FS_Store();
+	S3FS_Store(const QByteArray &bucket, const QByteArray &queue, const QString &cache, QObject *parent = 0);
 
 	// filesystem config
 	const QVariantMap &getConfig();

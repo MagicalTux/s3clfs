@@ -10,7 +10,7 @@
 
 #define INT_TO_BYTES(_x) QByteArray _x ## _b; { QDataStream s_tmp(&_x ## _b, QIODevice::WriteOnly); s_tmp << _x; }
 
-S3FS_Store::S3FS_Store(const QByteArray &_bucket, const QByteArray &queue, QObject *parent): QObject(parent) {
+S3FS_Store::S3FS_Store(const QByteArray &_bucket, const QByteArray &queue, const QString &cache_path, QObject *parent): QObject(parent) {
 	bucket = _bucket;
 	aws_list_ready = false;
 	aws_format_ready = false;
@@ -18,10 +18,14 @@ S3FS_Store::S3FS_Store(const QByteArray &_bucket, const QByteArray &queue, QObje
 	file_match = QRegExp("metadata/[0-9a-f]/[0-9a-f]{2}/([0-9a-f]{16})/([0-9a-f]{16})\\.dat");
 	algo = QCryptographicHash::Sha3_256; // default value
 	// generate filename
-	kv_location = QDir::temp().filePath(QString("s3clfs-")+QUuid::createUuid().toRfc4122().toHex());
+	if (cache_path.isEmpty()) {
+		kv_location = QDir::temp().filePath(QString("s3clfs-")+bucket);
+	} else {
+		kv_location = cache_path;
+	}
 	qDebug("S3FS: Keyval location: %s", qPrintable(kv_location));
 
-	if (!kv.create(kv_location)) {
+	if (!kv.open(kv_location)) {
 		qFatal("S3FS_Store: Failed to open cache");
 	}
 
@@ -193,13 +197,6 @@ bool S3FS_Store::setConfig(const QVariantMap&c) {
 void S3FS_Store::readyStateWithoutAws() {
 	qDebug("S3FS_Store: Going ready without any actual backend storage!");
 	ready();
-}
-
-S3FS_Store::~S3FS_Store() {
-	if (kv.isValid()) {
-		kv.close();
-		Keyval::destroy(kv_location);
-	}
 }
 
 bool S3FS_Store::hasInode(quint64 ino) {

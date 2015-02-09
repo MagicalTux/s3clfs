@@ -1,4 +1,3 @@
-Make keyval store permanent
 detect and handle pressure from available hard disk space by removing oldest data
 Handle HTTP errors (server unreachable, server error, etc) by retrying a bit later
 Handle HTTP errors (missing files) by sending EIO
