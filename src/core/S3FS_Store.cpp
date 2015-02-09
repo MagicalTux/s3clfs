@@ -296,6 +296,15 @@ void S3FS_Store::receivedInode(S3FS_Aws_S3*r) {
 	quint64 ino = r->property("_inode_num").toULongLong();
 	INT_TO_BYTES(ino);
 	QByteArray data = r->body();
+	if (data.isEmpty()) {
+		qDebug("Inode %llu missing!", ino);
+		kv.remove(QByteArrayLiteral("\x03")+ino_b); // remove this inode from known inodes
+		// call callbacks
+		QList<Callback*> list = inode_download_callback.take(ino);
+		foreach(auto cb, list)
+			cb->trigger();
+		return;
+	}
 	QDataStream s(data);
 	qDebug("Received inode %llu", ino);
 
