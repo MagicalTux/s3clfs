@@ -16,6 +16,12 @@ If you use AWS command line, configuration can be as easy as:
 
 	ln -s ../.aws ~/.config/aws
 
+If not, you will need to create a configuration file in ~/.config/aws/credentials with this contents:
+
+	[default]
+	aws_access_key_id = (your key id)
+	aws_secret_access_key = (secret value)
+
 ## AWS config
 
 You want to have the following:
