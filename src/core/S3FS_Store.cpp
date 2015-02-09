@@ -128,6 +128,15 @@ void S3FS_Store::learnFile(const QString &name, bool in_list) {
 	kv.insert(QByteArrayLiteral("\x03")+fn, newrev);
 }
 
+void S3FS_Store::removeInodeFromCache(quint64 ino) {
+	auto i = getInodeMetaIterator(ino);
+	if (!i->isValid()) return;
+	do {
+		kv.remove(i->fullKey());
+	} while(i->next());
+	delete i;
+}
+
 void S3FS_Store::receivedFormatFile(S3FS_Aws_S3 *r) {
 	QVariant c;
 	QDataStream kv_val(r->body()); kv_val >> c;

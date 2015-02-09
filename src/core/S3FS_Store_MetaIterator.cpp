@@ -19,6 +19,11 @@ QByteArray S3FS_Store_MetaIterator::key() {
 	return KeyvalIterator::key().mid(prefix.length());
 }
 
+QByteArray S3FS_Store_MetaIterator::fullKey() {
+	if (!isValid()) return QByteArray();
+	return KeyvalIterator::key();
+}
+
 QByteArray S3FS_Store_MetaIterator::value() {
 	if (!isValid()) return QByteArray();
 	return KeyvalIterator::value();

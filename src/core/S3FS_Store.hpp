@@ -30,6 +30,7 @@ public:
 	S3FS_Obj getInode(quint64);
 	bool hasInodeLocally(quint64);
 	void callbackOnInodeCached(quint64, Callback*);
+	void removeInodeFromCache(quint64);
 
 	// blocks
 	QByteArray writeBlock(const QByteArray &buf);
