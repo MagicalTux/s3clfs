@@ -1,5 +1,4 @@
 #include "S3FS_Aws_S3.hpp"
-#include <QDateTime>
 #include <QUrl>
 #include <QUrlQuery>
 #include <QNetworkRequest>
@@ -12,6 +11,7 @@ S3FS_Aws_S3::S3FS_Aws_S3(const QByteArray &_bucket, S3FS_Aws *parent): QObject(p
 	reply = 0;
 	request_body_buffer = 0;
 	verb = QByteArrayLiteral("GET"); // default
+	subpath = "ap-northeast-1/s3"; // TODO
 }
 
 S3FS_Aws_S3::~S3FS_Aws_S3() {
@@ -37,9 +37,9 @@ bool S3FS_Aws_S3::getFile(const QByteArray &path) {
 	// NOTE: if user is on aws, ssl might not be required?
 	QUrl url("https://"+bucket+".s3.amazonaws.com/"+path); // using bucketname.s3.amazonaws.com will ensure query is routed to appropriate region
 	request = QNetworkRequest(url);
-	signRequest();
+	request.setRawHeader("X-Amz-Content-SHA256", "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"); // sha256("")
 
-	aws->http(this, verb, request);
+	aws->httpV4(this, verb, subpath, request);
 	return true;
 }
 
@@ -64,15 +64,15 @@ S3FS_Aws_S3 *S3FS_Aws_S3::listMoreFiles(const QByteArray &path, const QStringLis
 
 bool S3FS_Aws_S3::listFiles(const QByteArray &path, const QByteArray &resume) {
 	QUrlQuery url_query;
-	url_query.addQueryItem("prefix", path);
-	if (!resume.isEmpty()) url_query.addQueryItem("marker", resume);
+	url_query.addQueryItem("prefix", QUrl::toPercentEncoding(path));
+	if (!resume.isEmpty()) url_query.addQueryItem("marker", QUrl::toPercentEncoding(resume));
 	QUrl url("https://"+bucket+".s3.amazonaws.com/");
 	url.setQuery(url_query);
 
 	request = QNetworkRequest(url);
-	signRequest();
+	request.setRawHeader("X-Amz-Content-SHA256", "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"); // sha256("")
 
-	aws->http(this, verb, request);
+	aws->httpV4(this, verb, subpath, request);
 	return true;
 }
 
@@ -94,14 +94,10 @@ bool S3FS_Aws_S3::putFile(const QByteArray &path, const QByteArray &data) {
 
 	// keep request body around in case we need to retry
 	request_body = data;
-	request_body_buffer = new QBuffer(&request_body, this);
-	request_body_buffer->open(QIODevice::ReadOnly);
 
 	verb = "PUT";
 
-	signRequest();
-
-	aws->http(this, verb, request, request_body_buffer);
+	aws->httpV4(this, verb, subpath, request, request_body);
 	return true;
 }
 
@@ -120,37 +116,12 @@ bool S3FS_Aws_S3::deleteFile(const QByteArray &path) {
 	request = QNetworkRequest(url);
 	verb = "DELETE";
 
-	signRequest();
-
-	aws->http(this, verb, request);
+	aws->httpV4(this, verb, subpath, request);
 	return true;
 }
 
 void S3FS_Aws_S3::connectReply() {
 	connect(reply, SIGNAL(finished()), this, SLOT(requestFinished()));
-}
-
-void S3FS_Aws_S3::signRequest() {
-	qDebug("AWS S3: Request %s %s", verb.data(), request.url().toString().toLatin1().data());
-	QByteArray date_header = QDateTime::currentDateTime().toString(QStringLiteral("ddd, dd MMM yyyy hh:mm:ss t")).toLatin1();
-
-	QByteArray sign = verb+"\n";
-	if (request.hasRawHeader("Content-MD5")) {
-		sign += request.rawHeader("Content-MD5")+"\n";
-	} else {
-		sign += "\n";
-	}
-	if (request.header(QNetworkRequest::ContentTypeHeader).isValid()) {
-		sign += request.header(QNetworkRequest::ContentTypeHeader).toByteArray()+"\n";
-	} else {
-		sign += "\n";
-	}
-	request.setRawHeader("Date", date_header);
-	sign += date_header+"\n";
-
-	sign += "/" + bucket + request.url().path(QUrl::FullyEncoded); // TODO also append query string if one of ?versioning ?location ?acl ?torrent ?lifecycle ?versionid
-
-	request.setRawHeader("Authorization", aws->signV2(sign));
 }
 
 void S3FS_Aws_S3::requestFinished() {
@@ -162,16 +133,29 @@ void S3FS_Aws_S3::requestFinished() {
 		return;
 	}
 	if (reply->error() != QNetworkReply::NoError) {
-		qDebug("Network error %s, re-queuing", qPrintable(reply->errorString()));
-		reply->deleteLater();
-		reply = NULL;
-		aws->http(this, verb, request, request_body_buffer);
+		qDebug("%s, re-queuing", qPrintable(reply->errorString()));
+		QTimer::singleShot(1000, this, SLOT(retry()));
+		return;
+	}
+//	int http_code = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+	if (reply->hasRawHeader("location")) {
+//		qDebug("**** REDIRECT TO %s", reply->rawHeader("location").data());
+		request.setUrl(QUrl(reply->rawHeader("location")));
+		QTimer::singleShot(1000, this, SLOT(retry()));
 		return;
 	}
 	reply_body = reply->readAll();
-//	qDebug("HTTP REPLY %s", reply_body.data());
+//	qDebug("HTTP REPLY %d %s", http_code, reply_body.data());
 	finished(this); // because we're in the same thread, signal will be called immediately
 	deleteLater(); // so when this object will be erased will be later
+}
+
+void S3FS_Aws_S3::retry() {
+	if (reply) {
+		reply->deleteLater();
+		reply = 0;
+	}
+	aws->httpV4(this, verb, subpath, request, request_body);
 }
 
 const QByteArray &S3FS_Aws_S3::body() const {

@@ -1,6 +1,5 @@
 #include "Callback.hpp"
 #include <QMetaObject>
-#include <qdebug.h>
 
 Callback::Callback(QObject *_obj, const char *_member, QGenericArgument _val0, QGenericArgument _val1, QGenericArgument _val2, QGenericArgument _val3, QGenericArgument _val4, QGenericArgument _val5, QGenericArgument _val6, QGenericArgument _val7, QGenericArgument _val8, QGenericArgument _val9) {
 	obj = _obj;

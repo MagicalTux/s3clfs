@@ -23,6 +23,7 @@ public:
 public slots:
 	void requestFinished();
 	void requestStarted(QNetworkReply*);
+	void retry();
 
 signals:
 	void finished(S3FS_Aws_S3*);
@@ -34,10 +35,10 @@ private:
 	bool putFile(const QByteArray &path, const QByteArray &data);
 	bool deleteFile(const QByteArray &path);
 
-	void signRequest();
 	void connectReply();
 
 	QByteArray bucket;
+	QByteArray subpath; // region/s3
 	QByteArray reply_body;
 	QByteArray request_body;
 	QByteArray verb;

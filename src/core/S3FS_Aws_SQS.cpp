@@ -7,8 +7,6 @@
 #include <QBuffer>
 #include <QtXmlPatterns>
 
-#include <qdebug.h>
-
 S3FS_Aws_SQS::S3FS_Aws_SQS(const QByteArray &_queue, S3FS_Aws *parent): QObject(parent) {
 	aws = parent;
 	reply = 0;
