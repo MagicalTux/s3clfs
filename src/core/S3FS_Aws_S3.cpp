@@ -162,7 +162,7 @@ void S3FS_Aws_S3::requestFinished() {
 		return;
 	}
 	if (reply->error() != QNetworkReply::NoError) {
-		qDebug("Network error, re-queuing");
+		qDebug("Network error %s, re-queuing", qPrintable(reply->errorString()));
 		reply = NULL;
 		aws->http(this, verb, request, request_body_buffer);
 		return;
