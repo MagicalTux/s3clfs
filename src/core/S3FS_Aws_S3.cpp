@@ -137,7 +137,7 @@ void S3FS_Aws_S3::requestFinished() {
 		if (response.indexOf("AuthorizationHeaderMalformed")) {
 			// likely wrong region, good one is in the msg
 			QRegExp rx("<Region>([a-z0-9-]+)</Region>");
-			if (rx.indexIn(response)) {
+			if (rx.indexIn(response) != -1) {
 				qDebug("Detected correct region %s for bucket, retrying...", qPrintable(rx.cap(1)));
 				aws->setBucketRegion(bucket, rx.cap(1).toLatin1());
 				subpath = rx.cap(1).toLatin1()+"/s3";
