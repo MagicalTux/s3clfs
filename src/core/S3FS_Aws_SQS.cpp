@@ -44,7 +44,7 @@ S3FS_Aws_SQS::S3FS_Aws_SQS(const QByteArray &_queue, S3FS_Aws *parent): QObject(
 }
 
 void S3FS_Aws_SQS::readReply() {
-	qDebug("Got messages from the queue system");
+//	qDebug("Got messages from the queue system");
 	auto res = parseMessages(reply->readAll());
 	foreach(auto msg, res) {
 		auto doc = QJsonDocument::fromJson(msg.value("Body"));

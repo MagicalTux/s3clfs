@@ -34,12 +34,13 @@ private:
 	bool putFile(const QByteArray &path, const QByteArray &data);
 	bool deleteFile(const QByteArray &path);
 
-	void signRequest(const QByteArray &verb = QByteArrayLiteral("GET"));
+	void signRequest();
 	void connectReply();
 
 	QByteArray bucket;
 	QByteArray reply_body;
 	QByteArray request_body;
+	QByteArray verb;
 	S3FS_Aws *aws;
 	QNetworkRequest request;
 	QNetworkReply *reply;

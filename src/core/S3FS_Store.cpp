@@ -52,7 +52,7 @@ S3FS_Store::S3FS_Store(const QByteArray &_bucket, const QByteArray &queue, QObje
 
 void S3FS_Store::gotNewFile(const QString &_bucket, const QString &file) {
 	if (bucket != _bucket) return;
-	qDebug("GOT NEW FILES %s", qPrintable(file));
+//	qDebug("GOT NEW FILES %s", qPrintable(file));
 	learnFile(file, false);
 }
 

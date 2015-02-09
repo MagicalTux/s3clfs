@@ -10,6 +10,7 @@ S3FS_Aws_S3::S3FS_Aws_S3(const QByteArray &_bucket, S3FS_Aws *parent): QObject(p
 	bucket = _bucket;
 	aws = parent;
 	reply = 0;
+	verb = QByteArrayLiteral("GET"); // default
 }
 
 S3FS_Aws_S3::~S3FS_Aws_S3() {
@@ -37,7 +38,7 @@ bool S3FS_Aws_S3::getFile(const QByteArray &path) {
 	request = QNetworkRequest(url);
 	signRequest();
 
-	aws->http(this, QByteArrayLiteral("GET"), request);
+	aws->http(this, verb, request);
 	return true;
 }
 
@@ -70,7 +71,7 @@ bool S3FS_Aws_S3::listFiles(const QByteArray &path, const QByteArray &resume) {
 	request = QNetworkRequest(url);
 	signRequest();
 
-	aws->http(this, QByteArrayLiteral("GET"), request);
+	aws->http(this, verb, request);
 	return true;
 }
 
@@ -95,9 +96,11 @@ bool S3FS_Aws_S3::putFile(const QByteArray &path, const QByteArray &data) {
 	request_body_buffer = new QBuffer(&request_body, this);
 	request_body_buffer->open(QIODevice::ReadOnly);
 
-	signRequest("PUT");
+	verb = "PUT";
 
-	aws->http(this, QByteArrayLiteral("PUT"), request, request_body_buffer);
+	signRequest();
+
+	aws->http(this, verb, request, request_body_buffer);
 	return true;
 }
 
@@ -114,10 +117,11 @@ S3FS_Aws_S3 *S3FS_Aws_S3::deleteFile(const QByteArray &bucket, const QByteArray 
 bool S3FS_Aws_S3::deleteFile(const QByteArray &path) {
 	QUrl url("https://"+bucket+".s3.amazonaws.com/"+path);
 	request = QNetworkRequest(url);
+	verb = "DELETE";
 
-	signRequest("DELETE");
+	signRequest();
 
-	aws->http(this, QByteArrayLiteral("DELETE"), request);
+	aws->http(this, verb, request);
 	return true;
 }
 
@@ -125,7 +129,7 @@ void S3FS_Aws_S3::connectReply() {
 	connect(reply, SIGNAL(finished()), this, SLOT(requestFinished()));
 }
 
-void S3FS_Aws_S3::signRequest(const QByteArray &verb) {
+void S3FS_Aws_S3::signRequest() {
 	qDebug("AWS S3: Request %s %s", verb.data(), request.url().toString().toLatin1().data());
 	QByteArray date_header = QDateTime::currentDateTime().toString(QStringLiteral("ddd, dd MMM yyyy hh:mm:ss t")).toLatin1();
 
@@ -149,6 +153,11 @@ void S3FS_Aws_S3::signRequest(const QByteArray &verb) {
 }
 
 void S3FS_Aws_S3::requestFinished() {
+	if (reply->error() != QNetworkReply::NoError) {
+		qDebug("Network error, re-queuing");
+		aws->http(this, verb, request, request_body_buffer);
+		return;
+	}
 	reply_body = reply->readAll();
 //	qDebug("HTTP REPLY %s", reply_body.data());
 	finished(this); // because we're in the same thread, signal will be called immediately
