@@ -113,13 +113,13 @@ void S3FS::fuse_setattr(QtFuseRequest *req, fuse_ino_t ino, struct stat *attr, i
 	if (ino_o.isFile()) { // do not allow setting size on anything else than a file
 		if (to_set & FUSE_SET_ATTR_SIZE) s.st_size = attr->st_size; // TODO drop data that shouldn't be there anymore
 	}
-	if (to_set & FUSE_SET_ATTR_ATIME) s.st_atime = attr->st_atime;
-	if (to_set & FUSE_SET_ATTR_MTIME) s.st_mtime = attr->st_mtime;
 	if ((to_set & FUSE_SET_ATTR_ATIME_NOW) || (to_set & FUSE_SET_ATTR_MTIME_NOW)) {
 		time_t t = time(NULL);
 		if (to_set | FUSE_SET_ATTR_ATIME_NOW) s.st_atime = t;
 		if (to_set | FUSE_SET_ATTR_MTIME_NOW) s.st_mtime = t;
 	}
+	if (to_set & FUSE_SET_ATTR_ATIME) s.st_atime = attr->st_atime;
+	if (to_set & FUSE_SET_ATTR_MTIME) s.st_mtime = attr->st_mtime;
 
 	ino_o.setAttr(s);
 	store.storeInode(ino_o);
