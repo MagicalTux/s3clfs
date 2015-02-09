@@ -211,18 +211,15 @@ bool S3FS_Store::storeInode(const S3FS_Obj&o) {
 }
 
 void S3FS_Store::inodeUpdated(quint64 ino) {
-	if (inodes_to_update_1.contains(ino))
-		inodes_to_update_1.remove(ino);
-	inodes_to_update_2.insert(ino);
+	if (!inodes_to_update.contains(ino))
+		inodes_to_update.insert(ino);
 }
 
 void S3FS_Store::updateInodes() {
-	quint64 ino;
-	foreach(ino, inodes_to_update_1)
+	foreach(quint64 ino, inodes_to_update)
 		sendInodeToAws(ino);
 	
-	inodes_to_update_1 = inodes_to_update_2;
-	inodes_to_update_2.clear();
+	inodes_to_update.clear();
 }
 
 void S3FS_Store::sendInodeToAws(quint64 ino) {

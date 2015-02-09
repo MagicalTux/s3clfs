@@ -66,8 +66,7 @@ private:
 
 	quint64 makeInodeRev();
 
-	QSet<quint64> inodes_to_update_1;
-	QSet<quint64> inodes_to_update_2;
+	QSet<quint64> inodes_to_update;
 	QTimer inodes_updater;
 	QTimer cache_updater;
 	QMap<quint64, QList<Callback*> > inode_download_callback;
