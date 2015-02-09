@@ -1,5 +1,6 @@
 Make keyval store permanent
 Flush unused metadata/data from keyval store
+=> detect and handle pressure from available hard disk space
 Handle HTTP errors (server unreachable, server error, etc) by retrying a bit later
 Handle HTTP errors (missing files) by sending EIO
 Automatic file system checks on idle
