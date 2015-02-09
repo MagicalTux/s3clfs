@@ -163,6 +163,7 @@ void S3FS_Aws_S3::requestFinished() {
 	}
 	if (reply->error() != QNetworkReply::NoError) {
 		qDebug("Network error %s, re-queuing", qPrintable(reply->errorString()));
+		reply->deleteLater();
 		reply = NULL;
 		aws->http(this, verb, request, request_body_buffer);
 		return;
