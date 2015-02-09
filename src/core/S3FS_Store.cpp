@@ -48,6 +48,14 @@ S3FS_Store::S3FS_Store(const QByteArray &_bucket, const QByteArray &queue, QObje
 
 	connect(&cache_updater, SIGNAL(timeout()), this, SLOT(getInodesList()));
 	cache_updater.setSingleShot(true);
+
+	connect(&lastaccess_updater, SIGNAL(timeout()), this, SLOT(lastaccess_update()));
+	lastaccess_updater.setSingleShot(false);
+	lastaccess_updater.start(5000);
+
+	connect(&lastaccess_cleaner, SIGNAL(timeout()), this, SLOT(lastaccess_clean()));
+	lastaccess_cleaner.setSingleShot(false);
+	lastaccess_cleaner.start(1800000); // 30min
 }
 
 void S3FS_Store::gotNewFile(const QString &_bucket, const QString &file) {
@@ -129,7 +137,13 @@ void S3FS_Store::learnFile(const QString &name, bool in_list) {
 }
 
 void S3FS_Store::removeInodeFromCache(quint64 ino) {
+	INT_TO_BYTES(ino);
 	auto i = getInodeMetaIterator(ino);
+
+	// lastaccess
+	lastaccess_inode.remove(ino);
+	kv.remove(QByteArrayLiteral("\x11")+ino_b);
+
 	if (!i->isValid()) return;
 	do {
 		kv.remove(i->fullKey());
@@ -213,6 +227,7 @@ bool S3FS_Store::storeInode(const S3FS_Obj&o) {
 void S3FS_Store::inodeUpdated(quint64 ino) {
 	if (!inodes_to_update.contains(ino))
 		inodes_to_update.insert(ino);
+	lastaccess_inode.insert(ino);
 }
 
 void S3FS_Store::updateInodes() {
@@ -249,6 +264,7 @@ void S3FS_Store::sendInodeToAws(quint64 ino) {
 S3FS_Obj S3FS_Store::getInode(quint64 ino) {
 	INT_TO_BYTES(ino);
 	QByteArray key = QByteArrayLiteral("\x01") + ino_b;
+	lastaccess_inode.insert(ino);
 
 	return S3FS_Obj(kv.value(key));
 }
@@ -292,6 +308,7 @@ void S3FS_Store::callbackOnInodeCached(quint64 ino, Callback *cb) {
 void S3FS_Store::receivedInode(S3FS_Aws_S3*r) {
 	quint64 ino = r->property("_inode_num").toULongLong();
 	INT_TO_BYTES(ino);
+	lastaccess_inode.insert(ino);
 	QByteArray data = r->body();
 	if (data.isEmpty()) {
 		qDebug("Inode %llu missing!", ino);
@@ -323,6 +340,7 @@ QByteArray S3FS_Store::writeBlock(const QByteArray &buf) {
 
 	// compute hash
 	QByteArray hash = QCryptographicHash::hash(buf, algo);
+	lastaccess_data.insert(hash);
 
 	if (hasBlockLocally(hash)) return hash;
 
@@ -339,6 +357,7 @@ QByteArray S3FS_Store::writeBlock(const QByteArray &buf) {
 }
 
 QByteArray S3FS_Store::readBlock(const QByteArray &hash) {
+	lastaccess_data.insert(hash);
 	return kv.value(QByteArrayLiteral("\x02")+hash);
 }
 
@@ -347,6 +366,7 @@ bool S3FS_Store::hasBlockLocally(const QByteArray &hash) {
 }
 
 void S3FS_Store::callbackOnBlockCached(const QByteArray &block, Callback *cb) {
+	lastaccess_data.insert(block);
 	// we need to try to get that block
 	if (block_download_callback.contains(block)) {
 		block_download_callback[block].append(cb);
@@ -371,6 +391,7 @@ void S3FS_Store::receivedBlock(S3FS_Aws_S3*r) {
 	QByteArray block = r->property("_block_id").toByteArray();
 	QByteArray data = r->body();
 	kv.insert(QByteArrayLiteral("\x02")+block, data);
+	lastaccess_data.insert(block);
 
 	// call callbacks
 	QList<Callback*> list = block_download_callback.take(block);
@@ -382,12 +403,14 @@ void S3FS_Store::receivedBlock(S3FS_Aws_S3*r) {
 
 bool S3FS_Store::hasInodeMeta(quint64 ino, const QByteArray &key_sub) {
 	INT_TO_BYTES(ino);
+	lastaccess_inode.insert(ino);
 	QByteArray key = QByteArrayLiteral("\x01") + ino_b;
 	return kv.contains(key+key_sub);
 }
 
 QByteArray S3FS_Store::getInodeMeta(quint64 ino, const QByteArray &key_sub) {
 	INT_TO_BYTES(ino);
+	lastaccess_inode.insert(ino);
 	QByteArray key = QByteArrayLiteral("\x01") + ino_b;
 	return kv.value(key+key_sub);
 }
@@ -402,6 +425,7 @@ bool S3FS_Store::setInodeMeta(quint64 ino, const QByteArray &key_sub, const QByt
 
 S3FS_Store_MetaIterator *S3FS_Store::getInodeMetaIterator(quint64 ino) {
 	INT_TO_BYTES(ino);
+	lastaccess_inode.insert(ino);
 	QByteArray key = QByteArrayLiteral("\x01") + ino_b;
 	return new S3FS_Store_MetaIterator(&kv, key);
 }
@@ -440,5 +464,56 @@ quint64 S3FS_Store::makeInodeRev() {
 	}
 	last_inode_rev = new_inode_rev;
 	return new_inode_rev;
+}
+
+void S3FS_Store::lastaccess_update() {
+	quint64 t = QDateTime::currentMSecsSinceEpoch();
+	INT_TO_BYTES(t);
+	foreach(auto ino, lastaccess_inode) {
+		INT_TO_BYTES(ino);
+		kv.insert(QByteArrayLiteral("\x11")+ino_b, t_b);
+	}
+	foreach(auto block, lastaccess_data) {
+		kv.insert(QByteArrayLiteral("\x12")+block, t_b);
+	}
+	lastaccess_inode.clear();
+	lastaccess_data.clear();
+}
+
+void S3FS_Store::lastaccess_clean() {
+	lastaccess_update(); // start by making sure we have latest data
+	// We want to remove any block of data that hasn't been used for 1 hour, or any inode unused for 24 hours
+	auto i = new KeyvalIterator(&kv);
+	auto j = new KeyvalIterator(&kv);
+	i->find(QByteArrayLiteral("\x11")); // inodes
+
+	quint64 timeout_inodes = QDateTime::currentMSecsSinceEpoch() - 86400000; // 24h
+	quint64 timeout_blocks = QDateTime::currentMSecsSinceEpoch() - 3600000; // 1h
+	INT_TO_BYTES(timeout_inodes);
+	INT_TO_BYTES(timeout_blocks);
+
+	while((i->isValid()) && (i->key().at(0) == '\x11')) {
+		if (i->value() < timeout_inodes_b) {
+			qDebug("S3FS_Store: inode %s not accessed for 24 hours, removing from cache", i->key().mid(1).toHex().data());
+			QByteArray prefix = QByteArrayLiteral("\x01")+i->key().mid(1);
+			j->find(prefix);
+			while((j->isValid()) && (j->key().left(prefix.length()) == prefix)) {
+				kv.remove(j->key());
+				if (!j->next()) break;
+			}
+			kv.remove(i->key());
+		}
+		if (!i->next()) break;
+	}
+	delete j; // only for inodes
+	while((i->isValid()) && (i->key().at(0) == '\x12')) {
+		if (i->value() < timeout_blocks_b) {
+			qDebug("S3FS_Store: block %s not accessed for 1 hour, removing from cache", i->key().mid(1).toHex().data());
+			kv.remove(QByteArrayLiteral("\x02")+i->key().mid(1));
+			kv.remove(i->key());
+		}
+		if (!i->next()) break;
+	}
+	delete i;
 }
 

@@ -25,6 +25,7 @@ public:
 	void toFront();
 
 	bool find(const QByteArray &);
+	bool isValid();
 
 	void operator=(Keyval*);
 

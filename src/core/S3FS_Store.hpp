@@ -59,6 +59,9 @@ public slots:
 	void getInodesList();
 	void gotNewFile(const QString&,const QString&);
 
+	void lastaccess_update();
+	void lastaccess_clean();
+
 private:
 	void sendInodeToAws(quint64);
 	void inodeUpdated(quint64);
@@ -71,6 +74,12 @@ private:
 	QTimer cache_updater;
 	QMap<quint64, QList<Callback*> > inode_download_callback;
 	QMap<QByteArray, QList<Callback*> > block_download_callback;
+
+	// lastaccess pruning system
+	QTimer lastaccess_updater;
+	QTimer lastaccess_cleaner;
+	QSet<quint64> lastaccess_inode;
+	QSet<QByteArray> lastaccess_data;
 
 	bool aws_list_ready;
 	bool aws_format_ready;
