@@ -13,7 +13,7 @@
 	if (!store.hasInodeLocally(ino)) { store.callbackOnInodeCached(ino, CALLBACK()); return; } S3FS_Obj ino ## _o = store.getInode(ino); \
 	if (!ino ## _o.isValid()) { req->error(ENOENT); return; }
 
-S3FS::S3FS(const QByteArray &_bucket, const QByteArray &path): fuse(_bucket, path, this), store(_bucket) {
+S3FS::S3FS(const QByteArray &_bucket, const QByteArray &path, const QByteArray &queue): fuse(_bucket, path, this), store(_bucket, queue) {
 	bucket = _bucket;
 	is_ready = false;
 

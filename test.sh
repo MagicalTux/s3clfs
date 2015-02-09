@@ -13,4 +13,4 @@ if [ ! -d fuse ]; then
 	mkdir fuse
 fi
 
-exec ./s3clfs s3clfs fuse
+exec ./s3clfs -q https://sqs.ap-northeast-1.amazonaws.com/133293341851/bucket-s3clfs-1 s3clfs fuse

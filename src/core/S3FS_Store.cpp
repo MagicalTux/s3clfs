@@ -1,6 +1,7 @@
 #include "S3FS_Store.hpp"
 #include "S3FS_Obj.hpp"
 #include "S3FS_Aws_S3.hpp"
+#include "S3FS_Aws_SQS.hpp"
 #include "S3FS_Store_MetaIterator.hpp"
 #include "Callback.hpp"
 #include <QDir>
@@ -9,7 +10,7 @@
 
 #define INT_TO_BYTES(_x) QByteArray _x ## _b; { QDataStream s_tmp(&_x ## _b, QIODevice::WriteOnly); s_tmp << _x; }
 
-S3FS_Store::S3FS_Store(const QByteArray &_bucket, QObject *parent): QObject(parent) {
+S3FS_Store::S3FS_Store(const QByteArray &_bucket, const QByteArray &queue, QObject *parent): QObject(parent) {
 	bucket = _bucket;
 	aws_list_ready = false;
 	aws_format_ready = false;
@@ -29,6 +30,10 @@ S3FS_Store::S3FS_Store(const QByteArray &_bucket, QObject *parent): QObject(pare
 	if (!aws->isValid()) {
 		QTimer::singleShot(1000, this, SLOT(readyStateWithoutAws()));
 		return;
+	}
+
+	if (!queue.isEmpty()) {
+		aws_sqs = new S3FS_Aws_SQS(queue, aws);
 	}
 
 	// test

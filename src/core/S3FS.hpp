@@ -9,7 +9,7 @@ class S3FS: public QObject {
 	Q_OBJECT
 
 public:
-	S3FS(const QByteArray &bucket, const QByteArray &path);
+	S3FS(const QByteArray &bucket, const QByteArray &path, const QByteArray &queue);
 	void format();
 	bool isReady() const;
 	S3FS_Store &getStore();
