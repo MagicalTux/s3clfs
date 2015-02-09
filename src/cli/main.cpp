@@ -15,7 +15,7 @@ int main(int argc, char *argv[]) {
 	parser.addPositionalArgument("bucket", QCoreApplication::translate("main", "Name of bucket on AWS S3"));
 	parser.addPositionalArgument("path", QCoreApplication::translate("main", "Path where to mount file system"));
 	parser.addOption({{"o", "options"}, QCoreApplication::translate("main", "comma-separated list of mount options"), "options"}); // if compilation fails here, make sure you have Qt 5.4+
-	parser.addOption({{"q", "queue"}, QCoreApplication::translate("main", "Name of SQS queue holding events for this mount"), "queue"});
+	parser.addOption({{"q", "queue"}, QCoreApplication::translate("main", "URL of SQS queue holding events for this bucket"), "queue"});
 
 	parser.process(app);
 
