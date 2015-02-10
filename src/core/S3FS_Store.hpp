@@ -33,8 +33,7 @@ class S3FS_Store: public QObject {
 	Q_OBJECT
 
 public:
-	S3FS_Store(const QByteArray &bucket, const QByteArray &queue, QObject *parent = 0);
-	~S3FS_Store();
+	S3FS_Store(const QByteArray &bucket, const QByteArray &queue, const QString &cache, QObject *parent = 0);
 
 	// filesystem config
 	const QVariantMap &getConfig();
@@ -48,6 +47,7 @@ public:
 	bool hasInodeLocally(quint64);
 	void callbackOnInodeCached(quint64, Callback*);
 	void removeInodeFromCache(quint64);
+	void brokenInode(quint64);
 
 	// blocks
 	QByteArray writeBlock(const QByteArray &buf);
@@ -76,6 +76,9 @@ public slots:
 	void getInodesList();
 	void gotNewFile(const QString&,const QString&);
 
+	void lastaccess_update();
+	void lastaccess_clean();
+
 private:
 	void sendInodeToAws(quint64);
 	void inodeUpdated(quint64);
@@ -88,6 +91,12 @@ private:
 	QTimer cache_updater;
 	QMap<quint64, QList<Callback*> > inode_download_callback;
 	QMap<QByteArray, QList<Callback*> > block_download_callback;
+
+	// lastaccess pruning system
+	QTimer lastaccess_updater;
+	QTimer lastaccess_cleaner;
+	QSet<quint64> lastaccess_inode;
+	QSet<QByteArray> lastaccess_data;
 
 	bool aws_list_ready;
 	bool aws_format_ready;

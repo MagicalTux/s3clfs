@@ -28,9 +28,9 @@
 #define GET_INODE(ino) \
 	if (!store.hasInode(ino)) { req->error(ENOENT); return; } \
 	if (!store.hasInodeLocally(ino)) { store.callbackOnInodeCached(ino, CALLBACK()); return; } S3FS_Obj ino ## _o = store.getInode(ino); \
-	if (!ino ## _o.isValid()) { store.removeInodeFromCache(ino); req->error(ENOENT); return; }
+	if ((!ino ## _o.isValid()) || (ino ## _o.getInode() != ino)) { store.brokenInode(ino); QTimer::singleShot(100, CALLBACK(), SLOT(trigger())); return; }
 
-S3FS::S3FS(const QByteArray &_bucket, const QByteArray &path, const QByteArray &queue): fuse(_bucket, path, this), store(_bucket, queue) {
+S3FS::S3FS(const QByteArray &_bucket, const QByteArray &path, const QByteArray &queue, const QByteArray &fuse_opts, const QString &cache): fuse(_bucket, path, fuse_opts, this), store(_bucket, queue, cache) {
 	bucket = _bucket;
 	is_ready = false;
 
@@ -102,6 +102,13 @@ void S3FS::fuse_lookup(QtFuseRequest *req, fuse_ino_t ino, const QByteArray &pat
 	QDataStream(res_ino_bin) >> res_ino;
 	if (res_ino <= 1) {
 		qDebug("S3FS: Corrupted filesystem, directory contains entry pointing to inode %llu", res_ino);
+		req->error(ENOENT);
+		return;
+	}
+	if (!store.hasInode(res_ino)) {
+		// corrupted inode?
+		qDebug("S3FS: Entry %s of inode %lu is corrupted, removed from tree", path.data(), ino);
+		store.removeInodeMeta(ino, path); // remove reference to inode
 		req->error(ENOENT);
 		return;
 	}
@@ -735,15 +742,19 @@ inline bool S3FS::real_write(S3FS_Obj &ino, const QByteArray &buf, off_t offset,
 }
 
 void S3FS::fuse_write_buf(QtFuseRequest *req, fuse_ino_t ino, struct fuse_bufvec *bufv, off_t off, struct fuse_file_info *fi) {
+// TODO re-entry to this function won't work, so copy buf now and pass it to fuse_write
+#if 0
 	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, ino), Q_ARG(struct fuse_bufvec*,bufv), Q_ARG(off_t,off), Q_ARG(struct fuse_file_info *,fi));
 	WAIT_READY();
 	GET_INODE(ino);
+
+	qDebug("S3FS::write_buf bufv=%p", bufv);
 
 //	qDebug("S3FS::write_buf called");
 //	qDebug("S3FS::write_buf count=%ld idx=%ld off=%ld", bufv->count, bufv->idx, bufv->off);
 
 //	TODO we might want to handle fuse's bufvec format for efficient writing. In the meantime we'll just do this the easy way
-
+#endif
 	struct fuse_bufvec dst = FUSE_BUFVEC_INIT(fuse_buf_size(bufv));
 	QByteArray dst_buf;
 	dst_buf.resize(fuse_buf_size(bufv));

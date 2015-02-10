@@ -1,5 +1,6 @@
 #include <QCoreApplication>
 #include <QCommandLineParser>
+#include <QStandardPaths>
 #include <S3FS.hpp>
 
 /*  S3ClFS - AWS S3 backed cluster filesystem
@@ -33,6 +34,7 @@ int main(int argc, char *argv[]) {
 	parser.addPositionalArgument("path", QCoreApplication::translate("main", "Path where to mount file system"));
 	parser.addOption({{"o", "options"}, QCoreApplication::translate("main", "comma-separated list of mount options"), "options"}); // if compilation fails here, make sure you have Qt 5.4+
 	parser.addOption({{"q", "queue"}, QCoreApplication::translate("main", "URL of SQS queue holding events for this bucket"), "queue"});
+	parser.addOption({{"c", "cache"}, QCoreApplication::translate("main", "Where to store cache, default %1/s3clfs-<bucket>").arg(QStandardPaths::writableLocation(QStandardPaths::TempLocation)), "cache"});
 
 	parser.process(app);
 
@@ -43,7 +45,7 @@ int main(int argc, char *argv[]) {
 	}
 	// bucket is args.at(0), path is args.at(1)
 	
-	S3FS s3clfs(args.at(0).toLocal8Bit(), args.at(1).toLocal8Bit(), parser.value(QStringLiteral("queue")).toLocal8Bit());
+	S3FS s3clfs(args.at(0).toLocal8Bit(), args.at(1).toLocal8Bit(), parser.value(QStringLiteral("queue")).toLocal8Bit(), parser.value(QStringLiteral("options")).toLocal8Bit(), parser.value(QStringLiteral("cache")));
 
 	return app.exec();
 }

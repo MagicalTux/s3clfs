@@ -106,6 +106,16 @@ bool KeyvalIterator::previous() {
 	return i->Valid();
 }
 
+bool KeyvalIterator::isValid() {
+	switch(location) {
+		case 1: i->Prev(); break;
+		case -1: i->Next(); break;
+	}
+	location = 0;
+
+	return i->Valid();
+}
+
 QByteArray KeyvalIterator::key() {
 	switch(location) {
 		case 1: i->Prev(); break;

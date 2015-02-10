@@ -38,7 +38,7 @@ class QtFuseRequest;
 class QtFuse: public QObject {
 	Q_OBJECT;
 public:
-	QtFuse(const QByteArray &mp, const QByteArray &src = QByteArrayLiteral("QtFuse"));
+	QtFuse(const QByteArray &mp, const QByteArray &src = QByteArrayLiteral("QtFuse"), const QByteArray &opts = QByteArray());
 	~QtFuse();
 	void init();
 
@@ -95,6 +95,7 @@ protected:
 private:
 	QByteArray mp; // mount point
 	QByteArray src;
+	QByteArray opts;
 	pthread_t thread;
 	bool fuse_cleaned;
 
