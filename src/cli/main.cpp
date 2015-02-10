@@ -23,7 +23,7 @@
 int main(int argc, char *argv[]) {
 	QCoreApplication app(argc, argv);
 	QCoreApplication::setApplicationName("s3clfs");
-	QCoreApplication::setApplicationVersion("1.0");
+	QCoreApplication::setApplicationVersion("0.1");
 
 	// arguments
 	QCommandLineParser parser;
