@@ -11,3 +11,10 @@ Automatic file system checks on idle
 => also detect unused data hashes, and purge
 => detect missing inodes, and remove links (or create empty inodes instead)
 => detect missing pieces of data, and remove from list (and/or move corrupted file away)
+
+Add better configuration system (config file?)
+
+Improve passing of config params within the system
+
+Implement encryption and compression
+
