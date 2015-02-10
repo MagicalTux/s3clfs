@@ -110,7 +110,8 @@ void S3FS_Store::receivedInodeList(S3FS_Aws_S3 *r) {
 		return;
 	}
 
-	cache_updater.start(900000); // 15min
+	if (cfg->listFetchInterval())
+		cache_updater.start(cfg->listFetchInterval() * 1000);
 	if (aws_list_ready) return;
 	aws_list_ready = true;
 	if (aws_format_ready && aws_list_ready) ready();
