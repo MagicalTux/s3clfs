@@ -1,7 +1,3 @@
-#include "S3Fuse.hpp"
-#include "S3FS.hpp"
-#include "QtFuseRequest.hpp"
-
 /*  S3ClFS - AWS S3 backed cluster filesystem
  *  Copyright (C) 2015 Mark Karpeles
  *
@@ -18,8 +14,12 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include "S3Fuse.hpp"
+#include "S3FS.hpp"
+#include "S3FS_Config.hpp"
+#include "QtFuseRequest.hpp"
 
-S3Fuse::S3Fuse(const QByteArray &bucket, const QByteArray &path, const QByteArray &opts, S3FS *_parent): QtFuse(path, bucket, opts) {
+S3Fuse::S3Fuse(S3FS_Config *cfg, S3FS *_parent): QtFuse(cfg->mountPath(), cfg->bucket(), cfg->mountOptions()) {
 	parent = _parent;
 }
 

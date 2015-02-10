@@ -2,6 +2,7 @@
 #include <QCommandLineParser>
 #include <QStandardPaths>
 #include <S3FS.hpp>
+#include <S3FS_Config.hpp>
 
 /*  S3ClFS - AWS S3 backed cluster filesystem
  *  Copyright (C) 2015 Mark Karpeles
@@ -44,8 +45,15 @@ int main(int argc, char *argv[]) {
 		Q_UNREACHABLE();
 	}
 	// bucket is args.at(0), path is args.at(1)
-	
-	S3FS s3clfs(args.at(0).toLocal8Bit(), args.at(1).toLocal8Bit(), parser.value(QStringLiteral("queue")).toLocal8Bit(), parser.value(QStringLiteral("options")).toLocal8Bit(), parser.value(QStringLiteral("cache")));
+
+	S3FS_Config cfg;
+	cfg.setBucket(args.at(0).toLocal8Bit());
+	cfg.setMountPath(args.at(1).toLocal8Bit());
+	cfg.setMountOptions(parser.value(QStringLiteral("options")).toLocal8Bit());
+	cfg.setQueue(parser.value(QStringLiteral("queue")).toLocal8Bit());
+	cfg.setCachePath(parser.value(QStringLiteral("cache")));
+
+	S3FS s3clfs(&cfg);
 
 	return app.exec();
 }

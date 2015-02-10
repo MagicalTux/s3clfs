@@ -26,6 +26,7 @@ class S3FS_Obj; // inode
 class S3FS_Aws;
 class S3FS_Aws_S3;
 class S3FS_Aws_SQS;
+class S3FS_Config;
 class Callback;
 class S3FS_Store_MetaIterator;
 
@@ -33,7 +34,7 @@ class S3FS_Store: public QObject {
 	Q_OBJECT
 
 public:
-	S3FS_Store(const QByteArray &bucket, const QByteArray &queue, const QString &cache, QObject *parent = 0);
+	S3FS_Store(S3FS_Config *cfg, QObject *parent = 0);
 
 	// filesystem config
 	const QVariantMap &getConfig();
@@ -110,5 +111,6 @@ private:
 	S3FS_Aws_SQS *aws_sqs;
 	quint64 last_inode_rev;
 	QRegExp file_match;
+	S3FS_Config *cfg;
 };
 

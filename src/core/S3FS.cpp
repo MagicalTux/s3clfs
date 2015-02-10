@@ -30,8 +30,8 @@
 	if (!store.hasInodeLocally(ino)) { store.callbackOnInodeCached(ino, CALLBACK()); return; } S3FS_Obj ino ## _o = store.getInode(ino); \
 	if ((!ino ## _o.isValid()) || (ino ## _o.getInode() != ino)) { store.brokenInode(ino); QTimer::singleShot(100, CALLBACK(), SLOT(trigger())); return; }
 
-S3FS::S3FS(const QByteArray &_bucket, const QByteArray &path, const QByteArray &queue, const QByteArray &fuse_opts, const QString &cache): fuse(_bucket, path, fuse_opts, this), store(_bucket, queue, cache) {
-	bucket = _bucket;
+S3FS::S3FS(S3FS_Config *_cfg): fuse(_cfg, this), store(_cfg) {
+	cfg = _cfg;
 	is_ready = false;
 
 	connect(&store, SIGNAL(ready()), this, SLOT(storeIsReady()));

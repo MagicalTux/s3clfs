@@ -1,8 +1,3 @@
-#include <QObject>
-#include "S3Fuse.hpp"
-#include "S3FS_Store.hpp"
-#include "Keyval.hpp"
-
 /*  S3ClFS - AWS S3 backed cluster filesystem
  *  Copyright (C) 2015 Mark Karpeles
  *
@@ -20,13 +15,20 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <QObject>
+#include "S3Fuse.hpp"
+#include "S3FS_Store.hpp"
+#include "Keyval.hpp"
+
 #pragma once
+
+class S3FS_Config;
 
 class S3FS: public QObject {
 	Q_OBJECT
 
 public:
-	S3FS(const QByteArray &bucket, const QByteArray &path, const QByteArray &queue, const QByteArray &fuse_opts, const QString &cache);
+	S3FS(S3FS_Config *cfg);
 	void format();
 	bool isReady() const;
 	S3FS_Store &getStore();
@@ -65,8 +67,8 @@ protected:
 private:
 	S3Fuse fuse;
 	S3FS_Store store;
-	QByteArray bucket;
 	bool is_ready;
 	quint64 last_inode;
+	S3FS_Config *cfg;
 };
 

@@ -1,13 +1,3 @@
-#include "S3FS_Store.hpp"
-#include "S3FS_Obj.hpp"
-#include "S3FS_Aws_S3.hpp"
-#include "S3FS_Aws_SQS.hpp"
-#include "S3FS_Store_MetaIterator.hpp"
-#include "Callback.hpp"
-#include <QDir>
-#include <QUuid>
-#include <QDataStream>
-
 /*  S3ClFS - AWS S3 backed cluster filesystem
  *  Copyright (C) 2015 Mark Karpeles
  *
@@ -24,17 +14,30 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include "S3FS_Store.hpp"
+#include "S3FS_Obj.hpp"
+#include "S3FS_Config.hpp"
+#include "S3FS_Aws_S3.hpp"
+#include "S3FS_Aws_SQS.hpp"
+#include "S3FS_Store_MetaIterator.hpp"
+#include "Callback.hpp"
+#include <QDir>
+#include <QUuid>
+#include <QDataStream>
+
 
 #define INT_TO_BYTES(_x) QByteArray _x ## _b; { QDataStream s_tmp(&_x ## _b, QIODevice::WriteOnly); s_tmp << _x; }
 
-S3FS_Store::S3FS_Store(const QByteArray &_bucket, const QByteArray &queue, const QString &cache_path, QObject *parent): QObject(parent) {
-	bucket = _bucket;
+S3FS_Store::S3FS_Store(S3FS_Config *_cfg, QObject *parent): QObject(parent) {
+	cfg = _cfg;
+	bucket = cfg->bucket();
 	aws_list_ready = false;
 	aws_format_ready = false;
 	last_inode_rev = 0;
 	file_match = QRegExp("metadata/[0-9a-f]/[0-9a-f]{2}/([0-9a-f]{16})/([0-9a-f]{16})\\.dat");
 	algo = QCryptographicHash::Sha3_256; // default value
 	// generate filename
+	QString cache_path = cfg->cachePath();
 	if (cache_path.isEmpty()) {
 		kv_location = QDir::temp().filePath(QString("s3clfs-")+bucket);
 	} else {
@@ -54,6 +57,7 @@ S3FS_Store::S3FS_Store(const QByteArray &_bucket, const QByteArray &queue, const
 		return;
 	}
 
+	QByteArray queue = cfg->queue();
 	if (!queue.isEmpty()) {
 		aws_sqs = new S3FS_Aws_SQS(queue, aws);
 		connect(aws_sqs, SIGNAL(newFile(const QString&,const QString&)), this, SLOT(gotNewFile(const QString&,const QString&)));
