@@ -1,10 +1,3 @@
-#include "S3FS.hpp"
-#include "S3FS_Obj.hpp"
-#include "QtFuseRequest.hpp"
-#include "Callback.hpp"
-#include "S3FS_Store_MetaIterator.hpp"
-#include <QDateTime>
-
 /*  S3ClFS - AWS S3 backed cluster filesystem
  *  Copyright (C) 2015 Mark Karpeles
  *
@@ -21,6 +14,13 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include "S3FS.hpp"
+#include "S3FS_Obj.hpp"
+#include "S3FS_Config.hpp"
+#include "QtFuseRequest.hpp"
+#include "Callback.hpp"
+#include "S3FS_Store_MetaIterator.hpp"
+#include <QDateTime>
 
 #define CALLBACK() new Callback(this, __func__, func_args)
 #define METHOD_ARGS(...) QList<QGenericArgument> func_args = {__VA_ARGS__}
@@ -33,6 +33,7 @@
 S3FS::S3FS(S3FS_Config *_cfg): fuse(_cfg, this), store(_cfg) {
 	cfg = _cfg;
 	is_ready = false;
+	cluster_node_id = cfg->clusterId();
 
 	connect(&store, SIGNAL(ready()), this, SLOT(storeIsReady()));
 
@@ -773,7 +774,7 @@ void S3FS::fuse_write_buf(QtFuseRequest *req, fuse_ino_t ino, struct fuse_bufvec
 }
 
 quint64 S3FS::makeInode() {
-	quint64 new_inode = QDateTime::currentMSecsSinceEpoch()*1000;
+	quint64 new_inode = QDateTime::currentMSecsSinceEpoch()*1000 + cluster_node_id;
 
 	if (new_inode <= last_inode) { // ensure we are incremental
 		new_inode = last_inode+100;

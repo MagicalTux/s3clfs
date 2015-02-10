@@ -70,5 +70,6 @@ private:
 	bool is_ready;
 	quint64 last_inode;
 	S3FS_Config *cfg;
+	int cluster_node_id;
 };
 

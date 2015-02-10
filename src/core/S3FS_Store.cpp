@@ -36,7 +36,9 @@ S3FS_Store::S3FS_Store(S3FS_Config *_cfg, QObject *parent): QObject(parent) {
 	last_inode_rev = 0;
 	file_match = QRegExp("metadata/[0-9a-f]/[0-9a-f]{2}/([0-9a-f]{16})/([0-9a-f]{16})\\.dat");
 	algo = QCryptographicHash::Sha3_256; // default value
-	// generate filename
+	cluster_node_id = cfg->clusterId();
+
+	// location of leveldb store
 	QString cache_path = cfg->cachePath();
 	if (cache_path.isEmpty()) {
 		kv_location = QDir::temp().filePath(QString("s3clfs-")+bucket);
@@ -482,7 +484,7 @@ bool S3FS_Store::clearInodeMeta(quint64 ino) {
 }
 
 quint64 S3FS_Store::makeInodeRev() {
-	quint64 new_inode_rev = QDateTime::currentMSecsSinceEpoch()*1000;
+	quint64 new_inode_rev = QDateTime::currentMSecsSinceEpoch()*1000 + cluster_node_id;
 
 	if (new_inode_rev <= last_inode_rev) { // ensure we are incremental
 		new_inode_rev = last_inode_rev+100;

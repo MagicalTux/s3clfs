@@ -102,6 +102,7 @@ private:
 	bool aws_list_ready;
 	bool aws_format_ready;
 
+	int cluster_node_id;
 	QString kv_location;
 	Keyval kv; // local cache
 	QByteArray bucket;
