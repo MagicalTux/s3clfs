@@ -1,6 +1,11 @@
 detect and handle pressure from available hard disk space by removing oldest data
+
 Handle HTTP errors (server unreachable, server error, etc) by retrying a bit later
+
+Handle HTTP errors (access denied) by exiting and warning user
+
 Handle HTTP errors (missing files) by sending EIO
+
 Automatic file system checks on idle
 => build mesh of inodes, detect orphan inodes and purge
 => also detect unused data hashes, and purge
