@@ -14,7 +14,5 @@ Automatic file system checks on idle
 
 Add better configuration system (config file?)
 
-Improve passing of config params within the system
-
 Implement encryption and compression
 
