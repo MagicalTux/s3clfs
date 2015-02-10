@@ -5,6 +5,8 @@ S3 Cluster FS
 Cache-enabled file system backed by S3, with support for multiple hosts
 accessing at the same time.
 
+Licensed under GPLv3. See attached LICENSE file for details.
+
 ## Compiling
 
 	/usr/lib/qt5/bin/qmake
