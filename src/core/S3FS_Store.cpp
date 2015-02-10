@@ -37,6 +37,8 @@ S3FS_Store::S3FS_Store(S3FS_Config *_cfg, QObject *parent): QObject(parent) {
 	file_match = QRegExp("metadata/[0-9a-f]/[0-9a-f]{2}/([0-9a-f]{16})/([0-9a-f]{16})\\.dat");
 	algo = QCryptographicHash::Sha3_256; // default value
 	cluster_node_id = cfg->clusterId();
+	expire_blocks = cfg->expireBlocks();
+	expire_inodes = cfg->expireInodes();
 
 	// location of leveldb store
 	QString cache_path = cfg->cachePath();
@@ -514,8 +516,8 @@ void S3FS_Store::lastaccess_clean() {
 	auto j = new KeyvalIterator(&kv);
 	i->find(QByteArrayLiteral("\x11")); // inodes
 
-	quint64 timeout_inodes = QDateTime::currentMSecsSinceEpoch() - 86400000; // 24h
-	quint64 timeout_blocks = QDateTime::currentMSecsSinceEpoch() - 3600000; // 1h
+	quint64 timeout_inodes = QDateTime::currentMSecsSinceEpoch() - expire_inodes*1000; // default 7 days
+	quint64 timeout_blocks = QDateTime::currentMSecsSinceEpoch() - expire_blocks*1000; // default 1 day
 	INT_TO_BYTES(timeout_inodes);
 	INT_TO_BYTES(timeout_blocks);
 

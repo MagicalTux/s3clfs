@@ -98,6 +98,8 @@ private:
 	QTimer lastaccess_cleaner;
 	QSet<quint64> lastaccess_inode;
 	QSet<QByteArray> lastaccess_data;
+	quint64 expire_blocks; // expiration of cached blocks, in seconds
+	quint64 expire_inodes; // expiration of cached inodes, in seconds
 
 	bool aws_list_ready;
 	bool aws_format_ready;

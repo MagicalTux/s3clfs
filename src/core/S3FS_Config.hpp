@@ -22,12 +22,20 @@ public:
 	const QString &cachePath() const;
 	void setCachePath(const QString &);
 
+	quint64 expireBlocks() const;
+	void setExpireBlocks(quint64);
+
+	quint64 expireInodes() const;
+	void setExpireInodes(quint64);
+
 private:
-	int cluster_id;
-	QByteArray mount_options;
-	QByteArray bucket_name;
-	QByteArray mount_path;
-	QByteArray queue_url;
-	QString cache_path;
+	int cluster_id; // node id within cluster
+	QByteArray mount_options; // mount options (allow_other, etc)
+	QByteArray bucket_name; // name of AWS S3 bucket
+	QByteArray mount_path; // path where to mount fuse filesystem
+	QByteArray queue_url; // URL of SQS queue (connected to SNS, connected to bucket notifications)
+	QString cache_path; // Path where to store leveldb
+	quint64 expire_blocks; // expiration of cached blocks, in seconds
+	quint64 expire_inodes; // expiration of cached inodes, in seconds
 };
 

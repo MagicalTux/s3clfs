@@ -2,6 +2,8 @@
 
 S3FS_Config::S3FS_Config() {
 	cluster_id = 0;
+	expire_blocks = 86400;
+	expire_inodes = 86400*7;
 }
 
 int S3FS_Config::clusterId() const {
@@ -52,3 +54,18 @@ void S3FS_Config::setCachePath(const QString &p) {
 	cache_path = p;
 }
 
+quint64 S3FS_Config::expireBlocks() const {
+	return expire_blocks;
+}
+
+void S3FS_Config::setExpireBlocks(quint64 e) {
+	expire_blocks = e;
+}
+
+quint64 S3FS_Config::expireInodes() const {
+	return expire_inodes;
+}
+
+void S3FS_Config::setExpireInodes(quint64 e) {
+	expire_inodes = e;
+}
