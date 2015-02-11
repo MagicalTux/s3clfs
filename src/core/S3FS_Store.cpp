@@ -370,12 +370,19 @@ QByteArray S3FS_Store::writeBlock(const QByteArray &buf) {
 
 	// compute hash
 	QByteArray hash = QCryptographicHash::hash(buf, algo);
-	lastaccess_data.insert(hash);
 
-	if (hasBlockLocally(hash)) return hash;
+	if (hasBlockLocally(hash)) {
+		lastaccess_data.insert(hash);
+		blocks_cache.insert(hash, new QByteArray(buf));
+		return hash;
+	}
+	blocks_cache.insert(hash, new QByteArray(buf));
 
-	if (!kv.insert(QByteArrayLiteral("\x02")+hash, buf))
-		return QByteArray();
+	if (cfg->cacheData()) {
+		lastaccess_data.insert(hash);
+		if (!kv.insert(QByteArrayLiteral("\x02")+hash, buf))
+			return QByteArray();
+	}
 
 	// storage
 	QByteArray hash_hex = hash.toHex();
@@ -388,10 +395,12 @@ QByteArray S3FS_Store::writeBlock(const QByteArray &buf) {
 
 QByteArray S3FS_Store::readBlock(const QByteArray &hash) {
 	lastaccess_data.insert(hash);
+	if (blocks_cache.contains(hash)) return *blocks_cache.object(hash);
 	return kv.value(QByteArrayLiteral("\x02")+hash);
 }
 
 bool S3FS_Store::hasBlockLocally(const QByteArray &hash) {
+	if (blocks_cache.contains(hash)) return true;
 	return kv.contains(QByteArrayLiteral("\x02")+hash);
 }
 
@@ -420,8 +429,11 @@ void S3FS_Store::callbackOnBlockCached(const QByteArray &block, Callback *cb) {
 void S3FS_Store::receivedBlock(S3FS_Aws_S3*r) {
 	QByteArray block = r->property("_block_id").toByteArray();
 	QByteArray data = r->body();
-	kv.insert(QByteArrayLiteral("\x02")+block, data);
-	lastaccess_data.insert(block);
+	if (cfg->cacheData()) {
+		kv.insert(QByteArrayLiteral("\x02")+block, data);
+		lastaccess_data.insert(block);
+	}
+	blocks_cache.insert(block, new QByteArray(data));
 
 	// call callbacks
 	QList<Callback*> list = block_download_callback.take(block);

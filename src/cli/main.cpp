@@ -37,6 +37,7 @@ int main(int argc, char *argv[]) {
 	parser.addOption({{"q", "queue"}, QCoreApplication::translate("main", "URL of SQS queue holding events for this bucket."), "queue"});
 	parser.addOption({{"c", "cache"}, QCoreApplication::translate("main", "Where to store cache, default %1/s3clfs-<bucket>").arg(QStandardPaths::writableLocation(QStandardPaths::TempLocation)), "cache"});
 	parser.addOption({"quick-forget", QCoreApplication::translate("main", "Quickly purge data from the database. Useful if used as rsync target only.")});
+	parser.addOption({"disable-data-cache", QCoreApplication::translate("main", "Do not keep data in the LevelDB cache.")});
 
 	parser.process(app);
 
@@ -54,6 +55,7 @@ int main(int argc, char *argv[]) {
 	cfg.setQueue(parser.value(QStringLiteral("queue")).toLocal8Bit());
 	cfg.setCachePath(parser.value(QStringLiteral("cache")));
 	if (parser.isSet("quick-forget")) cfg.setExpireBlocks(1800); // 30min
+	if (parser.isSet("disable-data-cache")) cfg.setCacheData(false);
 
 	S3FS s3clfs(&cfg);
 

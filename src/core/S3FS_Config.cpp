@@ -5,6 +5,7 @@ S3FS_Config::S3FS_Config() {
 	expire_blocks = 86400;
 	expire_inodes = 86400*7;
 	list_fetch_interval = 3600*6;
+	cache_data = true;
 }
 
 int S3FS_Config::clusterId() const {
@@ -77,5 +78,13 @@ quint64 S3FS_Config::listFetchInterval() const {
 
 void S3FS_Config::setListFetchInterval(quint64 i) {
 	list_fetch_interval = i;
+}
+
+bool S3FS_Config::cacheData() const {
+	return cache_data;
+}
+
+void S3FS_Config::setCacheData(bool b) {
+	cache_data = b;
 }
 

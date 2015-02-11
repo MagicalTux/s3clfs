@@ -1,10 +1,3 @@
-#include <QObject>
-#include <QCryptographicHash>
-#include "Keyval.hpp"
-#include <QVariant>
-#include <QSet>
-#include <QTimer>
-
 /*  S3ClFS - AWS S3 backed cluster filesystem
  *  Copyright (C) 2015 Mark Karpeles
  *
@@ -21,6 +14,13 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <QObject>
+#include <QCryptographicHash>
+#include "Keyval.hpp"
+#include <QVariant>
+#include <QSet>
+#include <QTimer>
+#include <QCache>
 
 class S3FS_Obj; // inode
 class S3FS_Aws;
@@ -92,6 +92,7 @@ private:
 	QTimer cache_updater;
 	QMap<quint64, QList<Callback*> > inode_download_callback;
 	QMap<QByteArray, QList<Callback*> > block_download_callback;
+	QCache<QByteArray, QByteArray> blocks_cache;
 
 	// lastaccess pruning system
 	QTimer lastaccess_updater;

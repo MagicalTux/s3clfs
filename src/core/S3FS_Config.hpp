@@ -31,6 +31,9 @@ public:
 	quint64 listFetchInterval() const;
 	void setListFetchInterval(quint64);
 
+	bool cacheData() const;
+	void setCacheData(bool);
+
 private:
 	int cluster_id; // node id within cluster
 	QByteArray mount_options; // mount options (allow_other, etc)
@@ -41,5 +44,6 @@ private:
 	quint64 expire_blocks; // expiration of cached blocks, in seconds
 	quint64 expire_inodes; // expiration of cached inodes, in seconds
 	quint64 list_fetch_interval; // how often to re-fetch the inodes list on S3
+	bool cache_data;
 };
 
