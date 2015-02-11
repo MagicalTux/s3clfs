@@ -16,3 +16,4 @@ Add better configuration system (config file?)
 
 Implement encryption and compression
 
+Limit maximum pending number of AWS queries and block if too many
