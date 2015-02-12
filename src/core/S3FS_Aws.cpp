@@ -149,7 +149,7 @@ void S3FS_Aws::httpV4(QObject *caller, const QByteArray &verb, const QByteArray 
 		QMetaObject::invokeMethod(caller, "requestStarted", Q_ARG(QNetworkReply*, reply));
 		return;
 	}
-	if ((!overload_status) && (http_running.size() > 10000)) {
+	if ((!overload_status) && (http_queue.size() > 10000)) {
 		// signal overload
 		overload_status = true;
 		overloadStatus(overload_status);
@@ -175,7 +175,7 @@ void S3FS_Aws::http(QObject *caller, const QByteArray &verb, const QNetworkReque
 		QMetaObject::invokeMethod(caller, "requestStarted", Q_ARG(QNetworkReply*, reply));
 		return;
 	}
-	if ((!overload_status) && (http_running.size() > 10000)) {
+	if ((!overload_status) && (http_queue.size() > 10000)) {
 		// signal overload
 		overload_status = true;
 		overloadStatus(overload_status);
@@ -191,7 +191,7 @@ void S3FS_Aws::http(QObject *caller, const QByteArray &verb, const QNetworkReque
 
 void S3FS_Aws::replyDestroyed(QObject *obj) {
 	http_running.remove((QNetworkReply*)obj);
-	if ((overload_status) && (http_running.size() < 5000)) {
+	if ((overload_status) && (http_queue.size() < 5000)) {
 		// signal overload
 		overload_status = false;
 		overloadStatus(overload_status);
