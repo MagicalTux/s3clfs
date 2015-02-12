@@ -24,7 +24,7 @@
 
 #define CALLBACK() new Callback(this, __func__, func_args)
 #define METHOD_ARGS(...) QList<QGenericArgument> func_args = {__VA_ARGS__}
-#define WAIT_READY() if (!is_ready) { connect(this, SIGNAL(ready()), CALLBACK(), SLOT(trigger())); return; }
+#define WAIT_READY() if (!is_ready) { connect(this, SIGNAL(ready()), CALLBACK(), SLOT(trigger())); return; } if (is_overloaded) { connect(this, SIGNAL(loadReduced()), CALLBACK(), SLOT(trigger())); return; }
 #define GET_INODE(ino) \
 	if (!store.hasInode(ino)) { req->error(ENOENT); return; } \
 	if (!store.hasInodeLocally(ino)) { store.callbackOnInodeCached(ino, CALLBACK()); return; } S3FS_Obj ino ## _o = store.getInode(ino); \
@@ -33,9 +33,11 @@
 S3FS::S3FS(S3FS_Config *_cfg): fuse(_cfg, this), store(_cfg) {
 	cfg = _cfg;
 	is_ready = false;
+	is_overloaded = false;
 	cluster_node_id = cfg->clusterId();
 
 	connect(&store, SIGNAL(ready()), this, SLOT(storeIsReady()));
+	connect(&store, SIGNAL(overloadStatus(bool)), this, SLOT(setOverload(bool)));
 
 	fuse.init();
 }
@@ -781,5 +783,16 @@ quint64 S3FS::makeInode() {
 	}
 	last_inode = new_inode;
 	return new_inode;
+}
+
+void S3FS::setOverload(bool status) {
+	if (is_overloaded == status) return;
+	is_overloaded = status;
+	if (!status) {
+		qDebug("S3FS: network load reduced, resuming operations");
+		loadReduced();
+	} else {
+		qDebug("S3FS: network load too high, waiting for cool down");
+	}
 }
 

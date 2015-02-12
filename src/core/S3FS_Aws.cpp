@@ -24,6 +24,7 @@
  */
 
 S3FS_Aws::S3FS_Aws(QObject *parent): QObject(parent) {
+	overload_status = false;
 	QString path = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation)+"/aws/credentials";
 	if (!QFile::exists(path)) {
 		qCritical("WARNING! AWS configuration is missing, your data WILL NOT be saved and will be LOST on umount.\nPlease create a configuration file %s with the required information.", qPrintable(path));
@@ -148,6 +149,11 @@ void S3FS_Aws::httpV4(QObject *caller, const QByteArray &verb, const QByteArray 
 		QMetaObject::invokeMethod(caller, "requestStarted", Q_ARG(QNetworkReply*, reply));
 		return;
 	}
+	if ((!overload_status) && (http_running.size() > 10000)) {
+		// signal overload
+		overload_status = true;
+		overloadStatus(overload_status);
+	}
 	// queue this
 	auto q = new S3FS_Aws_Queue_Entry;
 	q->req = req;
@@ -169,6 +175,11 @@ void S3FS_Aws::http(QObject *caller, const QByteArray &verb, const QNetworkReque
 		QMetaObject::invokeMethod(caller, "requestStarted", Q_ARG(QNetworkReply*, reply));
 		return;
 	}
+	if ((!overload_status) && (http_running.size() > 10000)) {
+		// signal overload
+		overload_status = true;
+		overloadStatus(overload_status);
+	}
 	// queue this
 	auto q = new S3FS_Aws_Queue_Entry;
 	q->req = req;
@@ -180,6 +191,11 @@ void S3FS_Aws::http(QObject *caller, const QByteArray &verb, const QNetworkReque
 
 void S3FS_Aws::replyDestroyed(QObject *obj) {
 	http_running.remove((QNetworkReply*)obj);
+	if ((overload_status) && (http_running.size() < 5000)) {
+		// signal overload
+		overload_status = false;
+		overloadStatus(overload_status);
+	}
 	if (http_queue.size()) {
 		auto q = http_queue.takeFirst();
 		QNetworkReply *reply;

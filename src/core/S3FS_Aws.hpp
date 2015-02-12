@@ -42,6 +42,9 @@ public:
 	bool isValid();
 	const QByteArray &getAwsId() const;
 
+signals:
+	void overloadStatus(bool);
+
 public slots:
 	void replyDestroyed(QObject *obj);
 
@@ -61,6 +64,7 @@ private:
 	QByteArray id;
 	QByteArray key;
 	QNetworkAccessManager net;
+	bool overload_status;
 
 	QSet<QNetworkReply*> http_running;
 	QList<S3FS_Aws_Queue_Entry*> http_queue;
