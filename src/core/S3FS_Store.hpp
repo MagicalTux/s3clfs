@@ -66,6 +66,7 @@ public:
 
 signals:
 	void ready();
+	void overloadStatus(bool);
 
 public slots:
 	void readyStateWithoutAws();
@@ -76,6 +77,7 @@ public slots:
 	void updateInodes();
 	void getInodesList();
 	void gotNewFile(const QString&,const QString&);
+	void setOverloadStatus(bool);
 
 	void lastaccess_update();
 	void lastaccess_clean();

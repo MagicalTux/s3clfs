@@ -35,6 +35,7 @@ public:
 
 signals:
 	void ready();
+	void loadReduced();
 
 public slots:
 	void fuse_lookup(QtFuseRequest *req, fuse_ino_t ino, const QByteArray &path);
@@ -60,6 +61,8 @@ public slots:
 	void fuse_write_buf(QtFuseRequest *req, fuse_ino_t ino, struct fuse_bufvec *bufv, off_t off, struct fuse_file_info *fi);
 	void storeIsReady();
 
+	void setOverload(bool);
+
 protected:
 	quint64 makeInode();
 	bool real_write(S3FS_Obj &ino, const QByteArray &buf, off_t offset, QList<QGenericArgument>&, bool &wait);
@@ -68,6 +71,7 @@ private:
 	S3Fuse fuse;
 	S3FS_Store store;
 	bool is_ready;
+	bool is_overloaded;
 	quint64 last_inode;
 	S3FS_Config *cfg;
 	int cluster_node_id;

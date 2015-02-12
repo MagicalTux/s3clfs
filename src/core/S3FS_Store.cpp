@@ -61,6 +61,8 @@ S3FS_Store::S3FS_Store(S3FS_Config *_cfg, QObject *parent): QObject(parent) {
 		return;
 	}
 
+	connect(aws, SIGNAL(overloadStatus(bool)), this, SLOT(setOverloadStatus(bool)));
+
 	QByteArray queue = cfg->queue();
 	if (!queue.isEmpty()) {
 		aws_sqs = new S3FS_Aws_SQS(queue, aws);
@@ -557,5 +559,9 @@ void S3FS_Store::lastaccess_clean() {
 		if (!i->next()) break;
 	}
 	delete i;
+}
+
+void S3FS_Store::setOverloadStatus(bool status) {
+	overloadStatus(status);
 }
 
