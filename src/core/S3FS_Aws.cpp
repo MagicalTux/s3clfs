@@ -23,7 +23,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-S3FS_Aws::S3FS_Aws(QObject *parent): QObject(parent) {
+S3FS_Aws::S3FS_Aws(S3FS_Config *_cfg, QObject *parent): QObject(parent) {
+	cfg = _cfg;
 	QString path = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation)+"/aws/credentials";
 	if (!QFile::exists(path)) {
 		qCritical("WARNING! AWS configuration is missing, your data WILL NOT be saved and will be LOST on umount.\nPlease create a configuration file %s with the required information.", qPrintable(path));

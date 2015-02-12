@@ -21,6 +21,7 @@
 
 #pragma once
 
+class S3FS_Config;
 class S3FS_Aws_S3;
 class S3FS_Aws_SQS;
 class QNetworkReply;
@@ -38,7 +39,7 @@ struct S3FS_Aws_Queue_Entry {
 class S3FS_Aws: public QObject {
 	Q_OBJECT
 public:
-	S3FS_Aws(QObject *parent = 0);
+	S3FS_Aws(S3FS_Config *cfg, QObject *parent = 0);
 	bool isValid();
 	const QByteArray &getAwsId() const;
 
@@ -65,5 +66,6 @@ private:
 	QSet<QNetworkReply*> http_running;
 	QList<S3FS_Aws_Queue_Entry*> http_queue;
 	QMap<QByteArray,QByteArray> aws_bucket_region;
+	S3FS_Config *cfg;
 };
 

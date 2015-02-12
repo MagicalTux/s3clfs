@@ -54,7 +54,7 @@ S3FS_Store::S3FS_Store(S3FS_Config *_cfg, QObject *parent): QObject(parent) {
 	}
 
 	// initialize AWS
-	aws = new S3FS_Aws(this);
+	aws = new S3FS_Aws(cfg, this);
 
 	if (!aws->isValid()) {
 		QTimer::singleShot(1000, this, SLOT(readyStateWithoutAws()));

@@ -6,7 +6,7 @@ public:
 	S3FS_Config();
 	int clusterId() const; // 1~100 id within cluster (to avoid overlaps in inode numbers)
 	void setClusterId(int);
-	
+
 	const QByteArray &mountOptions() const;
 	void setMountOptions(const QByteArray &);
 
