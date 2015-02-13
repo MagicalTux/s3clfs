@@ -24,7 +24,7 @@ class QtFuseRequest: public QObject {
 	Q_OBJECT;
 
 public:
-	QtFuseRequest(fuse_req_t req, QtFuse &_parent);
+	QtFuseRequest(fuse_req_t req, QtFuse &_parent, struct fuse_file_info *fi = 0);
 	~QtFuseRequest();
 
 public slots:
@@ -45,6 +45,8 @@ public:
 	void lock(struct flock *lock);
 	void bmap(uint64_t idx);
 
+	struct fuse_file_info *fi();
+
 	const struct fuse_ctx *context() const;
 
 	bool dir_add(const QByteArray &name, const struct stat *stbuf, off_t next_offset);
@@ -62,6 +64,7 @@ private:
 	
 	char *data_buf;
 	size_t buf_pos, buf_size;
+	struct fuse_file_info fuse_fi;
 };
 
 Q_DECLARE_METATYPE(QtFuseRequest*);

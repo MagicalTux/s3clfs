@@ -124,8 +124,8 @@ void S3FS::fuse_forget(QtFuseRequest *req, fuse_ino_t, unsigned long) {
 	req->none();
 }
 
-void S3FS::fuse_setattr(QtFuseRequest *req, fuse_ino_t ino, struct stat *attr, int to_set, struct fuse_file_info *fi) {
-	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, ino), Q_ARG(struct stat*, attr), Q_ARG(int, to_set), Q_ARG(struct fuse_file_info *, fi));
+void S3FS::fuse_setattr(QtFuseRequest *req, fuse_ino_t ino, struct stat *attr, int to_set) {
+	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, ino), Q_ARG(struct stat*, attr), Q_ARG(int, to_set));
 	WAIT_READY();
 	GET_INODE(ino);
 
@@ -152,8 +152,8 @@ void S3FS::fuse_setattr(QtFuseRequest *req, fuse_ino_t ino, struct stat *attr, i
 	req->attr(&ino_o.constAttr());
 }
 
-void S3FS::fuse_getattr(QtFuseRequest *req, fuse_ino_t ino, struct fuse_file_info *fi) {
-	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, ino), Q_ARG(struct fuse_file_info *, fi));
+void S3FS::fuse_getattr(QtFuseRequest *req, fuse_ino_t ino) {
+	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, ino));
 	WAIT_READY();
 	GET_INODE(ino);
 
@@ -406,20 +406,21 @@ void S3FS::fuse_link(QtFuseRequest *req, fuse_ino_t ino, fuse_ino_t newparent, c
 	req->entry(&ino_o.constAttr());
 }
 
-void S3FS::fuse_flush(QtFuseRequest *req, fuse_ino_t, struct fuse_file_info *) {
+void S3FS::fuse_flush(QtFuseRequest *req, fuse_ino_t) {
 	// nothing here for now
 	req->error(0);
 }
 
-void S3FS::fuse_release(QtFuseRequest *req, fuse_ino_t, struct fuse_file_info *) {
+void S3FS::fuse_release(QtFuseRequest *req, fuse_ino_t) {
 	// nothing here for now
 	req->error(0);
 }
 
-void S3FS::fuse_open(QtFuseRequest *req, fuse_ino_t ino, struct fuse_file_info *fi) {
-	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, ino), Q_ARG(struct fuse_file_info *, fi));
+void S3FS::fuse_open(QtFuseRequest *req, fuse_ino_t ino) {
+	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, ino));
 	WAIT_READY();
 	GET_INODE(ino);
+	auto fi = req->fi();
 
 	if (ino_o.isDir()) {
 		req->error(EISDIR);
@@ -440,10 +441,11 @@ void S3FS::fuse_open(QtFuseRequest *req, fuse_ino_t ino, struct fuse_file_info *
 	req->open(fi);
 }
 
-void S3FS::fuse_opendir(QtFuseRequest *req, fuse_ino_t ino, struct fuse_file_info *fi) {
-	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, ino), Q_ARG(struct fuse_file_info *, fi));
+void S3FS::fuse_opendir(QtFuseRequest *req, fuse_ino_t ino) {
+	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, ino));
 	WAIT_READY();
 	GET_INODE(ino);
+	auto fi = req->fi();
 
 	if (!ino_o.isDir()) {
 		req->error(ENOTDIR);
@@ -452,13 +454,18 @@ void S3FS::fuse_opendir(QtFuseRequest *req, fuse_ino_t ino, struct fuse_file_inf
 
 	fi->fh = (uintptr_t)store.getInodeMetaIterator(ino); // next entry to read
 
+	qDebug("Set fh to %lx", fi->fh);
+
 	req->open(fi);
 }
 
-void S3FS::fuse_readdir(QtFuseRequest *req, fuse_ino_t ino, off_t off, struct fuse_file_info *fi) {
-	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, ino), Q_ARG(off_t, off), Q_ARG(struct fuse_file_info *,fi));
+void S3FS::fuse_readdir(QtFuseRequest *req, fuse_ino_t ino, off_t off) {
+	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, ino), Q_ARG(off_t, off));
 	WAIT_READY();
 	GET_INODE(ino);
+	auto fi = req->fi();
+
+	qDebug("Read %p->fh to %lx", fi, fi->fh);
 
 	if (!ino_o.isDir()) {
 		req->error(ENOTDIR);
@@ -500,22 +507,23 @@ void S3FS::fuse_readdir(QtFuseRequest *req, fuse_ino_t ino, off_t off, struct fu
 	}
 }
 
-void S3FS::fuse_releasedir(QtFuseRequest *req, fuse_ino_t ino, struct fuse_file_info *fi) {
-	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, ino), Q_ARG(struct fuse_file_info *, fi));
+void S3FS::fuse_releasedir(QtFuseRequest *req, fuse_ino_t ino) {
+	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, ino));
 	WAIT_READY();
 	GET_INODE(ino);
 
-	S3FS_Store_MetaIterator *fh = (S3FS_Store_MetaIterator*)fi->fh;
+	S3FS_Store_MetaIterator *fh = (S3FS_Store_MetaIterator*)req->fi()->fh;
 	if (fh)
 		delete fh;
 
 	req->error(0); // success
 }
 
-void S3FS::fuse_create(QtFuseRequest *req, fuse_ino_t parent, const QByteArray &name, mode_t mode, struct fuse_file_info *fi) {
-	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, parent), Q_ARG(const QByteArray&,name), Q_ARG(mode_t,mode), Q_ARG(struct fuse_file_info *,fi));
+void S3FS::fuse_create(QtFuseRequest *req, fuse_ino_t parent, const QByteArray &name, mode_t mode) {
+	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, parent), Q_ARG(const QByteArray&,name), Q_ARG(mode_t,mode));
 	WAIT_READY();
 	GET_INODE(parent);
+	auto fi = req->fi();
 
 	// check if file exists
 	if (store.hasInodeMeta(parent, name)) {
@@ -547,8 +555,8 @@ void S3FS::fuse_create(QtFuseRequest *req, fuse_ino_t parent, const QByteArray &
 	req->create(&new_file.constAttr(), fi);
 }
 
-void S3FS::fuse_read(QtFuseRequest *req, fuse_ino_t ino, size_t size, off_t offset, struct fuse_file_info *fi) {
-	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, ino), Q_ARG(size_t,size), Q_ARG(off_t,offset), Q_ARG(struct fuse_file_info *,fi));
+void S3FS::fuse_read(QtFuseRequest *req, fuse_ino_t ino, size_t size, off_t offset) {
+	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, ino), Q_ARG(size_t,size), Q_ARG(off_t,offset));
 	WAIT_READY();
 	GET_INODE(ino);
 
@@ -604,8 +612,8 @@ void S3FS::fuse_read(QtFuseRequest *req, fuse_ino_t ino, size_t size, off_t offs
 	req->buf(buf);
 }
 
-void S3FS::fuse_write(QtFuseRequest *req, fuse_ino_t ino, const QByteArray &buf, off_t offset, struct fuse_file_info *fi) {
-	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, ino), Q_ARG(const QByteArray&,buf), Q_ARG(off_t,offset), Q_ARG(struct fuse_file_info *,fi));
+void S3FS::fuse_write(QtFuseRequest *req, fuse_ino_t ino, const QByteArray &buf, off_t offset) {
+	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, ino), Q_ARG(const QByteArray&,buf), Q_ARG(off_t,offset));
 	WAIT_READY();
 	GET_INODE(ino);
 	bool need_wait = false;
@@ -743,10 +751,10 @@ inline bool S3FS::real_write(S3FS_Obj &ino, const QByteArray &buf, off_t offset,
 	return true;
 }
 
-void S3FS::fuse_write_buf(QtFuseRequest *req, fuse_ino_t ino, struct fuse_bufvec *bufv, off_t off, struct fuse_file_info *fi) {
+void S3FS::fuse_write_buf(QtFuseRequest *req, fuse_ino_t ino, struct fuse_bufvec *bufv, off_t off) {
 // TODO re-entry to this function won't work, so copy buf now and pass it to fuse_write
 #if 0
-	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, ino), Q_ARG(struct fuse_bufvec*,bufv), Q_ARG(off_t,off), Q_ARG(struct fuse_file_info *,fi));
+	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, ino), Q_ARG(struct fuse_bufvec*,bufv), Q_ARG(off_t,off));
 	WAIT_READY();
 	GET_INODE(ino);
 
@@ -771,7 +779,7 @@ void S3FS::fuse_write_buf(QtFuseRequest *req, fuse_ino_t ino, struct fuse_bufvec
 
 	dst_buf.resize(res);
 
-	fuse_write(req, ino, dst_buf, off, fi);
+	fuse_write(req, ino, dst_buf, off);
 }
 
 quint64 S3FS::makeInode() {

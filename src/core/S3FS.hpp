@@ -40,8 +40,8 @@ signals:
 public slots:
 	void fuse_lookup(QtFuseRequest *req, fuse_ino_t ino, const QByteArray &path);
 	void fuse_forget(QtFuseRequest *req, fuse_ino_t ino, unsigned long nlookup);
-	void fuse_setattr(QtFuseRequest *req, fuse_ino_t node, struct_stat *attr, int to_set, struct fuse_file_info *fi);
-	void fuse_getattr(QtFuseRequest *req, fuse_ino_t node, struct fuse_file_info *fi);
+	void fuse_setattr(QtFuseRequest *req, fuse_ino_t node, struct_stat *attr, int to_set);
+	void fuse_getattr(QtFuseRequest *req, fuse_ino_t node);
 	void fuse_unlink(QtFuseRequest *req, fuse_ino_t parent_ino, const QByteArray &name);
 	void fuse_readlink(QtFuseRequest *req, fuse_ino_t node);
 	void fuse_mkdir(QtFuseRequest *req, fuse_ino_t parent, const QByteArray &name, int mode);
@@ -49,16 +49,16 @@ public slots:
 	void fuse_symlink(QtFuseRequest *req, const QByteArray &link, fuse_ino_t parent, const QByteArray &name);
 	void fuse_rename(QtFuseRequest *req, fuse_ino_t parent, const QByteArray &name, fuse_ino_t newparent, const QByteArray &newname);
 	void fuse_link(QtFuseRequest *req, fuse_ino_t ino, fuse_ino_t newparent, const QByteArray &newname);
-	void fuse_flush(QtFuseRequest *req, fuse_ino_t ino, struct fuse_file_info *fi);
-	void fuse_release(QtFuseRequest *req, fuse_ino_t ino, struct fuse_file_info *fi);
-	void fuse_open(QtFuseRequest *req, fuse_ino_t ino, struct fuse_file_info *fi);
-	void fuse_opendir(QtFuseRequest *req, fuse_ino_t ino, struct fuse_file_info *fi);
-	void fuse_readdir(QtFuseRequest *req, fuse_ino_t ino, off_t off, struct fuse_file_info *fi);
-	void fuse_releasedir(QtFuseRequest *req, fuse_ino_t ino, struct fuse_file_info *fi);
-	void fuse_create(QtFuseRequest *req, fuse_ino_t parent, const QByteArray &name, mode_t mode, struct fuse_file_info *fi);
-	void fuse_read(QtFuseRequest *req, fuse_ino_t ino, size_t size, off_t offset, struct fuse_file_info *fi);
-	void fuse_write(QtFuseRequest *req, fuse_ino_t ino, const QByteArray &buf, off_t offset, struct fuse_file_info *fi);
-	void fuse_write_buf(QtFuseRequest *req, fuse_ino_t ino, struct fuse_bufvec *bufv, off_t off, struct fuse_file_info *fi);
+	void fuse_flush(QtFuseRequest *req, fuse_ino_t ino);
+	void fuse_release(QtFuseRequest *req, fuse_ino_t ino);
+	void fuse_open(QtFuseRequest *req, fuse_ino_t ino);
+	void fuse_opendir(QtFuseRequest *req, fuse_ino_t ino);
+	void fuse_readdir(QtFuseRequest *req, fuse_ino_t ino, off_t off);
+	void fuse_releasedir(QtFuseRequest *req, fuse_ino_t ino);
+	void fuse_create(QtFuseRequest *req, fuse_ino_t parent, const QByteArray &name, mode_t mode);
+	void fuse_read(QtFuseRequest *req, fuse_ino_t ino, size_t size, off_t offset);
+	void fuse_write(QtFuseRequest *req, fuse_ino_t ino, const QByteArray &buf, off_t offset);
+	void fuse_write_buf(QtFuseRequest *req, fuse_ino_t ino, struct fuse_bufvec *bufv, off_t off);
 	void storeIsReady();
 
 	void setOverload(bool);

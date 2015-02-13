@@ -25,6 +25,7 @@
 
 #define QTFUSE_OBJ_FROM_REQ() QtFuse *c = (QtFuse*)fuse_req_userdata(req)
 #define QTFUSE_REQ() (new QtFuseRequest(req, *c))
+#define QTFUSE_REQ_FI() (new QtFuseRequest(req, *c, fi))
 #define QTFUSE_NOT_IMPL(e) qDebug("fuse: %s not implemented, returning " #e, __FUNCTION__); req->error(e)
 
 void QtFuse::priv_qtfuse_init(void *userdata, struct fuse_conn_info *conn) {
@@ -66,20 +67,20 @@ void QtFuse::fuse_forget(QtFuseRequest *req, fuse_ino_t node, unsigned long nloo
 
 void QtFuse::priv_qtfuse_getattr(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi) {
 	QTFUSE_OBJ_FROM_REQ();
-	c->fuse_getattr(QTFUSE_REQ(), ino, fi);
+	c->fuse_getattr(QTFUSE_REQ_FI(), ino);
 }
 
-void QtFuse::fuse_getattr(QtFuseRequest *req, fuse_ino_t, struct fuse_file_info *) {
+void QtFuse::fuse_getattr(QtFuseRequest *req, fuse_ino_t) {
 //	req->attr(node->getAttr());
 	QTFUSE_NOT_IMPL(ENOSYS);
 }
 
 void QtFuse::priv_qtfuse_setattr(fuse_req_t req, fuse_ino_t ino, struct stat *attr, int to_set, struct fuse_file_info *fi) {
 	QTFUSE_OBJ_FROM_REQ();
-	c->fuse_setattr(QTFUSE_REQ(), ino, attr, to_set, fi);
+	c->fuse_setattr(QTFUSE_REQ_FI(), ino, attr, to_set);
 }
 
-void QtFuse::fuse_setattr(QtFuseRequest *req, fuse_ino_t, struct stat *, int, struct fuse_file_info *) {
+void QtFuse::fuse_setattr(QtFuseRequest *req, fuse_ino_t, struct stat *, int) {
 	QTFUSE_NOT_IMPL(ENOSYS);
 }
 
@@ -161,93 +162,93 @@ void QtFuse::fuse_link(QtFuseRequest *req, fuse_ino_t, fuse_ino_t, const QByteAr
 
 void QtFuse::priv_qtfuse_open(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi) {
 	QTFUSE_OBJ_FROM_REQ();
-	c->fuse_open(QTFUSE_REQ(), ino, fi);
+	c->fuse_open(QTFUSE_REQ_FI(), ino);
 }
 
-void QtFuse::fuse_open(QtFuseRequest *req, fuse_ino_t, struct fuse_file_info *) {
+void QtFuse::fuse_open(QtFuseRequest *req, fuse_ino_t) {
 	QTFUSE_NOT_IMPL(ENOSYS);
 }
 
 void QtFuse::priv_qtfuse_read(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off, struct fuse_file_info *fi) {
 	QTFUSE_OBJ_FROM_REQ();
-	c->fuse_read(QTFUSE_REQ(), ino, size, off, fi);
+	c->fuse_read(QTFUSE_REQ_FI(), ino, size, off);
 }
 
-void QtFuse::fuse_read(QtFuseRequest *req, fuse_ino_t, size_t, off_t, struct fuse_file_info*) {
+void QtFuse::fuse_read(QtFuseRequest *req, fuse_ino_t, size_t, off_t) {
 	QTFUSE_NOT_IMPL(ENOSYS);
 }
 
 void QtFuse::priv_qtfuse_write(fuse_req_t req, fuse_ino_t ino, const char *buf, size_t size, off_t off, struct fuse_file_info *fi) {
 	QTFUSE_OBJ_FROM_REQ();
-	c->fuse_write(QTFUSE_REQ(), ino, QByteArray(buf, size), off, fi);
+	c->fuse_write(QTFUSE_REQ_FI(), ino, QByteArray(buf, size), off);
 }
 
-void QtFuse::fuse_write(QtFuseRequest *req, fuse_ino_t, const QByteArray&, off_t, struct fuse_file_info *) {
+void QtFuse::fuse_write(QtFuseRequest *req, fuse_ino_t, const QByteArray&, off_t) {
 	QTFUSE_NOT_IMPL(ENOSYS);
 }
 
 void QtFuse::priv_qtfuse_flush(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi) {
 	QTFUSE_OBJ_FROM_REQ();
-	c->fuse_flush(QTFUSE_REQ(), ino, fi);
+	c->fuse_flush(QTFUSE_REQ_FI(), ino);
 }
 
-void QtFuse::fuse_flush(QtFuseRequest *req, fuse_ino_t, struct fuse_file_info *) {
+void QtFuse::fuse_flush(QtFuseRequest *req, fuse_ino_t) {
 	QTFUSE_NOT_IMPL(ENOSYS);
 }
 
 void QtFuse::priv_qtfuse_release(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi) {
 	QTFUSE_OBJ_FROM_REQ();
-	c->fuse_release(QTFUSE_REQ(), ino, fi);
+	c->fuse_release(QTFUSE_REQ_FI(), ino);
 }
 
-void QtFuse::fuse_release(QtFuseRequest *req, fuse_ino_t, struct fuse_file_info *) {
+void QtFuse::fuse_release(QtFuseRequest *req, fuse_ino_t) {
 	QTFUSE_NOT_IMPL(ENOSYS);
 }
 
 void QtFuse::priv_qtfuse_fsync(fuse_req_t req, fuse_ino_t ino, int datasync, struct fuse_file_info *fi) {
 	QTFUSE_OBJ_FROM_REQ();
-	c->fuse_fsync(QTFUSE_REQ(), ino, datasync, fi);
+	c->fuse_fsync(QTFUSE_REQ_FI(), ino, datasync);
 }
 
-void QtFuse::fuse_fsync(QtFuseRequest *req, fuse_ino_t, int, struct fuse_file_info*) {
+void QtFuse::fuse_fsync(QtFuseRequest *req, fuse_ino_t, int) {
 	QTFUSE_NOT_IMPL(ENOSYS);
 }
 
 void QtFuse::priv_qtfuse_opendir(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi) {
 	QTFUSE_OBJ_FROM_REQ();
-	c->fuse_opendir(QTFUSE_REQ(), ino, fi);
+	c->fuse_opendir(QTFUSE_REQ_FI(), ino);
 }
 
-void QtFuse::fuse_opendir(QtFuseRequest *req, fuse_ino_t, struct fuse_file_info *) {
+void QtFuse::fuse_opendir(QtFuseRequest *req, fuse_ino_t) {
 	QTFUSE_NOT_IMPL(ENOSYS);
 }
 
 void QtFuse::priv_qtfuse_readdir(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off, struct fuse_file_info *fi) {
 	QTFUSE_OBJ_FROM_REQ();
-	QtFuseRequest *_req = QTFUSE_REQ();
+	QtFuseRequest *_req = QTFUSE_REQ_FI();
 	_req->prepareBuffer(size);
-	c->fuse_readdir(_req, ino, off, fi);
+	c->fuse_readdir(_req, ino, off);
 }
 
-void QtFuse::fuse_readdir(QtFuseRequest *req, fuse_ino_t, off_t, struct fuse_file_info *) {
+void QtFuse::fuse_readdir(QtFuseRequest *req, fuse_ino_t, off_t) {
 	QTFUSE_NOT_IMPL(ENOSYS);
 }
 
 void QtFuse::priv_qtfuse_releasedir(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi) {
 	QTFUSE_OBJ_FROM_REQ();
-	c->fuse_releasedir(QTFUSE_REQ(), ino, fi);
+	c->fuse_releasedir(QTFUSE_REQ_FI(), ino);
 }
 
-void QtFuse::fuse_releasedir(QtFuseRequest *req, fuse_ino_t, struct fuse_file_info *) {
+void QtFuse::fuse_releasedir(QtFuseRequest *req, fuse_ino_t) {
 	QTFUSE_NOT_IMPL(ENOSYS);
 }
 
 void QtFuse::priv_qtfuse_fsyncdir(fuse_req_t req, fuse_ino_t ino, int datasync, struct fuse_file_info *fi) {
 	QTFUSE_OBJ_FROM_REQ();
-	c->fuse_fsyncdir(QTFUSE_REQ(), ino, datasync, fi);
+	c->fuse_fsyncdir(QTFUSE_REQ_FI(), ino, datasync);
 }
 
-void QtFuse::fuse_fsyncdir(QtFuseRequest *req, fuse_ino_t, int, struct fuse_file_info *) {
+void QtFuse::fuse_fsyncdir(QtFuseRequest *req, fuse_ino_t, int) {
 	QTFUSE_NOT_IMPL(ENOSYS);
 }
 
@@ -307,28 +308,28 @@ void QtFuse::fuse_access(QtFuseRequest *req, fuse_ino_t, int) {
 
 void QtFuse::priv_qtfuse_create(fuse_req_t req, fuse_ino_t parent, const char *name, mode_t mode, struct fuse_file_info *fi) {
 	QTFUSE_OBJ_FROM_REQ();
-	c->fuse_create(QTFUSE_REQ(), parent, name, mode, fi);
+	c->fuse_create(QTFUSE_REQ_FI(), parent, name, mode);
 }
 
-void QtFuse::fuse_create(QtFuseRequest *req, fuse_ino_t, const char*, mode_t, struct fuse_file_info*) {
+void QtFuse::fuse_create(QtFuseRequest *req, fuse_ino_t, const char*, mode_t) {
 	QTFUSE_NOT_IMPL(ENOSYS);
 }
 
 void QtFuse::priv_qtfuse_getlk(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi, struct flock *lock) {
 	QTFUSE_OBJ_FROM_REQ();
-	c->fuse_getlk(QTFUSE_REQ(), ino, fi, lock);
+	c->fuse_getlk(QTFUSE_REQ_FI(), ino, lock);
 }
 
-void QtFuse::fuse_getlk(QtFuseRequest *req, fuse_ino_t, struct fuse_file_info*, struct flock*) {
+void QtFuse::fuse_getlk(QtFuseRequest *req, fuse_ino_t, struct flock*) {
 	QTFUSE_NOT_IMPL(ENOSYS);
 }
 
 void QtFuse::priv_qtfuse_setlk(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi, struct flock *lock, int sleep) {
 	QTFUSE_OBJ_FROM_REQ();
-	c->fuse_setlk(QTFUSE_REQ(), ino, fi, lock, sleep);
+	c->fuse_setlk(QTFUSE_REQ_FI(), ino, lock, sleep);
 }
 
-void QtFuse::fuse_setlk(QtFuseRequest *req, fuse_ino_t, struct fuse_file_info*, struct flock*, int) {
+void QtFuse::fuse_setlk(QtFuseRequest *req, fuse_ino_t, struct flock*, int) {
 	QTFUSE_NOT_IMPL(ENOSYS);
 }
 
@@ -343,28 +344,28 @@ void QtFuse::fuse_bmap(QtFuseRequest *req, fuse_ino_t, size_t, uint64_t) {
 
 void QtFuse::priv_qtfuse_ioctl(fuse_req_t req, fuse_ino_t ino, int cmd, void *arg, struct fuse_file_info *fi, unsigned flags, const void *in_buf, size_t in_bufsz, size_t out_bufsz) {
 	QTFUSE_OBJ_FROM_REQ();
-	c->fuse_ioctl(QTFUSE_REQ(), ino, cmd, arg, fi, flags, in_buf, in_bufsz, out_bufsz);
+	c->fuse_ioctl(QTFUSE_REQ_FI(), ino, cmd, arg, flags, in_buf, in_bufsz, out_bufsz);
 }
 
-void QtFuse::fuse_ioctl(QtFuseRequest *req, fuse_ino_t, int, void *, struct fuse_file_info *, unsigned, const void *, size_t, size_t) {
+void QtFuse::fuse_ioctl(QtFuseRequest *req, fuse_ino_t, int, void *, unsigned, const void *, size_t, size_t) {
 	QTFUSE_NOT_IMPL(ENOSYS);
 }
 
 void QtFuse::priv_qtfuse_poll(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi, struct fuse_pollhandle *ph) {
 	QTFUSE_OBJ_FROM_REQ();
-	c->fuse_poll(QTFUSE_REQ(), ino, fi, ph);
+	c->fuse_poll(QTFUSE_REQ_FI(), ino, ph);
 }
 
-void QtFuse::fuse_poll(QtFuseRequest *req, fuse_ino_t, struct fuse_file_info*, struct fuse_pollhandle*) {
+void QtFuse::fuse_poll(QtFuseRequest *req, fuse_ino_t, struct fuse_pollhandle*) {
 	QTFUSE_NOT_IMPL(ENOSYS);
 }
 
 void QtFuse::priv_qtfuse_write_buf(fuse_req_t req, fuse_ino_t ino, struct fuse_bufvec *bufv, off_t off, struct fuse_file_info *fi) {
 	QTFUSE_OBJ_FROM_REQ();
-	c->fuse_write_buf(QTFUSE_REQ(), ino, bufv, off, fi);
+	c->fuse_write_buf(QTFUSE_REQ_FI(), ino, bufv, off);
 }
 
-void QtFuse::fuse_write_buf(QtFuseRequest *req, fuse_ino_t, struct fuse_bufvec *, off_t, struct fuse_file_info *) {
+void QtFuse::fuse_write_buf(QtFuseRequest *req, fuse_ino_t, struct fuse_bufvec *, off_t) {
 	QTFUSE_NOT_IMPL(ENOSYS);
 }
 
@@ -392,19 +393,19 @@ void QtFuse::fuse_forget_multi(QtFuseRequest *req, size_t count, struct fuse_for
 
 void QtFuse::priv_qtfuse_flock(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi, int op) {
 	QTFUSE_OBJ_FROM_REQ();
-	c->fuse_flock(QTFUSE_REQ(), ino, fi, op);
+	c->fuse_flock(QTFUSE_REQ_FI(), ino, op);
 }
 
-void QtFuse::fuse_flock(QtFuseRequest *req, fuse_ino_t, struct fuse_file_info *, int) {
+void QtFuse::fuse_flock(QtFuseRequest *req, fuse_ino_t, int) {
 	QTFUSE_NOT_IMPL(ENOSYS);
 }
 
 void QtFuse::priv_qtfuse_fallocate(fuse_req_t req, fuse_ino_t ino, int mode, off_t offset, off_t length, struct fuse_file_info *fi) {
 	QTFUSE_OBJ_FROM_REQ();
-	c->fuse_fallocate(QTFUSE_REQ(), ino, mode, offset, length, fi);
+	c->fuse_fallocate(QTFUSE_REQ_FI(), ino, mode, offset, length);
 }
 
-void QtFuse::fuse_fallocate(QtFuseRequest *req, fuse_ino_t, int, off_t, off_t, struct fuse_file_info *) {
+void QtFuse::fuse_fallocate(QtFuseRequest *req, fuse_ino_t, int, off_t, off_t) {
 	QTFUSE_NOT_IMPL(ENOSYS);
 }
 
