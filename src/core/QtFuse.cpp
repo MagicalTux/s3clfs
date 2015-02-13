@@ -508,14 +508,14 @@ void QtFuse::init() {
 	struct fuse_buf fuse_buf;
 	memset(&fuse_buf, 0, sizeof(fuse_buf));
 	size_t bufsize = fuse_chan_bufsize(chan);
-//	char *fuse_buf_mem = (char *) malloc(bufsize);
+	char *fuse_buf_mem = (char *) malloc(bufsize);
 
 	ready();
 
 	while (!fuse_session_exited(fuse)) {
 		tmpch = chan;
 		fuse_buf.size = bufsize;
-		fuse_buf.mem = malloc(bufsize);
+		fuse_buf.mem = fuse_buf_mem;
 		fuse_buf.flags = (enum fuse_buf_flags)0;
 
 		res = fuse_session_receive_buf(fuse, &fuse_buf, &tmpch);

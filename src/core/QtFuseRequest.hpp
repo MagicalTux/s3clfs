@@ -1,6 +1,3 @@
-#include "QtFuse.hpp"
-#include <QObject>
-
 /*  S3ClFS - AWS S3 backed cluster filesystem
  *  Copyright (C) 2015 Mark Karpeles
  *
@@ -17,6 +14,8 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include "QtFuse.hpp"
+#include <QObject>
 
 #pragma once
 

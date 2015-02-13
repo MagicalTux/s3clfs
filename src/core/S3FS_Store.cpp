@@ -39,7 +39,7 @@ S3FS_Store::S3FS_Store(S3FS_Config *_cfg, QObject *parent): QObject(parent) {
 	cluster_node_id = cfg->clusterId();
 	expire_blocks = cfg->expireBlocks();
 	expire_inodes = cfg->expireInodes();
-	inodes_cache.setMaxCost(1000);
+	inodes_cache.setMaxCost(10000); // sizeof(S3FS_Obj) = 144
 
 	// location of leveldb store
 	QString cache_path = cfg->cachePath();
@@ -259,7 +259,7 @@ bool S3FS_Store::storeInode(const S3FS_Obj&o) {
 	QByteArray key = QByteArrayLiteral("\x01") + ino_b;
 	if (!kv.insert(key, o.encode())) return false;
 	kv.insert(QByteArrayLiteral("\x03") + ino_b, QByteArray(8, '\0')); // default to zero
-	inodes_cache.insert(ino, new S3FS_Obj(o));
+	if (!inodes_cache.insert(ino, new S3FS_Obj(o))) qDebug("LEAK2!");
 
 	// send inode to aws
 	inodeUpdated(ino);
@@ -311,7 +311,7 @@ S3FS_Obj S3FS_Store::getInode(quint64 ino) {
 	lastaccess_inode.insert(ino);
 
 	auto res = S3FS_Obj(kv.value(key));
-	inodes_cache.insert(ino, new S3FS_Obj(res));
+	if (!inodes_cache.insert(ino, new S3FS_Obj(res))) qDebug("LEAK!");
 	return res;
 }
 
