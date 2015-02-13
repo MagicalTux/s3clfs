@@ -473,7 +473,7 @@ void QtFuse::init() {
 	fuse_cleaned = false;
 
 	QByteArrayList o = opts.split(',');
-	o.append("default_permissions,debug");
+	o.append("default_permissions");
 	char *argv[] = { strdup("fuse"), strdup("-f"), strdup(mp.data()), strdup("-o"), strdup(o.join(',').data()) }; // hard_remove ?
 	int argc = 5;
 
@@ -535,8 +535,6 @@ void QtFuse::init() {
 	fuse_cleaned = true;
 
 	for(int i = 0; i < argc; i++) free(argv[i]);
-
-	QCoreApplication::quit();
 }
 
 void QtFuse::prepare() {
@@ -571,6 +569,8 @@ QtFuse::QtFuse(const QByteArray &_mp, const QByteArray &_src, const QByteArray &
 
 void QtFuse::quit() {
 	if (fuse_cleaned) return;
+	// attempt to stop fuse thread (we might die here)
+	fuse_thread.terminate();
 	// teardown fuse
 	fuse_session_reset(fuse);
 	fuse_unmount(mountpoint, chan);
@@ -580,5 +580,12 @@ void QtFuse::quit() {
 
 QtFuse::~QtFuse() {
 	quit();
+}
+
+void QtFuse::start() {
+	moveToThread(&fuse_thread);
+	connect(&fuse_thread, &QThread::started, this, &QtFuse::init);
+	connect(&fuse_thread, &QThread::finished, QCoreApplication::instance(), &QCoreApplication::quit);
+	fuse_thread.start();
 }
 

@@ -1,10 +1,11 @@
 #define _FILE_OFFSET_BITS 64
-#define FUSE_USE_VERSION 26
+#define FUSE_USE_VERSION 29
 #include <QObject>
 #include <QMutex>
 #include <QMap>
 #include <pthread.h>
 #include <errno.h>
+#include <QThread>
 
 /*  S3ClFS - AWS S3 backed cluster filesystem
  *  Copyright (C) 2015 Mark Karpeles
@@ -41,6 +42,7 @@ public:
 	QtFuse(const QByteArray &mp, const QByteArray &src = QByteArrayLiteral("QtFuse"), const QByteArray &opts = QByteArray());
 	~QtFuse();
 	static void prepare();
+	void start();
 
 signals:
 	void ready();
@@ -143,6 +145,7 @@ private:
 	static void priv_qtfuse_fallocate(fuse_req_t req, fuse_ino_t ino, int mode, off_t offset, off_t length, struct fuse_file_info *fi);
 
 	static struct fuse_lowlevel_ops qtfuse_op;
+	QThread fuse_thread;
 
 	// for fuse use
 	struct fuse_session *fuse;

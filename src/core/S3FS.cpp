@@ -454,8 +454,6 @@ void S3FS::fuse_opendir(QtFuseRequest *req, fuse_ino_t ino) {
 
 	fi->fh = (uintptr_t)store.getInodeMetaIterator(ino); // next entry to read
 
-	qDebug("Set fh to %lx", fi->fh);
-
 	req->open(fi);
 }
 
@@ -464,8 +462,6 @@ void S3FS::fuse_readdir(QtFuseRequest *req, fuse_ino_t ino, off_t off) {
 	WAIT_READY();
 	GET_INODE(ino);
 	auto fi = req->fi();
-
-	qDebug("Read %p->fh to %lx", fi, fi->fh);
 
 	if (!ino_o.isDir()) {
 		req->error(ENOTDIR);
