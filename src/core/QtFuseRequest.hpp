@@ -47,6 +47,9 @@ public:
 
 	struct fuse_file_info *fi();
 
+	void setAttr(struct stat*);
+	struct stat *attr();
+
 	const struct fuse_ctx *context() const;
 
 	bool dir_add(const QByteArray &name, const struct stat *stbuf, off_t next_offset);
@@ -65,6 +68,7 @@ private:
 	char *data_buf;
 	size_t buf_pos, buf_size;
 	struct fuse_file_info fuse_fi;
+	struct stat fuse_attr;
 };
 
 Q_DECLARE_METATYPE(QtFuseRequest*);

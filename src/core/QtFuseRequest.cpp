@@ -194,3 +194,12 @@ void QtFuseRequest::dir_send() {
 struct fuse_file_info *QtFuseRequest::fi() {
 	return &fuse_fi;
 }
+
+void QtFuseRequest::setAttr(struct stat	*a) {
+	memcpy(&fuse_attr, a, sizeof(struct stat));
+}
+
+struct stat *QtFuseRequest::attr() {
+	return &fuse_attr;
+}
+

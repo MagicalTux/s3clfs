@@ -57,7 +57,7 @@ protected:
 	virtual void fuse_lookup(QtFuseRequest *req, fuse_ino_t parent, const QByteArray &name);
 	virtual void fuse_forget(QtFuseRequest *req, fuse_ino_t node, unsigned long nlookup);
 	virtual void fuse_getattr(QtFuseRequest *req, fuse_ino_t node);
-	virtual void fuse_setattr(QtFuseRequest *req, fuse_ino_t node, struct stat *attr, int to_set);
+	virtual void fuse_setattr(QtFuseRequest *req, fuse_ino_t node, int to_set);
 	virtual void fuse_readlink(QtFuseRequest *req, fuse_ino_t node);
 	virtual void fuse_mkdir(QtFuseRequest *req, fuse_ino_t parent, const QByteArray &name, int mode);
 	virtual void fuse_unlink(QtFuseRequest *req, fuse_ino_t parent, const QByteArray &name);

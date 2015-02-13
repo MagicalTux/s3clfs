@@ -124,10 +124,11 @@ void S3FS::fuse_forget(QtFuseRequest *req, fuse_ino_t, unsigned long) {
 	req->none();
 }
 
-void S3FS::fuse_setattr(QtFuseRequest *req, fuse_ino_t ino, struct stat *attr, int to_set) {
-	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, ino), Q_ARG(struct stat*, attr), Q_ARG(int, to_set));
+void S3FS::fuse_setattr(QtFuseRequest *req, fuse_ino_t ino, int to_set) {
+	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, ino), Q_ARG(int, to_set));
 	WAIT_READY();
 	GET_INODE(ino);
+	auto attr = req->attr();
 
 //	qDebug("S3FS: about to setattr on inode %lu", ino);
 

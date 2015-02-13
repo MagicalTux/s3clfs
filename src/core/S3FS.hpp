@@ -40,7 +40,7 @@ signals:
 public slots:
 	void fuse_lookup(QtFuseRequest *req, fuse_ino_t ino, const QByteArray &path);
 	void fuse_forget(QtFuseRequest *req, fuse_ino_t ino, unsigned long nlookup);
-	void fuse_setattr(QtFuseRequest *req, fuse_ino_t node, struct_stat *attr, int to_set);
+	void fuse_setattr(QtFuseRequest *req, fuse_ino_t node, int to_set);
 	void fuse_getattr(QtFuseRequest *req, fuse_ino_t node);
 	void fuse_unlink(QtFuseRequest *req, fuse_ino_t parent_ino, const QByteArray &name);
 	void fuse_readlink(QtFuseRequest *req, fuse_ino_t node);

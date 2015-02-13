@@ -41,8 +41,8 @@ void S3Fuse::fuse_forget(QtFuseRequest *req, fuse_ino_t ino, unsigned long nlook
 	QMetaObject::invokeMethod(parent, "fuse_forget", Q_ARG(QtFuseRequest*,req), Q_ARG(fuse_ino_t,ino), Q_ARG(unsigned long,nlookup));
 }
 
-void S3Fuse::fuse_setattr(QtFuseRequest *req, fuse_ino_t node, struct stat *attr, int to_set) {
-	QMetaObject::invokeMethod(parent, "fuse_setattr", Q_ARG(QtFuseRequest*,req), Q_ARG(fuse_ino_t,node), Q_ARG(struct stat*,attr), Q_ARG(int,to_set));
+void S3Fuse::fuse_setattr(QtFuseRequest *req, fuse_ino_t node, int to_set) {
+	QMetaObject::invokeMethod(parent, "fuse_setattr", Q_ARG(QtFuseRequest*,req), Q_ARG(fuse_ino_t,node), Q_ARG(int,to_set));
 }
 
 void S3Fuse::fuse_getattr(QtFuseRequest *req, fuse_ino_t ino) {

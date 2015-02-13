@@ -77,10 +77,12 @@ void QtFuse::fuse_getattr(QtFuseRequest *req, fuse_ino_t) {
 
 void QtFuse::priv_qtfuse_setattr(fuse_req_t req, fuse_ino_t ino, struct stat *attr, int to_set, struct fuse_file_info *fi) {
 	QTFUSE_OBJ_FROM_REQ();
-	c->fuse_setattr(QTFUSE_REQ_FI(), ino, attr, to_set);
+	auto _req = QTFUSE_REQ_FI();
+	_req->setAttr(attr);
+	c->fuse_setattr(_req, ino, to_set);
 }
 
-void QtFuse::fuse_setattr(QtFuseRequest *req, fuse_ino_t, struct stat *, int) {
+void QtFuse::fuse_setattr(QtFuseRequest *req, fuse_ino_t, int) {
 	QTFUSE_NOT_IMPL(ENOSYS);
 }
 
