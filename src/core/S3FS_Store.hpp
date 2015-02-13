@@ -95,6 +95,7 @@ private:
 	QMap<quint64, QList<Callback*> > inode_download_callback;
 	QMap<QByteArray, QList<Callback*> > block_download_callback;
 	QCache<QByteArray, QByteArray> blocks_cache;
+	QCache<quint64, S3FS_Obj> inodes_cache;
 
 	// lastaccess pruning system
 	QTimer lastaccess_updater;

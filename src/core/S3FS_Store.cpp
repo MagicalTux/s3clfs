@@ -39,6 +39,7 @@ S3FS_Store::S3FS_Store(S3FS_Config *_cfg, QObject *parent): QObject(parent) {
 	cluster_node_id = cfg->clusterId();
 	expire_blocks = cfg->expireBlocks();
 	expire_inodes = cfg->expireInodes();
+	inodes_cache.setMaxCost(10000);
 
 	// location of leveldb store
 	QString cache_path = cfg->cachePath();
@@ -146,7 +147,10 @@ void S3FS_Store::learnFile(const QString &name, bool in_list) {
 			kv.insert(QByteArrayLiteral("\x03")+fn, newrev);
 			if (kv.contains(QByteArrayLiteral("\x01")+fn)) {
 				// clear this inode from cache
+				quint64 fn_ino;
+				QDataStream(fn) >> fn_ino;
 				qDebug("S3FS_Store: Inode %s has changed, invalidating cache", fn.toHex().data());
+				inodes_cache.remove(fn_ino);
 				auto i = new KeyvalIterator(&kv);
 				i->find(QByteArrayLiteral("\x01")+fn);
 				do {
@@ -175,6 +179,7 @@ void S3FS_Store::learnFile(const QString &name, bool in_list) {
 void S3FS_Store::removeInodeFromCache(quint64 ino) {
 	INT_TO_BYTES(ino);
 	auto i = getInodeMetaIterator(ino);
+	inodes_cache.remove(ino);
 
 	// lastaccess
 	lastaccess_inode.remove(ino);
@@ -241,6 +246,7 @@ void S3FS_Store::readyStateWithoutAws() {
 bool S3FS_Store::hasInode(quint64 ino) {
 	// transform quint64 to qbytearray (big endian)
 	INT_TO_BYTES(ino);
+	if (inodes_cache.contains(ino)) return true;
 
 	QByteArray key = QByteArrayLiteral("\x03") + ino_b; // where we should be storing cache info about this inode
 	return kv.contains(key);
@@ -253,6 +259,7 @@ bool S3FS_Store::storeInode(const S3FS_Obj&o) {
 	QByteArray key = QByteArrayLiteral("\x01") + ino_b;
 	if (!kv.insert(key, o.encode())) return false;
 	kv.insert(QByteArrayLiteral("\x03") + ino_b, QByteArray(8, '\0')); // default to zero
+	inodes_cache.insert(ino, new S3FS_Obj(o));
 
 	// send inode to aws
 	inodeUpdated(ino);
@@ -299,14 +306,18 @@ void S3FS_Store::sendInodeToAws(quint64 ino) {
 
 S3FS_Obj S3FS_Store::getInode(quint64 ino) {
 	INT_TO_BYTES(ino);
+	if (inodes_cache.contains(ino)) return *inodes_cache.object(ino);
 	QByteArray key = QByteArrayLiteral("\x01") + ino_b;
 	lastaccess_inode.insert(ino);
 
-	return S3FS_Obj(kv.value(key));
+	auto res = S3FS_Obj(kv.value(key));
+	inodes_cache.insert(ino, new S3FS_Obj(res));
+	return res;
 }
 
 bool S3FS_Store::hasInodeLocally(quint64 ino) {
 	INT_TO_BYTES(ino);
+	if (inodes_cache.contains(ino)) return true;
 	QByteArray key = QByteArrayLiteral("\x01") + ino_b;
 	return kv.contains(key);
 //	return (kv.value(key).length() > 0); // if length == 0, means we don't have this locally
