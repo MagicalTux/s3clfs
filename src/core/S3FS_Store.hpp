@@ -21,8 +21,8 @@
 #include <QSet>
 #include <QTimer>
 #include <QCache>
+#include "S3FS_Obj.hpp"
 
-class S3FS_Obj; // inode
 class S3FS_Aws;
 class S3FS_Aws_S3;
 class S3FS_Aws_SQS;
