@@ -468,11 +468,12 @@ static int set_one_signal_handler(int sig, void (*handler)(int)) {
 	return sigaction(sig, &sa, NULL);
 }
 
-void *QtFuse::qtfuse_start_thread(void *_c) {
-	QtFuse *c = (QtFuse*)_c;
-	QByteArrayList o = c->opts.split(',');
-	o.append("default_permissions");
-	char *argv[] = { strdup("fuse"), strdup("-f"), strdup(c->mp.data()), strdup("-o"), strdup(o.join(',').data()) }; // hard_remove ?
+void QtFuse::init() {
+	fuse_cleaned = false;
+
+	QByteArrayList o = opts.split(',');
+	o.append("default_permissions,debug");
+	char *argv[] = { strdup("fuse"), strdup("-f"), strdup(mp.data()), strdup("-o"), strdup(o.join(',').data()) }; // hard_remove ?
 	int argc = 5;
 
 	struct fuse_args args = FUSE_ARGS_INIT(argc, argv);
@@ -480,63 +481,64 @@ void *QtFuse::qtfuse_start_thread(void *_c) {
 	int multithreaded;
 	int res;
 
-	res = fuse_parse_cmdline(&args, &c->mountpoint, &multithreaded, &foreground);
+	res = fuse_parse_cmdline(&args, &mountpoint, &multithreaded, &foreground);
 	if (res == -1) {
 		fuse_opt_free_args(&args);
 		QCoreApplication::exit(1);
-		return NULL;
+		return;
 	}
 
-	c->chan = fuse_mount(c->mountpoint, &args);
-	if (!c->chan) {
+	chan = fuse_mount(mountpoint, &args);
+	if (!chan) {
 		fuse_opt_free_args(&args);
 		QCoreApplication::exit(1);
-		return NULL;
+		return;
 	}
 
-	c->fuse = fuse_lowlevel_new(&args, &qtfuse_op, sizeof(qtfuse_op), _c);
+	fuse = fuse_lowlevel_new(&args, &qtfuse_op, sizeof(qtfuse_op), this);
 	fuse_opt_free_args(&args);
-	if (c->fuse == NULL)
-		return NULL; // TODO: correctly unmount fuse
+	if (fuse == NULL)
+		return; // TODO: correctly unmount fuse
 
-	fuse_session_add_chan(c->fuse, c->chan);
-	
-	size_t bufsize = fuse_chan_bufsize(c->chan);
-	c->fuse_buf = (char *) malloc(bufsize);
+	fuse_session_add_chan(fuse, chan);
 
-	c->ready();
+	struct fuse_buf fuse_buf;
+	memset(&fuse_buf, 0, sizeof(fuse_buf));
+	size_t bufsize = fuse_chan_bufsize(chan);
+//	char *fuse_buf_mem = (char *) malloc(bufsize);
 
-	while (!fuse_session_exited(c->fuse)) {
-		c->tmpch = c->chan;
-		res = fuse_chan_recv(&c->tmpch, c->fuse_buf, bufsize);
+	ready();
+
+	while (!fuse_session_exited(fuse)) {
+		tmpch = chan;
+		fuse_buf.size = bufsize;
+		fuse_buf.mem = malloc(bufsize);
+		fuse_buf.flags = (enum fuse_buf_flags)0;
+
+		res = fuse_session_receive_buf(fuse, &fuse_buf, &tmpch);
+//		res = fuse_chan_recv_buf(&tmpch, &fuse_buf, bufsize);
 		if (res == -EINTR)
 			continue;
 		if (res <= 0)
 			break;
-		c->fuse_buf_len = res;
-		QMetaObject::invokeMethod(c, "priv_fuse_session_process", Qt::BlockingQueuedConnection);
+		//fuse_session_process(fuse, fuse_buf, fuse_buf_len, tmpch);
+		fuse_session_process_buf(fuse, &fuse_buf, tmpch);
 	}
 
-	free(c->fuse_buf);
-	fuse_session_reset(c->fuse);
+//	free(fuse_buf);
+	fuse_session_reset(fuse);
 
-	fuse_unmount(c->mountpoint, c->chan);
-	fuse_session_destroy(c->fuse);
+	fuse_unmount(mountpoint, chan);
+	fuse_session_destroy(fuse);
 
-	c->fuse_cleaned = true;
+	fuse_cleaned = true;
 
 	for(int i = 0; i < argc; i++) free(argv[i]);
 
 	QCoreApplication::quit();
-	return NULL;
 }
 
-void QtFuse::priv_fuse_session_process() {
-	fuse_session_process(fuse, fuse_buf, fuse_buf_len, tmpch);
-}
-
-QtFuse::QtFuse(const QByteArray &_mp, const QByteArray &_src, const QByteArray &_opts) {
-	// required in some cases by Qt
+void QtFuse::prepare() {
 	qRegisterMetaType<QtFuse*>("QtFuse*");
 	qRegisterMetaType<QtFuseRequest*>("QtFuseRequest*");
 	qRegisterMetaType<fuse_ino_t>("fuse_ino_t");
@@ -547,6 +549,11 @@ QtFuse::QtFuse(const QByteArray &_mp, const QByteArray &_src, const QByteArray &
 	qRegisterMetaType<struct flock *>("struct flock*");
 	qRegisterMetaType<struct stat *>("struct stat*");
 	qRegisterMetaType<struct fuse_bufvec*>("struct fuse_bufvec*");
+}
+
+QtFuse::QtFuse(const QByteArray &_mp, const QByteArray &_src, const QByteArray &_opts) {
+	// required in some cases by Qt
+	prepare();
 
 	mp = _mp;
 	src = _src;
@@ -561,16 +568,8 @@ QtFuse::QtFuse(const QByteArray &_mp, const QByteArray &_src, const QByteArray &
 	connect(QCoreApplication::instance(), SIGNAL(aboutToQuit()), this, SLOT(quit()));
 }
 
-void QtFuse::init() {
-	pthread_create(&thread, NULL, qtfuse_start_thread, this);
-	fuse_cleaned = false;
-}
-
 void QtFuse::quit() {
 	if (fuse_cleaned) return;
-	// fuse_session_exit(fuse_session)
-	if (pthread_cancel(thread) != 0) return; // thread already dead
-	pthread_join(thread, NULL);
 	// teardown fuse
 	fuse_session_reset(fuse);
 	fuse_unmount(mountpoint, chan);

@@ -34,86 +34,86 @@ void S3Fuse::fuse_init(struct fuse_conn_info *ci) {
 }
 
 void S3Fuse::fuse_lookup(QtFuseRequest *req, fuse_ino_t ino, const QByteArray &path) {
-	parent->fuse_lookup(req, ino, path);
+	QMetaObject::invokeMethod(parent, "fuse_lookup", Q_ARG(QtFuseRequest*,req), Q_ARG(fuse_ino_t,ino), Q_ARG(const QByteArray&,path));
 }
 
 void S3Fuse::fuse_forget(QtFuseRequest *req, fuse_ino_t ino, unsigned long nlookup) {
-	parent->fuse_forget(req, ino, nlookup);
+	QMetaObject::invokeMethod(parent, "fuse_forget", Q_ARG(QtFuseRequest*,req), Q_ARG(fuse_ino_t,ino), Q_ARG(unsigned long,nlookup));
 }
 
 void S3Fuse::fuse_setattr(QtFuseRequest *req, fuse_ino_t node, struct stat *attr, int to_set, struct fuse_file_info *fi) {
-	parent->fuse_setattr(req, node, attr, to_set, fi);
+	QMetaObject::invokeMethod(parent, "fuse_setattr", Q_ARG(QtFuseRequest*,req), Q_ARG(fuse_ino_t,node), Q_ARG(struct stat*,attr), Q_ARG(int,to_set), Q_ARG(struct fuse_file_info*,fi));
 }
 
 void S3Fuse::fuse_getattr(QtFuseRequest *req, fuse_ino_t ino, struct fuse_file_info *fi) {
-	parent->fuse_getattr(req, ino, fi);
+	QMetaObject::invokeMethod(parent, "fuse_getattr", Q_ARG(QtFuseRequest*,req), Q_ARG(fuse_ino_t,ino), Q_ARG(struct fuse_file_info*,fi));
 }
 
 void S3Fuse::fuse_unlink(QtFuseRequest *req, fuse_ino_t parent_ino, const QByteArray &name) {
-	parent->fuse_unlink(req, parent_ino, name);
+	QMetaObject::invokeMethod(parent, "fuse_unlink", Q_ARG(QtFuseRequest*,req), Q_ARG(fuse_ino_t,parent_ino), Q_ARG(const QByteArray&,name));
 }
 
 void S3Fuse::fuse_readlink(QtFuseRequest *req, fuse_ino_t node) {
-	parent->fuse_readlink(req, node);
+	QMetaObject::invokeMethod(parent, "fuse_readlink", Q_ARG(QtFuseRequest*,req), Q_ARG(fuse_ino_t,node));
 }
 
 void S3Fuse::fuse_mkdir(QtFuseRequest *req, fuse_ino_t parent_ino, const QByteArray &name, int mode) {
-	parent->fuse_mkdir(req, parent_ino, name, mode);
+	QMetaObject::invokeMethod(parent, "fuse_mkdir", Q_ARG(QtFuseRequest*,req), Q_ARG(fuse_ino_t,parent_ino), Q_ARG(const QByteArray&,name), Q_ARG(int,mode));
 }
 
 void S3Fuse::fuse_rmdir(QtFuseRequest *req, fuse_ino_t parent_ino, const QByteArray &name) {
-	parent->fuse_rmdir(req, parent_ino, name);
+	QMetaObject::invokeMethod(parent, "fuse_rmdir", Q_ARG(QtFuseRequest*,req), Q_ARG(fuse_ino_t,parent_ino), Q_ARG(const QByteArray&,name));
 }
 
 void S3Fuse::fuse_symlink(QtFuseRequest *req, const QByteArray &link, fuse_ino_t parent_ino, const QByteArray &name) {
-	parent->fuse_symlink(req, link, parent_ino, name);
+	QMetaObject::invokeMethod(parent, "fuse_symlink", Q_ARG(QtFuseRequest*,req), Q_ARG(const QByteArray&,link), Q_ARG(fuse_ino_t,parent_ino), Q_ARG(const QByteArray&,name));
 }
 
 void S3Fuse::fuse_rename(QtFuseRequest *req, fuse_ino_t parent_ino, const QByteArray &name, fuse_ino_t newparent, const QByteArray &newname) {
-	parent->fuse_rename(req, parent_ino, name, newparent, newname);
+	QMetaObject::invokeMethod(parent, "fuse_rename", Q_ARG(QtFuseRequest*,req), Q_ARG(fuse_ino_t,parent_ino), Q_ARG(const QByteArray&,name), Q_ARG(fuse_ino_t,newparent), Q_ARG(const QByteArray&,newname));
 }
 
 void S3Fuse::fuse_link(QtFuseRequest *req, fuse_ino_t ino, fuse_ino_t newparent, const QByteArray &newname) {
-	parent->fuse_link(req, ino, newparent, newname);
+	QMetaObject::invokeMethod(parent, "fuse_link", Q_ARG(QtFuseRequest*,req), Q_ARG(fuse_ino_t,ino), Q_ARG(fuse_ino_t,newparent), Q_ARG(const QByteArray&,newname));
 }
 
 void S3Fuse::fuse_flush(QtFuseRequest *req, fuse_ino_t ino, struct fuse_file_info *fi) {
-	parent->fuse_flush(req, ino, fi);
+	QMetaObject::invokeMethod(parent, "fuse_flush", Q_ARG(QtFuseRequest*,req), Q_ARG(fuse_ino_t,ino), Q_ARG(struct fuse_file_info*,fi));
 }
 
 void S3Fuse::fuse_release(QtFuseRequest *req, fuse_ino_t ino, struct fuse_file_info *fi) {
-	parent->fuse_release(req, ino, fi);
+	QMetaObject::invokeMethod(parent, "fuse_release", Q_ARG(QtFuseRequest*,req), Q_ARG(fuse_ino_t,ino), Q_ARG(struct fuse_file_info*,fi));
 }
 
 void S3Fuse::fuse_open(QtFuseRequest *req, fuse_ino_t ino, struct fuse_file_info *fi) {
-	parent->fuse_open(req, ino, fi);
+	QMetaObject::invokeMethod(parent, "fuse_open", Q_ARG(QtFuseRequest*,req), Q_ARG(fuse_ino_t,ino), Q_ARG(struct fuse_file_info*,fi));
 }
 
 void S3Fuse::fuse_opendir(QtFuseRequest *req, fuse_ino_t ino, struct fuse_file_info *fi) {
-	parent->fuse_opendir(req, ino, fi);
+	QMetaObject::invokeMethod(parent, "fuse_opendir", Q_ARG(QtFuseRequest*,req), Q_ARG(fuse_ino_t,ino), Q_ARG(struct fuse_file_info*,fi));
 }
 
 void S3Fuse::fuse_readdir(QtFuseRequest *req, fuse_ino_t ino, off_t off, struct fuse_file_info *fi) {
-	parent->fuse_readdir(req, ino, off, fi);
+	QMetaObject::invokeMethod(parent, "fuse_readdir", Q_ARG(QtFuseRequest*,req), Q_ARG(fuse_ino_t,ino), Q_ARG(off_t,off), Q_ARG(struct fuse_file_info*,fi));
 }
 
 void S3Fuse::fuse_releasedir(QtFuseRequest *req, fuse_ino_t ino, struct fuse_file_info *fi) {
-	parent->fuse_releasedir(req, ino, fi);
+	QMetaObject::invokeMethod(parent, "fuse_releasedir", Q_ARG(QtFuseRequest*,req), Q_ARG(fuse_ino_t,ino), Q_ARG(struct fuse_file_info*,fi));
 }
 
 void S3Fuse::fuse_create(QtFuseRequest *req, fuse_ino_t parent_ino, const char *name, mode_t mode, struct fuse_file_info *fi) {
-	parent->fuse_create(req, parent_ino, name, mode, fi);
+	QMetaObject::invokeMethod(parent, "fuse_create", Q_ARG(QtFuseRequest*,req), Q_ARG(fuse_ino_t,parent_ino), Q_ARG(const QByteArray&,name), Q_ARG(mode_t,mode), Q_ARG(struct fuse_file_info*,fi));
 }
 
 void S3Fuse::fuse_read(QtFuseRequest *req, fuse_ino_t ino, size_t size, off_t offset, struct fuse_file_info *fi) {
-	parent->fuse_read(req, ino, size, offset, fi);
+	QMetaObject::invokeMethod(parent, "fuse_read", Q_ARG(QtFuseRequest*,req), Q_ARG(fuse_ino_t,ino), Q_ARG(size_t,size), Q_ARG(off_t,offset), Q_ARG(struct fuse_file_info*,fi));
 }
 
 void S3Fuse::fuse_write(QtFuseRequest *req, fuse_ino_t ino, const QByteArray &buf, off_t offset, struct fuse_file_info *fi) {
-	parent->fuse_write(req, ino, buf, offset, fi);
+	QMetaObject::invokeMethod(parent, "fuse_write", Q_ARG(QtFuseRequest*,req), Q_ARG(fuse_ino_t,ino), Q_ARG(const QByteArray&,buf), Q_ARG(off_t,offset), Q_ARG(struct fuse_file_info*,fi));
 }
 
 void S3Fuse::fuse_write_buf(QtFuseRequest *req, fuse_ino_t ino, struct fuse_bufvec *bufv, off_t off, struct fuse_file_info *fi) {
-	parent->fuse_write_buf(req, ino, bufv, off, fi);
+	QMetaObject::invokeMethod(parent, "fuse_write_buf", Q_ARG(QtFuseRequest*,req), Q_ARG(fuse_ino_t,ino), Q_ARG(struct fuse_bufvec*,bufv), Q_ARG(off_t,off), Q_ARG(struct fuse_file_info*,fi));
 }
 

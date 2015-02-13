@@ -16,9 +16,9 @@
  */
 
 #include <QObject>
-#include "S3Fuse.hpp"
 #include "S3FS_Store.hpp"
 #include "Keyval.hpp"
+#include "QtFuseRequest.hpp"
 
 #pragma once
 
@@ -55,7 +55,7 @@ public slots:
 	void fuse_opendir(QtFuseRequest *req, fuse_ino_t ino, struct fuse_file_info *fi);
 	void fuse_readdir(QtFuseRequest *req, fuse_ino_t ino, off_t off, struct fuse_file_info *fi);
 	void fuse_releasedir(QtFuseRequest *req, fuse_ino_t ino, struct fuse_file_info *fi);
-	void fuse_create(QtFuseRequest *req, fuse_ino_t parent, const char *name, mode_t mode, struct fuse_file_info *fi);
+	void fuse_create(QtFuseRequest *req, fuse_ino_t parent, const QByteArray &name, mode_t mode, struct fuse_file_info *fi);
 	void fuse_read(QtFuseRequest *req, fuse_ino_t ino, size_t size, off_t offset, struct fuse_file_info *fi);
 	void fuse_write(QtFuseRequest *req, fuse_ino_t ino, const QByteArray &buf, off_t offset, struct fuse_file_info *fi);
 	void fuse_write_buf(QtFuseRequest *req, fuse_ino_t ino, struct fuse_bufvec *bufv, off_t off, struct fuse_file_info *fi);
@@ -68,7 +68,6 @@ protected:
 	bool real_write(S3FS_Obj &ino, const QByteArray &buf, off_t offset, QList<QGenericArgument>&, bool &wait);
 
 private:
-	S3Fuse fuse;
 	S3FS_Store store;
 	bool is_ready;
 	bool is_overloaded;

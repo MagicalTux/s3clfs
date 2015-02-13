@@ -2,7 +2,9 @@
 #include <QCommandLineParser>
 #include <QStandardPaths>
 #include <S3FS.hpp>
+#include <S3Fuse.hpp>
 #include <S3FS_Config.hpp>
+#include <QThread>
 
 /*  S3ClFS - AWS S3 backed cluster filesystem
  *  Copyright (C) 2015 Mark Karpeles
@@ -25,6 +27,7 @@ int main(int argc, char *argv[]) {
 	QCoreApplication app(argc, argv);
 	QCoreApplication::setApplicationName("s3clfs");
 	QCoreApplication::setApplicationVersion("0.1");
+	QtFuse::prepare();
 
 	// arguments
 	QCommandLineParser parser;
@@ -58,6 +61,11 @@ int main(int argc, char *argv[]) {
 	if (parser.isSet("disable-data-cache")) cfg.setCacheData(false);
 
 	S3FS s3clfs(&cfg);
+	QThread fuse_thread;
+	S3Fuse *fuse = new S3Fuse(&cfg, &s3clfs);
+	fuse->moveToThread(&fuse_thread);
+	QObject::connect(&fuse_thread, &QThread::started, fuse, &S3Fuse::init);
+	fuse_thread.start();
 
 	return app.exec();
 }

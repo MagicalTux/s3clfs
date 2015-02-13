@@ -17,6 +17,7 @@
 #include "S3FS.hpp"
 #include "S3FS_Obj.hpp"
 #include "S3FS_Config.hpp"
+#include "S3Fuse.hpp"
 #include "QtFuseRequest.hpp"
 #include "Callback.hpp"
 #include "S3FS_Store_MetaIterator.hpp"
@@ -30,7 +31,7 @@
 	if (!store.hasInodeLocally(ino)) { store.callbackOnInodeCached(ino, CALLBACK()); return; } S3FS_Obj ino ## _o = store.getInode(ino); \
 	if ((!ino ## _o.isValid()) || (ino ## _o.getInode() != ino)) { store.brokenInode(ino); QTimer::singleShot(100, CALLBACK(), SLOT(trigger())); return; }
 
-S3FS::S3FS(S3FS_Config *_cfg): fuse(_cfg, this), store(_cfg) {
+S3FS::S3FS(S3FS_Config *_cfg): store(_cfg) {
 	cfg = _cfg;
 	is_ready = false;
 	is_overloaded = false;
@@ -38,8 +39,6 @@ S3FS::S3FS(S3FS_Config *_cfg): fuse(_cfg, this), store(_cfg) {
 
 	connect(&store, SIGNAL(ready()), this, SLOT(storeIsReady()));
 	connect(&store, SIGNAL(overloadStatus(bool)), this, SLOT(setOverload(bool)));
-
-	fuse.init();
 }
 
 S3FS_Store &S3FS::getStore() {
@@ -513,8 +512,8 @@ void S3FS::fuse_releasedir(QtFuseRequest *req, fuse_ino_t ino, struct fuse_file_
 	req->error(0); // success
 }
 
-void S3FS::fuse_create(QtFuseRequest *req, fuse_ino_t parent, const char *name, mode_t mode, struct fuse_file_info *fi) {
-	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, parent), Q_ARG(const char*,name), Q_ARG(mode_t,mode), Q_ARG(struct fuse_file_info *,fi));
+void S3FS::fuse_create(QtFuseRequest *req, fuse_ino_t parent, const QByteArray &name, mode_t mode, struct fuse_file_info *fi) {
+	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, parent), Q_ARG(const QByteArray&,name), Q_ARG(mode_t,mode), Q_ARG(struct fuse_file_info *,fi));
 	WAIT_READY();
 	GET_INODE(parent);
 

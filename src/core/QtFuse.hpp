@@ -40,14 +40,14 @@ class QtFuse: public QObject {
 public:
 	QtFuse(const QByteArray &mp, const QByteArray &src = QByteArrayLiteral("QtFuse"), const QByteArray &opts = QByteArray());
 	~QtFuse();
-	void init();
+	static void prepare();
 
 signals:
 	void ready();
 
 public slots:
+	void init();
 	void quit();
-	void priv_fuse_session_process();
 
 protected:
 	virtual void fuse_init(struct fuse_conn_info *);
@@ -148,8 +148,6 @@ private:
 	struct fuse_session *fuse;
 	struct fuse_chan *chan, *tmpch;
 	char *mountpoint;
-	char *fuse_buf;
-	int fuse_buf_len;
 };
 
 typedef struct stat struct_stat;
