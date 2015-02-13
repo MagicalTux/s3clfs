@@ -4,7 +4,7 @@ S3FS_Config::S3FS_Config() {
 	cluster_id = 0;
 	expire_blocks = 86400;
 	expire_inodes = 86400*7;
-	list_fetch_interval = 3600*6;
+	list_fetch_interval = 3600*48;
 	cache_data = true;
 }
 
