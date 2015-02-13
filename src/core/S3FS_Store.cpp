@@ -39,7 +39,7 @@ S3FS_Store::S3FS_Store(S3FS_Config *_cfg, QObject *parent): QObject(parent) {
 	cluster_node_id = cfg->clusterId();
 	expire_blocks = cfg->expireBlocks();
 	expire_inodes = cfg->expireInodes();
-	inodes_cache.setMaxCost(10000);
+	inodes_cache.setMaxCost(1000);
 
 	// location of leveldb store
 	QString cache_path = cfg->cachePath();
