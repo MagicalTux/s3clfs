@@ -69,10 +69,6 @@ S3FS_Store::S3FS_Store(S3FS_Config *_cfg, QObject *parent): QObject(parent) {
 		connect(aws_sqs, SIGNAL(newFile(const QString&,const QString&)), this, SLOT(gotNewFile(const QString&,const QString&)));
 	}
 
-	// test
-	connect(S3FS_Aws_S3::listFiles(bucket, "metadata/", aws), SIGNAL(finished(S3FS_Aws_S3*)), this, SLOT(receivedInodeList(S3FS_Aws_S3*)));
-	connect(S3FS_Aws_S3::getFile(bucket, "metadata/format.dat", aws), SIGNAL(finished(S3FS_Aws_S3*)), this, SLOT(receivedFormatFile(S3FS_Aws_S3*)));
-
 	connect(&inodes_updater, SIGNAL(timeout()), this, SLOT(updateInodes()));
 	inodes_updater.setSingleShot(false);
 	inodes_updater.start(1000);
@@ -87,6 +83,14 @@ S3FS_Store::S3FS_Store(S3FS_Config *_cfg, QObject *parent): QObject(parent) {
 	connect(&lastaccess_cleaner, SIGNAL(timeout()), this, SLOT(lastaccess_clean()));
 	lastaccess_cleaner.setSingleShot(false);
 	lastaccess_cleaner.start(1800000); // 30min
+
+	// quick initialize
+	if (hasInode(1))
+		aws_list_ready = true;
+
+	// fetchers
+	connect(S3FS_Aws_S3::listFiles(bucket, "metadata/", aws), SIGNAL(finished(S3FS_Aws_S3*)), this, SLOT(receivedInodeList(S3FS_Aws_S3*)));
+	connect(S3FS_Aws_S3::getFile(bucket, "metadata/format.dat", aws), SIGNAL(finished(S3FS_Aws_S3*)), this, SLOT(receivedFormatFile(S3FS_Aws_S3*)));
 }
 
 void S3FS_Store::gotNewFile(const QString &_bucket, const QString &file) {
