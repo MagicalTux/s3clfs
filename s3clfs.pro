@@ -25,7 +25,11 @@ lessThan(QT_MAJOR_VERSION, 5) {
 }
 equals(QT_MAJOR_VERSION, 5) {
 	lessThan(QT_MINOR_VERSION, 4) {
-		error("S3ClFS requires Qt5.4 or better")
+		system(cat /usr/include/qt5/QtCore/qcommandlineoption.h  | grep QCommandLineOption | grep -c explicit) {
+			message("Compiling with older Qt but explicit patch")
+		} else {
+			error("S3ClFS requires Qt5.4 or better. Alternatively you can run: sed -i s/explicit// /usr/include/qt5/QtCore/qcommandlineoption.h")
+		}
 	}
 }
 
