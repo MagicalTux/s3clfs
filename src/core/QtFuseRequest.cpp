@@ -1,6 +1,3 @@
-#include "QtFuse.hpp"
-#include "QtFuseRequest.hpp"
-
 /*  S3ClFS - AWS S3 backed cluster filesystem
  *  Copyright (C) 2015 Mark Karpeles
  *
@@ -17,8 +14,12 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include "QtFuse.hpp"
+#include "QtFuseRequest.hpp"
+#include <QCoreApplication>
 
 QtFuseRequest::QtFuseRequest(fuse_req_t _req, QtFuse &_parent, struct fuse_file_info *_fi): parent(_parent) {
+	moveToThread(QCoreApplication::instance()->thread());
 	req = _req;
 	if (_fi) fuse_fi = *_fi;
 	answered = false;

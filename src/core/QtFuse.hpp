@@ -39,7 +39,7 @@ class QtFuseRequest;
 class QtFuse: public QThread {
 	Q_OBJECT;
 public:
-	QtFuse(const QByteArray &mp, const QByteArray &src = QByteArrayLiteral("QtFuse"), const QByteArray &opts = QByteArray());
+	QtFuse(const QByteArray &mp, const QByteArray &src = QByteArrayLiteral("QtFuse"), const QByteArray &opts = QByteArray(), QObject *parent = 0);
 	~QtFuse();
 	static void prepare();
 	void start();

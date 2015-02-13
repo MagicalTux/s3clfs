@@ -19,7 +19,7 @@
 #include "S3FS_Config.hpp"
 #include "QtFuseRequest.hpp"
 
-S3Fuse::S3Fuse(S3FS_Config *cfg, S3FS *_parent): QtFuse(cfg->mountPath(), cfg->bucket(), cfg->mountOptions()) {
+S3Fuse::S3Fuse(S3FS_Config *cfg, S3FS *_parent): QtFuse(cfg->mountPath(), cfg->bucket(), cfg->mountOptions(), _parent) {
 	parent = _parent;
 }
 

@@ -552,7 +552,7 @@ void QtFuse::prepare() {
 	qRegisterMetaType<struct fuse_bufvec*>("struct fuse_bufvec*");
 }
 
-QtFuse::QtFuse(const QByteArray &_mp, const QByteArray &_src, const QByteArray &_opts) {
+QtFuse::QtFuse(const QByteArray &_mp, const QByteArray &_src, const QByteArray &_opts, QObject *parent): QThread(parent) {
 	// required in some cases by Qt
 	prepare();
 
