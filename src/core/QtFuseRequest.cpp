@@ -18,7 +18,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-QtFuseRequest::QtFuseRequest(fuse_req_t _req, QtFuse &_parent, struct fuse_file_info *_fi): QObject(&_parent), parent(_parent) {
+QtFuseRequest::QtFuseRequest(fuse_req_t _req, QtFuse &_parent, struct fuse_file_info *_fi): parent(_parent) {
 	req = _req;
 	if (_fi) fuse_fi = *_fi;
 	answered = false;

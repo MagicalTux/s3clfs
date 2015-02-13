@@ -471,7 +471,7 @@ static int set_one_signal_handler(int sig, void (*handler)(int)) {
 	return sigaction(sig, &sa, NULL);
 }
 
-void QtFuse::init() {
+void QtFuse::run() {
 	fuse_cleaned = false;
 
 	QByteArrayList o = opts.split(',');
@@ -572,7 +572,7 @@ QtFuse::QtFuse(const QByteArray &_mp, const QByteArray &_src, const QByteArray &
 void QtFuse::quit() {
 	if (fuse_cleaned) return;
 	// attempt to stop fuse thread (we might die here)
-	fuse_thread.terminate();
+	terminate();
 	// teardown fuse
 	fuse_session_reset(fuse);
 	fuse_unmount(mountpoint, chan);
@@ -585,9 +585,7 @@ QtFuse::~QtFuse() {
 }
 
 void QtFuse::start() {
-	moveToThread(&fuse_thread);
-	connect(&fuse_thread, &QThread::started, this, &QtFuse::init);
-	connect(&fuse_thread, &QThread::finished, QCoreApplication::instance(), &QCoreApplication::quit);
-	fuse_thread.start();
+	connect(this, &QThread::finished, QCoreApplication::instance(), &QCoreApplication::quit);
+	QThread::start();
 }
 

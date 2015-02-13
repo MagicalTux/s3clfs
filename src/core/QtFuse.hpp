@@ -36,7 +36,7 @@ struct qtfuse_callback_data {
 class QtFuse;
 class QtFuseRequest;
 
-class QtFuse: public QObject {
+class QtFuse: public QThread {
 	Q_OBJECT;
 public:
 	QtFuse(const QByteArray &mp, const QByteArray &src = QByteArrayLiteral("QtFuse"), const QByteArray &opts = QByteArray());
@@ -48,10 +48,10 @@ signals:
 	void ready();
 
 public slots:
-	void init();
 	void quit();
 
 protected:
+	void run();
 	virtual void fuse_init(struct fuse_conn_info *);
 	virtual void fuse_destroy();
 	virtual void fuse_lookup(QtFuseRequest *req, fuse_ino_t parent, const QByteArray &name);
@@ -145,7 +145,6 @@ private:
 	static void priv_qtfuse_fallocate(fuse_req_t req, fuse_ino_t ino, int mode, off_t offset, off_t length, struct fuse_file_info *fi);
 
 	static struct fuse_lowlevel_ops qtfuse_op;
-	QThread fuse_thread;
 
 	// for fuse use
 	struct fuse_session *fuse;
