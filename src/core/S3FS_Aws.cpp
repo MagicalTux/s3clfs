@@ -1,11 +1,3 @@
-#include "S3FS_Aws.hpp"
-#include <QStandardPaths>
-#include <QFile>
-#include <QSettings>
-#include <QMessageAuthenticationCode>
-#include <QNetworkReply>
-#include <QBuffer>
-
 /*  S3ClFS - AWS S3 backed cluster filesystem
  *  Copyright (C) 2015 Mark Karpeles
  *
@@ -22,6 +14,16 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include "S3FS_Aws.hpp"
+#include <QStandardPaths>
+#include <QFile>
+#include <QSettings>
+#include <QMessageAuthenticationCode>
+#include <QNetworkReply>
+#include <QBuffer>
+#if QT_VERSION < 0x050300
+#include <contrib/QByteArrayList.hpp>
+#endif
 
 S3FS_Aws::S3FS_Aws(S3FS_Config *_cfg, QObject *parent): QObject(parent) {
 	cfg = _cfg;
@@ -85,7 +87,7 @@ QNetworkReply *S3FS_Aws::reqV4(const QByteArray &verb, const QByteArray &subpath
 
 	// compute canonical url query
 	QByteArray canonical_query_string = req.url().query(QUrl::FullyEncoded).toLatin1();
-	auto q_split = canonical_query_string.split('&');
+	QByteArrayList q_split = canonical_query_string.split('&');
 	std::sort(q_split.begin(), q_split.end());
 	canonical_query_string = q_split.join('&');
 
@@ -111,7 +113,11 @@ QNetworkReply *S3FS_Aws::reqV4(const QByteArray &verb, const QByteArray &subpath
 		CanonicalRequest += i.key()+":"+i.value()+QByteArrayLiteral("\n");
 	CanonicalRequest += QByteArrayLiteral("\n"); // an empty line
 
-	CanonicalRequest += headers.keys().join(";") + QByteArrayLiteral("\n"); // list of signed headers... 
+#if QT_VERSION < 0x050300
+	CanonicalRequest += QByteArrayList(headers.keys()).join(';') + QByteArrayLiteral("\n"); // list of signed headers... 
+#else
+	CanonicalRequest += headers.keys().join(';') + QByteArrayLiteral("\n"); // list of signed headers... 
+#endif
 	CanonicalRequest += content_sha256; // and hash of the request body
 
 //	qDebug("CANONICAL REQUEST: %s", CanonicalRequest.data());
@@ -122,7 +128,11 @@ QNetworkReply *S3FS_Aws::reqV4(const QByteArray &verb, const QByteArray &subpath
 	QByteArray sign = signV4(CanonicalRequest, path, timestamp, algo);
 
 	// and put it in the Authorization header
+#if QT_VERSION < 0x050300
+	QByteArray auth_header = algo+" Credential="+id+"/"+path+", SignedHeaders="+QByteArrayList(headers.keys()).join(';')+", Signature="+sign.toHex();
+#else
 	QByteArray auth_header = algo+" Credential="+id+"/"+path+", SignedHeaders="+headers.keys().join(";")+", Signature="+sign.toHex();
+#endif
 	req.setRawHeader("Authorization", auth_header);
 
 //	qDebug("Authorization: %s", auth_header.data());

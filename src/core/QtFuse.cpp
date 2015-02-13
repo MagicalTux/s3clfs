@@ -1,9 +1,3 @@
-#include "QtFuse.hpp"
-#include "QtFuseRequest.hpp"
-#include <signal.h>
-#include <stdlib.h>
-#include <QCoreApplication>
-
 /*  S3ClFS - AWS S3 backed cluster filesystem
  *  Copyright (C) 2015 Mark Karpeles
  *
@@ -20,6 +14,14 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include "QtFuse.hpp"
+#include "QtFuseRequest.hpp"
+#include <signal.h>
+#include <stdlib.h>
+#include <QCoreApplication>
+#if QT_VERSION < 0x050300
+#include <contrib/QByteArrayList.hpp>
+#endif
 
 #define QTFUSE_OBJ_FROM_REQ() QtFuse *c = (QtFuse*)fuse_req_userdata(req)
 #define QTFUSE_REQ() (new QtFuseRequest(req, *c))
