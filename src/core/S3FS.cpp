@@ -747,37 +747,6 @@ inline bool S3FS::real_write(S3FS_Obj &ino, const QByteArray &buf, off_t offset,
 	return true;
 }
 
-void S3FS::fuse_write_buf(QtFuseRequest *req, fuse_ino_t ino, struct fuse_bufvec *bufv, off_t off) {
-// TODO re-entry to this function won't work, so copy buf now and pass it to fuse_write
-#if 0
-	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, ino), Q_ARG(struct fuse_bufvec*,bufv), Q_ARG(off_t,off));
-	WAIT_READY();
-	GET_INODE(ino);
-
-	qDebug("S3FS::write_buf bufv=%p", bufv);
-
-//	qDebug("S3FS::write_buf called");
-//	qDebug("S3FS::write_buf count=%ld idx=%ld off=%ld", bufv->count, bufv->idx, bufv->off);
-
-//	TODO we might want to handle fuse's bufvec format for efficient writing. In the meantime we'll just do this the easy way
-#endif
-	struct fuse_bufvec dst = FUSE_BUFVEC_INIT(fuse_buf_size(bufv));
-	QByteArray dst_buf;
-	dst_buf.resize(fuse_buf_size(bufv));
-	dst.buf[0].mem = dst_buf.data();
-
-	ssize_t res = fuse_buf_copy(&dst, bufv, FUSE_BUF_NO_SPLICE);
-
-	if (res < 0) {
-		req->error(-res);
-		return;
-	}
-
-	dst_buf.resize(res);
-
-	fuse_write(req, ino, dst_buf, off);
-}
-
 quint64 S3FS::makeInode() {
 	quint64 new_inode = QDateTime::currentMSecsSinceEpoch()*1000 + cluster_node_id;
 

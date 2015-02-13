@@ -114,6 +114,18 @@ void S3Fuse::fuse_write(QtFuseRequest *req, fuse_ino_t ino, const QByteArray &bu
 }
 
 void S3Fuse::fuse_write_buf(QtFuseRequest *req, fuse_ino_t ino, struct fuse_bufvec *bufv, off_t off) {
-	QMetaObject::invokeMethod(parent, "fuse_write_buf", Q_ARG(QtFuseRequest*,req), Q_ARG(fuse_ino_t,ino), Q_ARG(struct fuse_bufvec*,bufv), Q_ARG(off_t,off));
+	struct fuse_bufvec dst = FUSE_BUFVEC_INIT(fuse_buf_size(bufv));
+	QByteArray dst_buf;
+	dst_buf.resize(fuse_buf_size(bufv));
+	dst.buf[0].mem = dst_buf.data();
+	ssize_t res = fuse_buf_copy(&dst, bufv, FUSE_BUF_NO_SPLICE);
+
+	if (res < 0) {
+		req->error(-res);
+		return;
+	}
+
+	dst_buf.resize(res);
+	fuse_write(req, ino, dst_buf, off);
 }
 
