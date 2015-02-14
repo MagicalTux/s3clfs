@@ -33,7 +33,7 @@ protected:
 	virtual void fuse_init(struct fuse_conn_info *);
 	//virtual void fuse_destroy();
 	virtual void fuse_lookup(QtFuseRequest *req, fuse_ino_t parent, const QByteArray &name);
-	virtual void fuse_forget(QtFuseRequest *req, fuse_ino_t ino, unsigned long nlookup);
+	virtual void fuse_forget(fuse_ino_t ino, unsigned long nlookup);
 	virtual void fuse_getattr(QtFuseRequest *req, fuse_ino_t node);
 	virtual void fuse_setattr(QtFuseRequest *req, fuse_ino_t node, int to_set);
 	virtual void fuse_unlink(QtFuseRequest *req, fuse_ino_t parent, const QByteArray &name);
@@ -67,7 +67,7 @@ protected:
 	//virtual void fuse_poll(QtFuseRequest *req, fuse_ino_t ino, struct fuse_pollhandle *ph);
 	virtual void fuse_write_buf(QtFuseRequest *req, fuse_ino_t ino, struct fuse_bufvec *bufv, off_t off);
 	//virtual void fuse_retrieve_reply(QtFuseRequest *req, void *cookie, fuse_ino_t ino, off_t offset, struct fuse_bufvec *bufv);
-	//virtual void fuse_forget_multi(QtFuseRequest *req, size_t count, struct fuse_forget_data *forgets);
+	//virtual void fuse_forget_multi(size_t count, struct fuse_forget_data *forgets);
 	//virtual void fuse_flock(QtFuseRequest *req, fuse_ino_t ino, int op);
 	//virtual void fuse_fallocate(QtFuseRequest *req, fuse_ino_t ino, int mode, off_t offset, off_t length);
 

@@ -57,12 +57,12 @@ void QtFuse::fuse_lookup(QtFuseRequest *req, fuse_ino_t, const QByteArray &) {
 
 void QtFuse::priv_qtfuse_forget(fuse_req_t req, fuse_ino_t ino, unsigned long nlookup) {
 	QTFUSE_OBJ_FROM_REQ();
-	c->fuse_forget(QTFUSE_REQ(), ino, nlookup);
+	fuse_reply_none(req);
+	c->fuse_forget(ino, nlookup);
 }
 
-void QtFuse::fuse_forget(QtFuseRequest *req, fuse_ino_t node, unsigned long nlookup) {
+void QtFuse::fuse_forget(fuse_ino_t node, unsigned long nlookup) {
 	qDebug("TODO forget(%ld, %ld)", node, nlookup);
-	req->none();
 }
 
 void QtFuse::priv_qtfuse_getattr(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi) {
@@ -382,11 +382,13 @@ void QtFuse::fuse_retrieve_reply(QtFuseRequest *req, void*, fuse_ino_t, off_t, s
 
 void QtFuse::priv_qtfuse_forget_multi(fuse_req_t req, size_t count, struct fuse_forget_data *forgets) {
 	QTFUSE_OBJ_FROM_REQ();
-	c->fuse_forget_multi(QTFUSE_REQ(), count, forgets);
+	fuse_reply_none(req);
+	c->fuse_forget_multi(count, forgets);
 }
 
-void QtFuse::fuse_forget_multi(QtFuseRequest *req, size_t, struct fuse_forget_data *) {
-	req->none();
+void QtFuse::fuse_forget_multi(size_t count, struct fuse_forget_data *forgets) {
+	for(size_t i = 0; i < count; i++)
+		fuse_forget(forgets[i].ino, forgets[i].nlookup);
 }
 
 void QtFuse::priv_qtfuse_flock(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi, int op) {

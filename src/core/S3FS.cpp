@@ -120,8 +120,8 @@ void S3FS::fuse_lookup(QtFuseRequest *req, fuse_ino_t ino, const QByteArray &pat
 	req->entry(&res_ino_o.constAttr());
 }
 
-void S3FS::fuse_forget(QtFuseRequest *req, fuse_ino_t, unsigned long) {
-	req->none();
+void S3FS::fuse_forget(fuse_ino_t, unsigned long) {
+	// TODO? 
 }
 
 void S3FS::fuse_setattr(QtFuseRequest *req, fuse_ino_t ino, int to_set) {

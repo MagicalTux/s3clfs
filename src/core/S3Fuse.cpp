@@ -37,8 +37,8 @@ void S3Fuse::fuse_lookup(QtFuseRequest *req, fuse_ino_t ino, const QByteArray &p
 	QMetaObject::invokeMethod(parent, "fuse_lookup", Q_ARG(QtFuseRequest*,req), Q_ARG(fuse_ino_t,ino), Q_ARG(const QByteArray&,path));
 }
 
-void S3Fuse::fuse_forget(QtFuseRequest *req, fuse_ino_t ino, unsigned long nlookup) {
-	QMetaObject::invokeMethod(parent, "fuse_forget", Q_ARG(QtFuseRequest*,req), Q_ARG(fuse_ino_t,ino), Q_ARG(unsigned long,nlookup));
+void S3Fuse::fuse_forget(fuse_ino_t ino, unsigned long nlookup) {
+	QMetaObject::invokeMethod(parent, "fuse_forget", Q_ARG(fuse_ino_t,ino), Q_ARG(unsigned long,nlookup));
 }
 
 void S3Fuse::fuse_setattr(QtFuseRequest *req, fuse_ino_t node, int to_set) {
