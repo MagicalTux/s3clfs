@@ -43,6 +43,10 @@ S3FS_Aws::S3FS_Aws(S3FS_Config *_cfg, QObject *parent): QObject(parent) {
 		qCritical("WARNING! AWS configuration is missing, your data WILL NOT be saved and will be LOST on umount.\nPlease create a configuration file %s with the required information.", qPrintable(path));
 		return;
 	}
+
+	connect(&status_timer, &QTimer::timeout, this, &S3FS_Aws::showStatus);
+	status_timer.setSingleShot(false);
+	status_timer.start(5000);
 }
 
 const QByteArray &S3FS_Aws::getAwsId() const {
@@ -151,12 +155,12 @@ QNetworkReply *S3FS_Aws::reqV4(const QByteArray &verb, const QByteArray &subpath
 }
 
 void S3FS_Aws::httpV4(QObject *caller, const QByteArray &verb, const QByteArray &subpath, const QNetworkRequest &req, const QByteArray &data) {
-	qDebug("AWS: Request(v4) %s %s", verb.data(), req.url().toString().toLatin1().data());
+//	qDebug("AWS: Request(v4) %s %s", verb.data(), req.url().toString().toLatin1().data());
 	if (http_running.size() < 8) {
 		auto reply = reqV4(verb, subpath, req, data);
 		http_running.insert(reply);
 		connect(reply, SIGNAL(destroyed(QObject*)), this, SLOT(replyDestroyed(QObject*)));
-		qDebug("S3FS_Aws: queries status %d/8", http_running.size());
+//		qDebug("S3FS_Aws: queries status %d/8", http_running.size());
 		QMetaObject::invokeMethod(caller, "requestStarted", Q_ARG(QNetworkReply*, reply));
 		return;
 	}
@@ -177,12 +181,12 @@ void S3FS_Aws::httpV4(QObject *caller, const QByteArray &verb, const QByteArray 
 }
 
 void S3FS_Aws::http(QObject *caller, const QByteArray &verb, const QNetworkRequest &req, QIODevice *data) {
-	qDebug("AWS: Request %s %s", verb.data(), req.url().toString().toLatin1().data());
+//	qDebug("AWS: Request %s %s", verb.data(), req.url().toString().toLatin1().data());
 	if (http_running.size() < 8) {
 		auto reply = net.sendCustomRequest(req, verb, data);
 		http_running.insert(reply);
 		connect(reply, SIGNAL(destroyed(QObject*)), this, SLOT(replyDestroyed(QObject*)));
-		qDebug("S3FS_Aws: queries status %d/8", http_running.size());
+//		qDebug("S3FS_Aws: queries status %d/8", http_running.size());
 		QMetaObject::invokeMethod(caller, "requestStarted", Q_ARG(QNetworkReply*, reply));
 		return;
 	}
@@ -222,6 +226,10 @@ void S3FS_Aws::replyDestroyed(QObject *obj) {
 		QMetaObject::invokeMethod(q->sender, "requestStarted", Q_ARG(QNetworkReply*, reply));
 		delete q;
 	}
+//	qDebug("S3FS_Aws: queries status %d/8 (%d in queue)", http_running.size(), http_queue.size());
+}
+
+void S3FS_Aws::showStatus() {
 	qDebug("S3FS_Aws: queries status %d/8 (%d in queue)", http_running.size(), http_queue.size());
 }
 

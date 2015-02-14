@@ -44,7 +44,7 @@ public:
 	// inodes
 	bool hasInode(quint64);
 	bool storeInode(const S3FS_Obj&);
-	S3FS_Obj getInode(quint64);
+	S3FS_Obj *getInode(quint64);
 	bool hasInodeLocally(quint64);
 	void callbackOnInodeCached(quint64, Callback*);
 	void removeInodeFromCache(quint64);

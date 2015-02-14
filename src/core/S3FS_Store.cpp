@@ -259,7 +259,7 @@ bool S3FS_Store::storeInode(const S3FS_Obj&o) {
 	QByteArray key = QByteArrayLiteral("\x01") + ino_b;
 	if (!kv.insert(key, o.encode())) return false;
 	kv.insert(QByteArrayLiteral("\x03") + ino_b, QByteArray(8, '\0')); // default to zero
-	if (!inodes_cache.insert(ino, new S3FS_Obj(o))) qDebug("LEAK2!");
+	inodes_cache.insert(ino, new S3FS_Obj(o));
 
 	// send inode to aws
 	inodeUpdated(ino);
@@ -304,14 +304,14 @@ void S3FS_Store::sendInodeToAws(quint64 ino) {
 	kv.insert(QByteArrayLiteral("\x03")+ino_b, ino_rev_b);
 }
 
-S3FS_Obj S3FS_Store::getInode(quint64 ino) {
+S3FS_Obj *S3FS_Store::getInode(quint64 ino) {
 	INT_TO_BYTES(ino);
-	if (inodes_cache.contains(ino)) return *inodes_cache.object(ino);
+	if (inodes_cache.contains(ino)) return inodes_cache.object(ino);
 	QByteArray key = QByteArrayLiteral("\x01") + ino_b;
 	lastaccess_inode.insert(ino);
 
-	auto res = S3FS_Obj(kv.value(key));
-	if (!inodes_cache.insert(ino, new S3FS_Obj(res))) qDebug("LEAK!");
+	auto res = new S3FS_Obj(kv.value(key));
+	inodes_cache.insert(ino, res);
 	return res;
 }
 

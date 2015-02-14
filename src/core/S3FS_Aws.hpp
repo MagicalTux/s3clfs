@@ -1,7 +1,3 @@
-#include <QObject>
-#include <QNetworkAccessManager>
-#include <QNetworkRequest>
-
 /*  S3ClFS - AWS S3 backed cluster filesystem
  *  Copyright (C) 2015 Mark Karpeles
  *
@@ -18,6 +14,10 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <QObject>
+#include <QNetworkAccessManager>
+#include <QNetworkRequest>
+#include <QTimer>
 
 #pragma once
 
@@ -50,6 +50,7 @@ public slots:
 	void replyDestroyed(QObject *obj);
 
 protected:
+	void showStatus();
 	QByteArray signV2(const QByteArray &string);
 	QByteArray signV4(const QByteArray &string, const QByteArray &path, const QByteArray &timestamp, QByteArray &algo);
 	QNetworkReply *reqV4(const QByteArray &verb, const QByteArray &subpath, QNetworkRequest req, const QByteArray &data = QByteArray());
@@ -71,5 +72,6 @@ private:
 	QList<S3FS_Aws_Queue_Entry*> http_queue;
 	QMap<QByteArray,QByteArray> aws_bucket_region;
 	S3FS_Config *cfg;
+	QTimer status_timer;
 };
 
