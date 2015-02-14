@@ -1,6 +1,3 @@
-#include <QObject>
-#include <leveldb/db.h>
-
 /*  S3ClFS - AWS S3 backed cluster filesystem
  *  Copyright (C) 2015 Mark Karpeles
  *
@@ -17,6 +14,9 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <QObject>
+#include <leveldb/db.h>
+#include <QCache>
 
 #pragma once
 
@@ -48,6 +48,7 @@ private:
 	leveldb::Options options;
 	leveldb::ReadOptions readoptions;
 	leveldb::WriteOptions writeoptions;
+	QCache<QByteArray,QByteArray> quick_cache;
 	friend class KeyvalIterator; // grants access to private and protected members of KeyvalIterator
 }; 
 
