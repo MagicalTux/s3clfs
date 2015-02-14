@@ -1,0 +1,16 @@
+Source: s3clfs
+Section: otherosfs
+Priority: optional
+Maintainer: Mark Karpeles <magicaltux@gmail.com>
+Build-Depends: debhelper (>= 8.0.0)
+Standards-Version: 3.9.4
+Homepage: https://github.com/MagicalTux/s3clfs
+#Vcs-Git: git://git.debian.org/collab-maint/s3clfs.git
+#Vcs-Browser: http://git.debian.org/?p=collab-maint/s3clfs.git;a=summary
+
+Package: s3clfs
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: S3ClFS is a fuse filesystem backed by AWS S3
+ This software allows storing of data on S3 from any machine, with a local
+ cache for improved performance.
