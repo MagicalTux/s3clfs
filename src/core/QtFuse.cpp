@@ -274,10 +274,10 @@ void QtFuse::fuse_setxattr(QtFuseRequest *req, fuse_ino_t, const char *, const c
 
 void QtFuse::priv_qtfuse_getxattr(fuse_req_t req, fuse_ino_t ino, const char *name, size_t size) {
 	QTFUSE_OBJ_FROM_REQ();
-	c->fuse_getxattr(QTFUSE_REQ(), ino, name, size);
+	c->fuse_getxattr(QTFUSE_REQ(), ino, QByteArray(name), size);
 }
 
-void QtFuse::fuse_getxattr(QtFuseRequest *req, fuse_ino_t, const char*, size_t) {
+void QtFuse::fuse_getxattr(QtFuseRequest *req, fuse_ino_t, const QByteArray&, size_t) {
 	QTFUSE_NOT_IMPL(ENOTSUP);
 }
 

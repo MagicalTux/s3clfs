@@ -129,3 +129,7 @@ void S3Fuse::fuse_write_buf(QtFuseRequest *req, fuse_ino_t ino, struct fuse_bufv
 	fuse_write(req, ino, dst_buf, off);
 }
 
+void S3Fuse::fuse_getxattr(QtFuseRequest *req, fuse_ino_t, const QByteArray &, size_t) {
+	req->error(ENOTSUP); // just return ENOSYS here to avoid log full of "getxattr not impl"
+}
+

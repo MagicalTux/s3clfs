@@ -78,7 +78,7 @@ protected:
 	virtual void fuse_fsyncdir(QtFuseRequest *req, fuse_ino_t ino, int datasync);
 	virtual void fuse_statfs(QtFuseRequest *req, fuse_ino_t ino);
 	virtual void fuse_setxattr(QtFuseRequest *req, fuse_ino_t ino, const char *name, const char *value, size_t size, int flags);
-	virtual void fuse_getxattr(QtFuseRequest *req, fuse_ino_t ino, const char *name, size_t size);
+	virtual void fuse_getxattr(QtFuseRequest *req, fuse_ino_t ino, const QByteArray&, size_t size);
 	virtual void fuse_listxattr(QtFuseRequest *req, fuse_ino_t ino, size_t size);
 	virtual void fuse_removexattr(QtFuseRequest *req, fuse_ino_t ino, const char *name);
 	virtual void fuse_access(QtFuseRequest *req, fuse_ino_t ino, int mask);
