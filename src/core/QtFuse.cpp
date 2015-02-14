@@ -385,12 +385,8 @@ void QtFuse::priv_qtfuse_forget_multi(fuse_req_t req, size_t count, struct fuse_
 	c->fuse_forget_multi(QTFUSE_REQ(), count, forgets);
 }
 
-void QtFuse::fuse_forget_multi(QtFuseRequest *req, size_t count, struct fuse_forget_data *forgets) {
-	for(size_t i = 0; i < count; i++) {
-		fuse_ino_t ino = forgets[i].ino;
-		fuse_forget(req, ino, forgets[i].nlookup);
-	}
-	req->none(); // just in case count==0
+void QtFuse::fuse_forget_multi(QtFuseRequest *req, size_t, struct fuse_forget_data *) {
+	req->none();
 }
 
 void QtFuse::priv_qtfuse_flock(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi, int op) {
