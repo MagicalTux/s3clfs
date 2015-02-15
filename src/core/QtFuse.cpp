@@ -23,7 +23,7 @@
 #include <contrib/QByteArrayList.hpp>
 #endif
 
-#define QTFUSE_OBJ_FROM_REQ() QtFuse *c = (QtFuse*)fuse_req_userdata(req)
+#define QTFUSE_OBJ_FROM_REQ() Q_CHECK_PTR(req); QtFuse *c = (QtFuse*)fuse_req_userdata(req); Q_CHECK_PTR(c)
 #define QTFUSE_REQ() (new QtFuseRequest(req, *c))
 #define QTFUSE_REQ_FI() (new QtFuseRequest(req, *c, fi))
 #define QTFUSE_NOT_IMPL(e) qDebug("fuse: %s not implemented, returning " #e, __FUNCTION__); req->error(e)
@@ -490,16 +490,11 @@ void QtFuse::run() {
 	}
 
 	chan = fuse_mount(mountpoint, &args);
-	if (!chan) {
-		fuse_opt_free_args(&args);
-		QCoreApplication::exit(1);
-		return;
-	}
+	Q_CHECK_PTR(chan);
 
 	fuse = fuse_lowlevel_new(&args, &qtfuse_op, sizeof(qtfuse_op), this);
+	Q_CHECK_PTR(fuse);
 	fuse_opt_free_args(&args);
-	if (fuse == NULL)
-		return; // TODO: correctly unmount fuse
 
 	fuse_session_add_chan(fuse, chan);
 
@@ -507,6 +502,7 @@ void QtFuse::run() {
 	memset(&fuse_buf, 0, sizeof(fuse_buf));
 	size_t bufsize = fuse_chan_bufsize(chan);
 	char *fuse_buf_mem = (char *) malloc(bufsize);
+	Q_CHECK_PTR(fuse_buf_mem);
 
 	ready();
 
@@ -538,6 +534,7 @@ void QtFuse::run() {
 }
 
 void QtFuse::prepare() {
+	// Register various types for safety
 	qRegisterMetaType<QtFuse*>("QtFuse*");
 	qRegisterMetaType<QtFuseRequest*>("QtFuseRequest*");
 	qRegisterMetaType<fuse_ino_t>("fuse_ino_t");
