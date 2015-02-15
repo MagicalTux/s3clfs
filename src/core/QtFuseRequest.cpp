@@ -17,11 +17,12 @@
 #include "QtFuse.hpp"
 #include "QtFuseRequest.hpp"
 #include <QCoreApplication>
+#include <QTimer>
 
-#define CHECK_ANSWER() if (answered) return; answered = true
+#define CHECK_ANSWER() if (answered) return; answered = true; QTimer::singleShot(0,this,SLOT(deleteLater()))
 
 QtFuseRequest::QtFuseRequest(fuse_req_t _req, QtFuse &_parent, struct fuse_file_info *_fi): parent(_parent) {
-	moveToThread(QCoreApplication::instance()->thread());
+//	moveToThread(QCoreApplication::instance()->thread());
 	req = _req;
 	if (_fi) fuse_fi = *_fi;
 	answered = false;
@@ -49,13 +50,11 @@ void QtFuseRequest::prepareBuffer(size_t size) {
 void QtFuseRequest::error(int err) {
 	CHECK_ANSWER();
 	fuse_reply_err(req, err);
-	deleteLater();
 }
 
 void QtFuseRequest::none() {
 	CHECK_ANSWER();
 	fuse_reply_none(req);
-	deleteLater();
 }
 
 void QtFuseRequest::entry(const struct stat*attr, int generation) {
@@ -70,7 +69,6 @@ void QtFuseRequest::entry(const struct stat*attr, int generation) {
 	e.entry_timeout = 1;
 
 	fuse_reply_entry(req, &e);
-	deleteLater();
 }
 
 void QtFuseRequest::create(const struct stat *attr, const struct fuse_file_info *fi, int generation) {
@@ -84,77 +82,66 @@ void QtFuseRequest::create(const struct stat *attr, const struct fuse_file_info 
 	e.attr = *attr;
 
 	fuse_reply_create(req, &e, fi);
-	deleteLater();
 }
 
 void QtFuseRequest::attr(const struct stat *attr, double attr_timeout) {
 	CHECK_ANSWER();
 
 	fuse_reply_attr(req, attr, attr_timeout);
-	deleteLater();
 }
 
 void QtFuseRequest::readlink(const QByteArray &link) {
 	CHECK_ANSWER();
 
 	fuse_reply_readlink(req, link.constData());
-	deleteLater();
 }
 
 void QtFuseRequest::open(const struct fuse_file_info *fi) {
 	CHECK_ANSWER();
 
 	fuse_reply_open(req, fi);
-	deleteLater();
 }
 
 void QtFuseRequest::write(size_t count) {
 	CHECK_ANSWER();
 
 	fuse_reply_write(req, count);
-	deleteLater();
 }
 
 void QtFuseRequest::buf(const QByteArray &data) {
 	CHECK_ANSWER();
 
 	fuse_reply_buf(req, data.constData(), data.size());
-	deleteLater();
 }
 
 void QtFuseRequest::iov(const struct iovec *iov, int count) {
 	CHECK_ANSWER();
 
 	fuse_reply_iov(req, iov, count);
-	deleteLater();
 }
 
 void QtFuseRequest::statfs(const struct statvfs *stbuf) {
 	CHECK_ANSWER();
 
 	fuse_reply_statfs(req, stbuf);
-	deleteLater();
 }
 
 void QtFuseRequest::xattr(size_t count) {
 	CHECK_ANSWER();
 
 	fuse_reply_xattr(req, count);
-	deleteLater();
 }
 
 void QtFuseRequest::lock(struct flock *lock) {
 	CHECK_ANSWER();
 
 	fuse_reply_lock(req, lock);
-	deleteLater();
 }
 
 void QtFuseRequest::bmap(uint64_t idx) {
 	CHECK_ANSWER();
 
 	fuse_reply_bmap(req, idx);
-	deleteLater();
 }
 
 bool QtFuseRequest::dir_add(const QByteArray &name, const struct stat *stbuf, off_t next_offset) {
@@ -175,7 +162,6 @@ void QtFuseRequest::dir_send() {
 	delete data_buf;
 	data_buf = NULL;
 	buf_size = 0;
-	deleteLater();
 }
 
 struct fuse_file_info *QtFuseRequest::fi() {
