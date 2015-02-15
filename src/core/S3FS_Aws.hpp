@@ -21,6 +21,8 @@
 
 #pragma once
 
+#define S3FS_AWS_QUEUE_LENGTH 8
+
 class S3FS_Config;
 class S3FS_Aws_S3;
 class S3FS_Aws_SQS;
@@ -65,13 +67,19 @@ protected:
 private:
 	QByteArray id;
 	QByteArray key;
+	QByteArray token;
 	QNetworkAccessManager net;
 	bool overload_status;
+	bool is_ready;
 
 	QSet<QNetworkReply*> http_running;
 	QList<S3FS_Aws_Queue_Entry*> http_queue;
 	QMap<QByteArray,QByteArray> aws_bucket_region;
 	S3FS_Config *cfg;
 	QTimer status_timer;
+
+	void retrieveAwsCredentials();
+	void receiveAwsCredentials();
+	void runQueue();
 };
 

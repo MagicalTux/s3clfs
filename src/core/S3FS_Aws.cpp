@@ -15,12 +15,15 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "S3FS_Aws.hpp"
+#include "S3FS_Config.hpp"
 #include <QStandardPaths>
 #include <QFile>
 #include <QSettings>
 #include <QMessageAuthenticationCode>
 #include <QNetworkReply>
 #include <QBuffer>
+#include <QJsonDocument>
+#include <QJsonObject>
 #if QT_VERSION < 0x050300
 #include <contrib/QByteArrayList.hpp>
 #endif
@@ -28,6 +31,17 @@
 S3FS_Aws::S3FS_Aws(S3FS_Config *_cfg, QObject *parent): QObject(parent) {
 	cfg = _cfg;
 	overload_status = false;
+	is_ready = false;
+
+	connect(&status_timer, &QTimer::timeout, this, &S3FS_Aws::showStatus);
+	status_timer.setSingleShot(false);
+	status_timer.start(5000);
+
+	if (!cfg->awsCredentialsUrl().isEmpty()) {
+		retrieveAwsCredentials();
+		return;
+	}
+
 	QString path = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation)+"/aws/credentials";
 	if (!QFile::exists(path)) {
 		qCritical("WARNING! AWS configuration is missing, your data WILL NOT be saved and will be LOST on umount.\nPlease create a configuration file %s with the required information.", qPrintable(path));
@@ -43,10 +57,59 @@ S3FS_Aws::S3FS_Aws(S3FS_Config *_cfg, QObject *parent): QObject(parent) {
 		qCritical("WARNING! AWS configuration is missing, your data WILL NOT be saved and will be LOST on umount.\nPlease create a configuration file %s with the required information.", qPrintable(path));
 		return;
 	}
+	is_ready = true;
+}
 
-	connect(&status_timer, &QTimer::timeout, this, &S3FS_Aws::showStatus);
-	status_timer.setSingleShot(false);
-	status_timer.start(5000);
+void S3FS_Aws::retrieveAwsCredentials() {
+	// receive credentials from provided URL, that will return a JSON object containing at least:
+	// - AccessKeyId
+	// - SecretAccessKey
+	// - Token
+	// - Expiration (new key must be available at least 5 min before expiration)
+	QNetworkRequest req(QUrl(cfg->awsCredentialsUrl()));
+	qDebug("S3FS_Aws: Performing GET request to get credentials on %s", qPrintable(req.url().toString()));
+	auto reply = net.get(req);
+	connect(reply, &QNetworkReply::finished, this, &S3FS_Aws::receiveAwsCredentials);
+}
+
+void S3FS_Aws::receiveAwsCredentials() {
+	auto reply = qobject_cast<QNetworkReply*>(sender());
+	if (reply == NULL) return;
+	reply->deleteLater();
+
+	QJsonParseError e;
+	QJsonDocument doc = QJsonDocument::fromJson(reply->readAll(), &e);
+
+	if (e.error != QJsonParseError::NoError) {
+		qDebug("S3FS_Aws: failed to parse JSON: %s", qPrintable(e.errorString()));
+		qDebug("S3FS_Aws: failed to receive valid JSON, retrying in 10 seconds");
+		QTimer::singleShot(10000, this, &S3FS_Aws::retrieveAwsCredentials);
+		return;
+	}
+	auto obj = doc.object();
+	if ((!obj.contains("AccessKeyId")) || (!obj.contains("SecretAccessKey")) || (!obj.contains("Token")) || (!obj.contains("Expiration"))) {
+		qFatal("S3FS_Aws: invalid data from api, giving up");
+		Q_UNREACHABLE();
+	}
+	qDebug("S3FS_Aws: Received credentials");
+	id = obj.value("AccessKeyId").toString().toUtf8();
+	key = obj.value("SecretAccessKey").toString().toUtf8();
+	token = obj.value("Token").toString().toUtf8();
+
+	QDateTime t = QDateTime::fromString(obj.value("Expiration").toString(), Qt::ISODate);
+	qint64 t_diff = QDateTime::currentDateTimeUtc().msecsTo(t);
+	if (t_diff < 300000) {
+		// can't be less than 5 mins, this is wrong
+		qDebug("S3FS_Aws: failed to receive something correct, retrying in 1 minute");
+		QTimer::singleShot(60000, this, &S3FS_Aws::retrieveAwsCredentials);
+		return;
+	}
+
+	qDebug("Configured new ID %s, expiring in %lld seconds", id.data(), t_diff/1000);
+	is_ready = true;
+	runQueue();
+
+	QTimer::singleShot(t_diff-300000, this, &S3FS_Aws::retrieveAwsCredentials); // retry 5 minutes earlier than expiration
 }
 
 const QByteArray &S3FS_Aws::getAwsId() const {
@@ -156,7 +219,7 @@ QNetworkReply *S3FS_Aws::reqV4(const QByteArray &verb, const QByteArray &subpath
 
 void S3FS_Aws::httpV4(QObject *caller, const QByteArray &verb, const QByteArray &subpath, const QNetworkRequest &req, const QByteArray &data) {
 //	qDebug("AWS: Request(v4) %s %s", verb.data(), req.url().toString().toLatin1().data());
-	if (http_running.size() < 8) {
+	if ((is_ready) && (http_running.size() < S3FS_AWS_QUEUE_LENGTH)) {
 		auto reply = reqV4(verb, subpath, req, data);
 		http_running.insert(reply);
 		connect(reply, SIGNAL(destroyed(QObject*)), this, SLOT(replyDestroyed(QObject*)));
@@ -182,7 +245,7 @@ void S3FS_Aws::httpV4(QObject *caller, const QByteArray &verb, const QByteArray 
 
 void S3FS_Aws::http(QObject *caller, const QByteArray &verb, const QNetworkRequest &req, QIODevice *data) {
 //	qDebug("AWS: Request %s %s", verb.data(), req.url().toString().toLatin1().data());
-	if (http_running.size() < 8) {
+	if ((is_ready) && (http_running.size() < S3FS_AWS_QUEUE_LENGTH)) {
 		auto reply = net.sendCustomRequest(req, verb, data);
 		http_running.insert(reply);
 		connect(reply, SIGNAL(destroyed(QObject*)), this, SLOT(replyDestroyed(QObject*)));
@@ -211,7 +274,12 @@ void S3FS_Aws::replyDestroyed(QObject *obj) {
 		overload_status = false;
 		overloadStatus(overload_status);
 	}
-	if (http_queue.size()) {
+	runQueue();
+}
+
+void S3FS_Aws::runQueue() {
+	if (!is_ready) return;
+	if ((http_queue.size()) && (http_running.size() < S3FS_AWS_QUEUE_LENGTH)) {
 		auto q = http_queue.takeFirst();
 		QNetworkReply *reply;
 		switch(q->sign) {
@@ -230,7 +298,8 @@ void S3FS_Aws::replyDestroyed(QObject *obj) {
 }
 
 void S3FS_Aws::showStatus() {
-	qDebug("S3FS_Aws: queries status %d/8 (%d in queue)", http_running.size(), http_queue.size());
+	if ((http_running.size() == 0) && (http_queue.size() == 0)) return;
+	qDebug("S3FS_Aws: queries status %d/%d (%d in queue)", http_running.size(), S3FS_AWS_QUEUE_LENGTH, http_queue.size());
 }
 
 QByteArray S3FS_Aws::getBucketRegion(const QByteArray&bucket) {

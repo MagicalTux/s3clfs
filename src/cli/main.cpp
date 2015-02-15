@@ -39,6 +39,7 @@ int main(int argc, char *argv[]) {
 	parser.addOption({{"c", "cache"}, QCoreApplication::translate("main", "Where to store cache, default %1/s3clfs-<bucket>").arg(QStandardPaths::writableLocation(QStandardPaths::TempLocation)), "cache"});
 	parser.addOption({"quick-forget", QCoreApplication::translate("main", "Quickly purge data from the database. Useful if used as rsync target only.")});
 	parser.addOption({"disable-data-cache", QCoreApplication::translate("main", "Do not keep data in the LevelDB cache.")});
+	parser.addOption({"ec2-iam-role", QCoreApplication::translate("main", "Obtain AWS access from IAM role set to this EC2 instance."), "url"});
 
 	parser.process(app);
 
@@ -57,6 +58,10 @@ int main(int argc, char *argv[]) {
 	cfg.setCachePath(parser.value(QStringLiteral("cache")));
 	if (parser.isSet("quick-forget")) cfg.setExpireBlocks(1800); // 30min
 	if (parser.isSet("disable-data-cache")) cfg.setCacheData(false);
+	if (parser.isSet("ec2-iam-role")) {
+		// gather AWS credentials from there (only valid for EC2 instances)
+		cfg.setAwsCredentialsUrl(QString("http://169.254.169.254/latest/meta-data/iam/security-credentials/")+parser.value("ec2-iam-role"));
+	}
 
 	S3FS s3clfs(&cfg);
 	S3Fuse fuse(&cfg, &s3clfs);

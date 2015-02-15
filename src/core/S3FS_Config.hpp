@@ -34,6 +34,9 @@ public:
 	bool cacheData() const;
 	void setCacheData(bool);
 
+	QString awsCredentialsUrl() const;
+	void setAwsCredentialsUrl(const QString&);
+
 private:
 	int cluster_id; // node id within cluster
 	QByteArray mount_options; // mount options (allow_other, etc)
@@ -45,5 +48,6 @@ private:
 	quint64 expire_inodes; // expiration of cached inodes, in seconds
 	quint64 list_fetch_interval; // how often to re-fetch the inodes list on S3
 	bool cache_data;
+	QString aws_credentials_url; // for example http://169.254.169.254/latest/meta-data/iam/security-credentials/policy-name
 };
 
