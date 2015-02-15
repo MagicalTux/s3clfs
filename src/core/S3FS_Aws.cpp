@@ -152,6 +152,8 @@ QNetworkReply *S3FS_Aws::reqV4(const QByteArray &verb, const QByteArray &subpath
 	// at the very minimum, we need this header
 	req.setRawHeader("X-Amz-Date", timestamp);
 	req.setRawHeader("X-Amz-Content-SHA256", content_sha256);
+	if (!token.isEmpty())
+		req.setRawHeader("X-Amz-Security-Token", token);
 
 	// compute canonical url query
 	QByteArray canonical_query_string = req.url().query(QUrl::FullyEncoded).toLatin1();
