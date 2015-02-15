@@ -18,7 +18,7 @@
 #include "QtFuseRequest.hpp"
 #include <QCoreApplication>
 
-#define CHECK_ANSWER() if (answered) return; answered = true; moveToThread(QThread::currentThread()); deleteLater()
+#define CHECK_ANSWER() if (answered) return; answered = true; deleteLater()
 
 QtFuseRequest::QtFuseRequest(fuse_req_t _req, QtFuse &_parent, struct fuse_file_info *_fi): parent(_parent) {
 	moveToThread(QCoreApplication::instance()->thread());

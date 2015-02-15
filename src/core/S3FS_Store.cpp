@@ -259,7 +259,11 @@ bool S3FS_Store::storeInode(const S3FS_Obj&o) {
 	QByteArray key = QByteArrayLiteral("\x01") + ino_b;
 	if (!kv.insert(key, o.encode())) return false;
 	kv.insert(QByteArrayLiteral("\x03") + ino_b, QByteArray(8, '\0')); // default to zero
-	inodes_cache.insert(ino, new S3FS_Obj(o));
+	if (inodes_cache.contains(ino)) {
+		inodes_cache[ino]->setAttr(o.constAttr());
+	} else {
+		inodes_cache.insert(ino, new S3FS_Obj(o));
+	}
 
 	// send inode to aws
 	inodeUpdated(ino);
