@@ -139,6 +139,9 @@ void S3FS_Store::learnFile(const QString &name, bool in_list) {
 
 	if (kv.contains(QByteArrayLiteral("\x03")+fn)) {
 		// remove old file
+		quint64 fn_ino;
+		QDataStream(fn) >> fn_ino;
+		if (inodes_to_update.contains(fn_ino)) return; // this is pending transmission
 		QByteArray rev = kv.value(QByteArrayLiteral("\x03")+fn);
 		if (rev == newrev) return; // no change
 		if (rev < newrev) {
@@ -147,8 +150,6 @@ void S3FS_Store::learnFile(const QString &name, bool in_list) {
 			kv.insert(QByteArrayLiteral("\x03")+fn, newrev);
 			if (kv.contains(QByteArrayLiteral("\x01")+fn)) {
 				// clear this inode from cache
-				quint64 fn_ino;
-				QDataStream(fn) >> fn_ino;
 				qDebug("S3FS_Store: Inode %s has changed, invalidating cache", fn.toHex().data());
 				inodes_cache.remove(fn_ino);
 				auto i = new KeyvalIterator(&kv);
