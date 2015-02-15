@@ -372,7 +372,7 @@ void S3FS_Store::receivedInode(S3FS_Aws_S3*r) {
 		return;
 	}
 	QDataStream s(data);
-	qDebug("Received inode %llu", ino);
+//	qDebug("Received inode %llu", ino);
 
 	while(!s.atEnd()) {
 		QByteArray key, val;
