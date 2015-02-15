@@ -50,6 +50,8 @@ signals:
 
 public slots:
 	void replyDestroyed(QObject *obj);
+	void retrieveAwsCredentials();
+	void receiveAwsCredentials();
 
 protected:
 	void showStatus();
@@ -78,8 +80,6 @@ private:
 	S3FS_Config *cfg;
 	QTimer status_timer;
 
-	void retrieveAwsCredentials();
-	void receiveAwsCredentials();
 	void runQueue();
 };
 

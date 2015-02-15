@@ -84,7 +84,7 @@ void S3FS_Aws::receiveAwsCredentials() {
 	if (e.error != QJsonParseError::NoError) {
 		qDebug("S3FS_Aws: failed to parse JSON: %s", qPrintable(e.errorString()));
 		qDebug("S3FS_Aws: failed to receive valid JSON, retrying in 10 seconds");
-		QTimer::singleShot(10000, this, &S3FS_Aws::retrieveAwsCredentials);
+		QTimer::singleShot(10000, this, SLOT(retrieveAwsCredentials()));
 		return;
 	}
 	auto obj = doc.object();
@@ -102,7 +102,7 @@ void S3FS_Aws::receiveAwsCredentials() {
 	if (t_diff < 300000) {
 		// can't be less than 5 mins, this is wrong
 		qDebug("S3FS_Aws: failed to receive something correct, retrying in 1 minute");
-		QTimer::singleShot(60000, this, &S3FS_Aws::retrieveAwsCredentials);
+		QTimer::singleShot(60000, this, SLOT(retrieveAwsCredentials()));
 		return;
 	}
 
@@ -110,7 +110,7 @@ void S3FS_Aws::receiveAwsCredentials() {
 	is_ready = true;
 	runQueue();
 
-	QTimer::singleShot(t_diff-300000, this, &S3FS_Aws::retrieveAwsCredentials); // retry 5 minutes earlier than expiration
+	QTimer::singleShot(t_diff-300000, this, SLOT(retrieveAwsCredentials())); // retry 5 minutes earlier than expiration
 }
 
 const QByteArray &S3FS_Aws::getAwsId() const {
