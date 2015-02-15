@@ -38,6 +38,7 @@ S3FS_Aws::S3FS_Aws(S3FS_Config *_cfg, QObject *parent): QObject(parent) {
 	status_timer.start(5000);
 
 	if (!cfg->awsCredentialsUrl().isEmpty()) {
+		id = "PENDING";
 		retrieveAwsCredentials();
 		return;
 	}
