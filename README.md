@@ -11,7 +11,7 @@ Licensed under GPLv3. See attached LICENSE file for details.
 
 S3ClFS requires Qt5.4+ (core, network and xmlpatterns) and Fuse 2.9+.
 
-	/usr/lib/qt5/bin/qmake
+	qmake -qt=qt5 (or /usr/lib/qt5/bin/qmake)
 	make
 
 ## Configuring
