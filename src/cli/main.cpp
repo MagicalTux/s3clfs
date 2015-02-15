@@ -24,7 +24,7 @@
 int main(int argc, char *argv[]) {
 	QCoreApplication app(argc, argv);
 	QCoreApplication::setApplicationName("s3clfs");
-	QCoreApplication::setApplicationVersion("0.2");
+	QCoreApplication::setApplicationVersion("0.2.1");
 	QtFuse::prepare();
 
 	// arguments

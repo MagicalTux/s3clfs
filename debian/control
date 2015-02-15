@@ -1,5 +1,5 @@
 Source: s3clfs
-Section: otherosfs
+Section: admin
 Priority: optional
 Maintainer: Mark Karpeles <magicaltux@gmail.com>
 Build-Depends: debhelper (>= 8.0.0)
