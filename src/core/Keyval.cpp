@@ -27,7 +27,7 @@ Keyval::Keyval(QObject *parent): QObject(parent) {
 	options.create_if_missing = true;
 	options.compression = leveldb::kNoCompression;
 	// TODO allow tweaking of values through command line
-	options.max_open_files = 5000;
+	options.max_open_files = 1000; // TODO check ulimit fileno value and adapt
 	options.block_size = 65536; // 64kB, also largest size for values
 	options.write_buffer_size = 2*1024*1024; // 2MB (smaller means less stalls during reorg)
 	readoptions.verify_checksums = true;
