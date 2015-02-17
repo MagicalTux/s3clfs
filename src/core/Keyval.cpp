@@ -26,7 +26,10 @@ Keyval::Keyval(QObject *parent): QObject(parent) {
 	// setup default options
 	options.create_if_missing = true;
 	options.compression = leveldb::kNoCompression;
-	options.max_open_files = 64;
+	// TODO allow tweaking of values through command line
+	options.max_open_files = 5000;
+	options.block_size = 65536; // 64kB, also largest size for values
+	options.write_buffer_size = 64*1024*1024; // 64MB
 	readoptions.verify_checksums = true;
 	quick_cache.setMaxCost(1000);
 }
