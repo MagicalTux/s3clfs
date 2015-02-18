@@ -21,6 +21,7 @@
 #include <QSet>
 #include <QTimer>
 #include <QCache>
+#include <QDir>
 #include "S3FS_Obj.hpp"
 
 class S3FS_Aws;
@@ -119,5 +120,6 @@ private:
 	quint64 last_inode_rev;
 	QRegExp file_match;
 	S3FS_Config *cfg;
+	QDir data_path;
 };
 

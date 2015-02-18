@@ -49,6 +49,14 @@ S3FS_Store::S3FS_Store(S3FS_Config *_cfg, QObject *parent): QObject(parent) {
 		kv_location = cache_path;
 	}
 	qDebug("S3FS: Keyval location: %s", qPrintable(kv_location));
+	QString data_path_str = cfg->dataPath();
+	if (data_path_str.isEmpty()) {
+		data_path = QDir(QDir::temp().filePath(QString("s3clfs-")+bucket+QString("-data")));
+	} else {
+		data_path = QDir(data_path_str);
+	}
+	data_path.mkpath(".");
+	qDebug("S3FS: Data location: %s", qPrintable(data_path.path()));
 
 	if (!kv.open(kv_location)) {
 		qFatal("S3FS_Store: Failed to open cache");
@@ -402,8 +410,18 @@ QByteArray S3FS_Store::writeBlock(const QByteArray &buf) {
 
 	if (cfg->cacheData()) {
 		lastaccess_data.insert(hash);
-		if (!kv.insert(QByteArrayLiteral("\x02")+hash, buf))
+		// make block path
+		QByteArray hash_hex = hash.toHex();
+		QDir block_dir = QDir(data_path.filePath(hash_hex.left(1)+"/"+hash_hex.left(2)));
+		block_dir.mkpath(".");
+		QFile f(block_dir.filePath(hash_hex+".dat"));
+		if (!f.open(QIODevice::WriteOnly)) return QByteArray();
+		if (f.write(buf) != buf.size()) {
+			f.close();
+			f.remove();
 			return QByteArray();
+		}
+		f.close();
 	}
 
 	// storage
@@ -418,12 +436,20 @@ QByteArray S3FS_Store::writeBlock(const QByteArray &buf) {
 QByteArray S3FS_Store::readBlock(const QByteArray &hash) {
 	lastaccess_data.insert(hash);
 	if (blocks_cache.contains(hash)) return *blocks_cache.object(hash);
-	return kv.value(QByteArrayLiteral("\x02")+hash);
+	// make block path
+	QByteArray hash_hex = hash.toHex();
+	QString block_path = data_path.filePath(hash_hex.left(1)+"/"+hash_hex.left(2)+"/"+hash_hex+".dat");
+	QFile f(block_path);
+	if (!f.open(QIODevice::ReadOnly)) return QByteArray();
+	return f.readAll();
 }
 
 bool S3FS_Store::hasBlockLocally(const QByteArray &hash) {
 	if (blocks_cache.contains(hash)) return true;
-	return kv.contains(QByteArrayLiteral("\x02")+hash);
+	// make block path
+	QByteArray hash_hex = hash.toHex();
+	QString block_path = data_path.filePath(hash_hex.left(1)+"/"+hash_hex.left(2)+"/"+hash_hex+".dat");
+	return QFile::exists(block_path);
 }
 
 void S3FS_Store::callbackOnBlockCached(const QByteArray &block, Callback *cb) {
@@ -452,8 +478,20 @@ void S3FS_Store::receivedBlock(S3FS_Aws_S3*r) {
 	QByteArray block = r->property("_block_id").toByteArray();
 	QByteArray data = r->body();
 	if (cfg->cacheData()) {
-		kv.insert(QByteArrayLiteral("\x02")+block, data);
-		lastaccess_data.insert(block);
+		// make block path
+		QByteArray hash_hex = block.toHex();
+		QDir block_dir = QDir(data_path.filePath(hash_hex.left(1)+"/"+hash_hex.left(2)));
+		block_dir.mkpath(".");
+		QFile f(block_dir.filePath(hash_hex+".dat"));
+		if (f.open(QIODevice::WriteOnly)) {
+			if (f.write(data) != data.size()) {
+				f.close();
+				f.remove();
+			} else {
+				f.close();
+				lastaccess_data.insert(block);
+			}
+		}
 	}
 	blocks_cache.insert(block, new QByteArray(data));
 
@@ -572,8 +610,11 @@ void S3FS_Store::lastaccess_clean() {
 	delete j; // only for inodes
 	while((i->isValid()) && (i->key().at(0) == '\x12')) {
 		if (i->value() < timeout_blocks_b) {
-			qDebug("S3FS_Store: block %s not accessed for 1 hour, removing from cache", i->key().mid(1).toHex().data());
-			kv.remove(QByteArrayLiteral("\x02")+i->key().mid(1));
+			qDebug("S3FS_Store: block %s not accessed for too long, removing from cache", i->key().mid(1).toHex().data());
+			// make block path
+			QByteArray hash_hex = i->key().mid(1).toHex();
+			QString block_path = data_path.filePath(hash_hex.left(1)+"/"+hash_hex.left(2)+"/"+hash_hex+".dat");
+			QFile::remove(block_path);
 			kv.remove(i->key());
 		}
 		if (!i->next()) break;

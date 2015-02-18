@@ -22,6 +22,9 @@ public:
 	const QString &cachePath() const;
 	void setCachePath(const QString &);
 
+	const QString &dataPath() const;
+	void setDataPath(const QString &);
+
 	quint64 expireBlocks() const;
 	void setExpireBlocks(quint64);
 
@@ -44,6 +47,7 @@ private:
 	QByteArray mount_path; // path where to mount fuse filesystem
 	QByteArray queue_url; // URL of SQS queue (connected to SNS, connected to bucket notifications)
 	QString cache_path; // Path where to store leveldb
+	QString data_path; // Path where to store cached data
 	quint64 expire_blocks; // expiration of cached blocks, in seconds
 	quint64 expire_inodes; // expiration of cached inodes, in seconds
 	quint64 list_fetch_interval; // how often to re-fetch the inodes list on S3
