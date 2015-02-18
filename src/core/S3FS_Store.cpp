@@ -412,7 +412,7 @@ QByteArray S3FS_Store::writeBlock(const QByteArray &buf) {
 		lastaccess_data.insert(hash);
 		// make block path
 		QByteArray hash_hex = hash.toHex();
-		QDir block_dir = QDir(data_path.filePath(hash_hex.left(1)+"/"+hash_hex.left(2)));
+		QDir block_dir = QDir(data_path.filePath(hash_hex.left(2)+"/"+hash_hex.left(4)));
 		block_dir.mkpath(".");
 		QFile f(block_dir.filePath(hash_hex+".dat"));
 		if (!f.open(QIODevice::WriteOnly)) return QByteArray();
@@ -438,7 +438,7 @@ QByteArray S3FS_Store::readBlock(const QByteArray &hash) {
 	if (blocks_cache.contains(hash)) return *blocks_cache.object(hash);
 	// make block path
 	QByteArray hash_hex = hash.toHex();
-	QString block_path = data_path.filePath(hash_hex.left(1)+"/"+hash_hex.left(2)+"/"+hash_hex+".dat");
+	QString block_path = data_path.filePath(hash_hex.left(2)+"/"+hash_hex.left(4)+"/"+hash_hex+".dat");
 	QFile f(block_path);
 	if (!f.open(QIODevice::ReadOnly)) return QByteArray();
 	return f.readAll();
@@ -448,7 +448,7 @@ bool S3FS_Store::hasBlockLocally(const QByteArray &hash) {
 	if (blocks_cache.contains(hash)) return true;
 	// make block path
 	QByteArray hash_hex = hash.toHex();
-	QString block_path = data_path.filePath(hash_hex.left(1)+"/"+hash_hex.left(2)+"/"+hash_hex+".dat");
+	QString block_path = data_path.filePath(hash_hex.left(2)+"/"+hash_hex.left(4)+"/"+hash_hex+".dat");
 	return QFile::exists(block_path);
 }
 
@@ -480,7 +480,7 @@ void S3FS_Store::receivedBlock(S3FS_Aws_S3*r) {
 	if (cfg->cacheData()) {
 		// make block path
 		QByteArray hash_hex = block.toHex();
-		QDir block_dir = QDir(data_path.filePath(hash_hex.left(1)+"/"+hash_hex.left(2)));
+		QDir block_dir = QDir(data_path.filePath(hash_hex.left(2)+"/"+hash_hex.left(4)));
 		block_dir.mkpath(".");
 		QFile f(block_dir.filePath(hash_hex+".dat"));
 		if (f.open(QIODevice::WriteOnly)) {
@@ -613,7 +613,7 @@ void S3FS_Store::lastaccess_clean() {
 			qDebug("S3FS_Store: block %s not accessed for too long, removing from cache", i->key().mid(1).toHex().data());
 			// make block path
 			QByteArray hash_hex = i->key().mid(1).toHex();
-			QString block_path = data_path.filePath(hash_hex.left(1)+"/"+hash_hex.left(2)+"/"+hash_hex+".dat");
+			QString block_path = data_path.filePath(hash_hex.left(2)+"/"+hash_hex.left(4)+"/"+hash_hex+".dat");
 			QFile::remove(block_path);
 			kv.remove(i->key());
 		}
