@@ -56,6 +56,14 @@ void S3FS_Config::setCachePath(const QString &p) {
 	cache_path = p;
 }
 
+const QString &S3FS_Config::dataPath() const {
+	return data_path;
+}
+
+void S3FS_Config::setDataPath(const QString &p) {
+	data_path = p;
+}
+
 quint64 S3FS_Config::expireBlocks() const {
 	return expire_blocks;
 }

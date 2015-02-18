@@ -35,11 +35,12 @@ int main(int argc, char *argv[]) {
 	parser.addPositionalArgument("bucket", QCoreApplication::translate("main", "Name of bucket on AWS S3."));
 	parser.addPositionalArgument("path", QCoreApplication::translate("main", "Path where to mount file system."));
 	parser.addOption({{"o", "options"}, QCoreApplication::translate("main", "comma-separated list of mount options."), "options"}); // if compilation fails here, make sure you have Qt 5.4+
-	parser.addOption({{"q", "queue"}, QCoreApplication::translate("main", "URL of SQS queue holding events for this bucket."), "queue"});
-	parser.addOption({{"c", "cache"}, QCoreApplication::translate("main", "Where to store cache, default %1/s3clfs-<bucket>").arg(QStandardPaths::writableLocation(QStandardPaths::TempLocation)), "cache"});
+	parser.addOption({{"q", "queue"}, QCoreApplication::translate("main", "URL of SQS queue holding events for this bucket."), "url"});
+	parser.addOption({{"c", "cache"}, QCoreApplication::translate("main", "Where to store cache, default %1/s3clfs-<bucket>").arg(QStandardPaths::writableLocation(QStandardPaths::TempLocation)), "path"});
+	parser.addOption({{"d", "data-path"}, QCoreApplication::translate("main", "Where to store data, default %1/s3clfs-<bucket>-data").arg(QStandardPaths::writableLocation(QStandardPaths::TempLocation)), "path"});
 	parser.addOption({"quick-forget", QCoreApplication::translate("main", "Quickly purge data from the database. Useful if used as rsync target only.")});
 	parser.addOption({"disable-data-cache", QCoreApplication::translate("main", "Do not keep data in the LevelDB cache.")});
-	parser.addOption({"ec2-iam-role", QCoreApplication::translate("main", "Obtain AWS access from IAM role set to this EC2 instance."), "url"});
+	parser.addOption({"ec2-iam-role", QCoreApplication::translate("main", "Obtain AWS access from IAM role set to this EC2 instance."), "role"});
 
 	parser.process(app);
 
@@ -56,6 +57,7 @@ int main(int argc, char *argv[]) {
 	cfg.setMountOptions(parser.value(QStringLiteral("options")).toLocal8Bit());
 	cfg.setQueue(parser.value(QStringLiteral("queue")).toLocal8Bit());
 	cfg.setCachePath(parser.value(QStringLiteral("cache")));
+	cfg.setDataPath(parser.value(QStringLiteral("data-path")));
 	if (parser.isSet("quick-forget")) cfg.setExpireBlocks(1800); // 30min
 	if (parser.isSet("disable-data-cache")) cfg.setCacheData(false);
 	if (parser.isSet("ec2-iam-role")) {
