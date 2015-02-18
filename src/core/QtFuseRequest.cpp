@@ -23,7 +23,7 @@
 
 QtFuseRequest::QtFuseRequest(fuse_req_t _req, QtFuse &_parent, struct fuse_file_info *_fi): parent(_parent) {
 	Q_CHECK_PTR(_req);
-//	moveToThread(QCoreApplication::instance()->thread());
+	moveToThread(QCoreApplication::instance()->thread());
 	req = _req;
 	if (_fi) fuse_fi = *_fi;
 	answered = false;
