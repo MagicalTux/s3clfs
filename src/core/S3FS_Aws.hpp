@@ -60,6 +60,7 @@ protected:
 	QNetworkReply *reqV4(const QByteArray &verb, const QByteArray &subpath, QNetworkRequest req, const QByteArray &data = QByteArray());
 	void http(QObject *caller, const QByteArray &verb, const QNetworkRequest &req, QIODevice *data = 0);
 	void httpV4(QObject *caller, const QByteArray &verb, const QByteArray &subpath, const QNetworkRequest &req, const QByteArray &data = QByteArray());
+	void httpSlowV4(QObject *caller, const QByteArray &verb, const QByteArray &subpath, const QNetworkRequest &req, const QByteArray &data = QByteArray());
 	QByteArray getBucketRegion(const QByteArray&bucket);
 	void setBucketRegion(const QByteArray&bucket, const QByteArray&region);
 
@@ -76,6 +77,7 @@ private:
 
 	QSet<QNetworkReply*> http_running;
 	QList<S3FS_Aws_Queue_Entry*> http_queue;
+	QList<S3FS_Aws_Queue_Entry*> http_slow_queue;
 	QMap<QByteArray,QByteArray> aws_bucket_region;
 	S3FS_Config *cfg;
 	QTimer status_timer;

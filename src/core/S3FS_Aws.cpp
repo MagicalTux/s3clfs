@@ -230,7 +230,7 @@ void S3FS_Aws::httpV4(QObject *caller, const QByteArray &verb, const QByteArray 
 		QMetaObject::invokeMethod(caller, "requestStarted", Q_ARG(QNetworkReply*, reply));
 		return;
 	}
-	if ((!overload_status) && (http_queue.size() > 10000)) {
+	if ((!overload_status) && ((http_queue.size()+http_slow_queue.size()) > 10000)) {
 		// signal overload
 		overload_status = true;
 		overloadStatus(overload_status);
@@ -246,6 +246,28 @@ void S3FS_Aws::httpV4(QObject *caller, const QByteArray &verb, const QByteArray 
 	http_queue.append(q);
 }
 
+void S3FS_Aws::httpSlowV4(QObject *caller, const QByteArray &verb, const QByteArray &subpath, const QNetworkRequest &req, const QByteArray &data) {
+	if ((is_ready) && (http_running.size() < S3FS_AWS_QUEUE_LENGTH)) {
+		// system is not crowded, just proceed
+		httpV4(caller, verb, subpath, req, data);
+		return;
+	}
+	if ((!overload_status) && ((http_queue.size()+http_slow_queue.size()) > 10000)) {
+		// signal overload
+		overload_status = true;
+		overloadStatus(overload_status);
+	}
+	// queue this
+	auto q = new S3FS_Aws_Queue_Entry;
+	q->req = req;
+	q->verb = verb;
+	q->subpath = subpath;
+	q->raw_data = data;
+	q->sender = caller;
+	q->sign = 4;
+	http_slow_queue.append(q);
+}
+
 void S3FS_Aws::http(QObject *caller, const QByteArray &verb, const QNetworkRequest &req, QIODevice *data) {
 //	qDebug("AWS: Request %s %s", verb.data(), req.url().toString().toLatin1().data());
 	if ((is_ready) && (http_running.size() < S3FS_AWS_QUEUE_LENGTH)) {
@@ -256,7 +278,7 @@ void S3FS_Aws::http(QObject *caller, const QByteArray &verb, const QNetworkReque
 		QMetaObject::invokeMethod(caller, "requestStarted", Q_ARG(QNetworkReply*, reply));
 		return;
 	}
-	if ((!overload_status) && (http_queue.size() > 10000)) {
+	if ((!overload_status) && ((http_queue.size()+http_slow_queue.size()) > 10000)) {
 		// signal overload
 		overload_status = true;
 		overloadStatus(overload_status);
@@ -272,7 +294,7 @@ void S3FS_Aws::http(QObject *caller, const QByteArray &verb, const QNetworkReque
 
 void S3FS_Aws::replyDestroyed(QObject *obj) {
 	http_running.remove((QNetworkReply*)obj);
-	if ((overload_status) && (http_queue.size() < 5000)) {
+	if ((overload_status) && ((http_queue.size()+http_slow_queue.size()) < 9000)) {
 		// signal overload
 		overload_status = false;
 		overloadStatus(overload_status);
@@ -282,27 +304,34 @@ void S3FS_Aws::replyDestroyed(QObject *obj) {
 
 void S3FS_Aws::runQueue() {
 	if (!is_ready) return;
-	if ((http_queue.size()) && (http_running.size() < S3FS_AWS_QUEUE_LENGTH)) {
-		auto q = http_queue.takeFirst();
-		QNetworkReply *reply;
-		switch(q->sign) {
-			case 4: // signV4
-				reply = reqV4(q->verb, q->subpath, q->req, q->raw_data);
-				break;
-			default:
-				reply = net.sendCustomRequest(q->req, q->verb, q->data);
-		}
-		http_running.insert(reply);
-		connect(reply, SIGNAL(destroyed(QObject*)), this, SLOT(replyDestroyed(QObject*)));
-		QMetaObject::invokeMethod(q->sender, "requestStarted", Q_ARG(QNetworkReply*, reply));
-		delete q;
+	if (http_running.size() >= S3FS_AWS_QUEUE_LENGTH) return; // busy
+	S3FS_Aws_Queue_Entry *q = 0;
+	if (http_queue.size()) {
+		q = http_queue.takeFirst();
+	} else if (http_slow_queue.size()) {
+		q = http_slow_queue.takeFirst();
 	}
-//	qDebug("S3FS_Aws: queries status %d/8 (%d in queue)", http_running.size(), http_queue.size());
+	if (!q) {
+		// System is idle
+		return;
+	}
+	QNetworkReply *reply;
+	switch(q->sign) {
+		case 4: // signV4
+			reply = reqV4(q->verb, q->subpath, q->req, q->raw_data);
+			break;
+		default:
+			reply = net.sendCustomRequest(q->req, q->verb, q->data);
+	}
+	http_running.insert(reply);
+	connect(reply, SIGNAL(destroyed(QObject*)), this, SLOT(replyDestroyed(QObject*)));
+	QMetaObject::invokeMethod(q->sender, "requestStarted", Q_ARG(QNetworkReply*, reply));
+	delete q;
 }
 
 void S3FS_Aws::showStatus() {
 	if ((http_running.size() == 0) && (http_queue.size() == 0)) return;
-	qDebug("S3FS_Aws: queries status %d/%d (%d in queue)", http_running.size(), S3FS_AWS_QUEUE_LENGTH, http_queue.size());
+	qDebug("S3FS_Aws: queries status %d/%d (%d in queue, %d in slow queue)", http_running.size(), S3FS_AWS_QUEUE_LENGTH, http_queue.size(), http_slow_queue.size());
 }
 
 QByteArray S3FS_Aws::getBucketRegion(const QByteArray&bucket) {
