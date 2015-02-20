@@ -51,6 +51,10 @@ void S3FS_Obj::makeDir(quint64 ino, int mode, int uid, int gid) {
 void S3FS_Obj::makeFile(quint64 ino, int mode, int uid, int gid) {
 	makeEntry(ino, S_IFREG, mode, uid, gid);
 }
+void S3FS_Obj::touch() {
+	quint64 t = time(NULL);
+	attr.st_mtime = t;
+}
 
 void S3FS_Obj::makeEntry(quint64 ino, int type, int mode, int uid, int gid) {
 	quint64 t = time(NULL);

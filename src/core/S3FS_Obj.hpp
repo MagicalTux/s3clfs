@@ -47,6 +47,7 @@ public:
 
 	const struct stat &constAttr() const;
 	void setAttr(const struct stat &s);
+	void touch();
 
 	size_t size() const;
 	void setSize(size_t);

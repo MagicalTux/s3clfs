@@ -628,11 +628,13 @@ void S3FS::fuse_write(QtFuseRequest *req, fuse_ino_t ino, const QByteArray &buf,
 		qint64 maxlen = S3FUSE_BLOCK_SIZE - (offset % S3FUSE_BLOCK_SIZE);
 		if (buf.length() < maxlen) {
 			if (!real_write(ino_o, buf, offset, func_args, need_wait)) {
+				ino_o.touch();
 				store.storeInode(ino_o);
 				if (need_wait) return;
 				req->error(EIO);
 				return;
 			}
+			ino_o.touch();
 			store.storeInode(ino_o);
 			req->write(buf.length());
 			return;
@@ -653,17 +655,20 @@ void S3FS::fuse_write(QtFuseRequest *req, fuse_ino_t ino, const QByteArray &buf,
 		if (pos + S3FUSE_BLOCK_SIZE > len) {
 			// final block
 			if (!real_write(ino_o, buf.mid(pos), offset+pos, func_args, need_wait)) {
+				ino_o.touch();
 				store.storeInode(ino_o);
 				if (need_wait) return;
 				req->error(EIO);
 				return;
 			}
+			ino_o.touch();
 			store.storeInode(ino_o);
 			req->write(len);
 			return;
 		}
 		// middle write
 		if (!real_write(ino_o, buf.mid(pos, S3FUSE_BLOCK_SIZE), offset+pos, func_args, need_wait)) {
+			ino_o.touch();
 			store.storeInode(ino_o);
 			if (need_wait) return;
 			req->error(EIO);
@@ -671,6 +676,7 @@ void S3FS::fuse_write(QtFuseRequest *req, fuse_ino_t ino, const QByteArray &buf,
 		}
 		pos += S3FUSE_BLOCK_SIZE;
 	}
+	ino_o.touch();
 	store.storeInode(ino_o);
 	req->write(pos); // if len was a multiple of S3FUSE_BLOCK_SIZE
 }
