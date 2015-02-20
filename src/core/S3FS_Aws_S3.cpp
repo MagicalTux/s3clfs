@@ -93,17 +93,17 @@ bool S3FS_Aws_S3::listFiles(const QByteArray &path, const QByteArray &resume) {
 	return true;
 }
 
-S3FS_Aws_S3 *S3FS_Aws_S3::putFile(const QByteArray &bucket, const QByteArray &path, const QByteArray &data, S3FS_Aws *aws, bool slow) {
+S3FS_Aws_S3 *S3FS_Aws_S3::putFile(const QByteArray &bucket, const QByteArray &path, const QByteArray &data, S3FS_Aws *aws) {
 	if (!aws->isValid()) return NULL;
 	auto i = new S3FS_Aws_S3(bucket, aws);
-	if (!i->putFile(path, data, slow)) {
+	if (!i->putFile(path, data)) {
 		delete i;
 		return NULL;
 	}
 	return i;
 }
 
-bool S3FS_Aws_S3::putFile(const QByteArray &path, const QByteArray &data, bool slow) {
+bool S3FS_Aws_S3::putFile(const QByteArray &path, const QByteArray &data) {
 	QUrl url("https://"+bucket+".s3.amazonaws.com/"+path);
 	request = QNetworkRequest(url);
 	request.setHeader(QNetworkRequest::ContentTypeHeader, "application/octet-stream"); // RFC 2046
@@ -114,11 +114,7 @@ bool S3FS_Aws_S3::putFile(const QByteArray &path, const QByteArray &data, bool s
 
 	verb = "PUT";
 
-	if (slow) {
-		aws->httpSlowV4(this, verb, subpath, request, request_body);
-	} else {
-		aws->httpV4(this, verb, subpath, request, request_body);
-	}
+	aws->httpSlowV4(this, verb, subpath, request, request_body);
 	return true;
 }
 

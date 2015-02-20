@@ -428,7 +428,7 @@ QByteArray S3FS_Store::writeBlock(const QByteArray &buf) {
 	QByteArray hash_hex = hash.toHex();
 	QByteArray path = QByteArrayLiteral("data/")+hash_hex.right(1)+"/"+hash_hex.right(2)+"/"+hash_hex+".dat";
 
-	S3FS_Aws_S3::putFile(bucket, path, buf, aws, true); // slow put
+	S3FS_Aws_S3::putFile(bucket, path, buf, aws); // slow put
 
 	return hash;
 }

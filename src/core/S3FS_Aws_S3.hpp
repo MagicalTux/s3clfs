@@ -29,7 +29,7 @@ public:
 
 	static S3FS_Aws_S3 *getFile(const QByteArray &bucket, const QByteArray &path, S3FS_Aws *aws);
 	static S3FS_Aws_S3 *listFiles(const QByteArray &bucket, const QByteArray &path, S3FS_Aws *aws);
-	static S3FS_Aws_S3 *putFile(const QByteArray &bucket, const QByteArray &path, const QByteArray &data, S3FS_Aws *aws, bool slow = false);
+	static S3FS_Aws_S3 *putFile(const QByteArray &bucket, const QByteArray &path, const QByteArray &data, S3FS_Aws *aws);
 	static S3FS_Aws_S3 *deleteFile(const QByteArray &bucket, const QByteArray &path, S3FS_Aws *aws);
 
 	const QByteArray &body() const;
@@ -49,7 +49,7 @@ private:
 	S3FS_Aws_S3(const QByteArray &bucket, S3FS_Aws*);
 	bool getFile(const QByteArray &path);
 	bool listFiles(const QByteArray &path, const QByteArray &resume);
-	bool putFile(const QByteArray &path, const QByteArray &data, bool slow);
+	bool putFile(const QByteArray &path, const QByteArray &data);
 	bool deleteFile(const QByteArray &path);
 
 	void connectReply();
