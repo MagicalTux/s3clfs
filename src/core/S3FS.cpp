@@ -227,6 +227,8 @@ void S3FS::fuse_mkdir(QtFuseRequest *req, fuse_ino_t parent, const QByteArray &n
 	store.setInodeMeta(new_dir.getInode(), ".", dir_entry);
 
 	// store dir entry
+	parent_o.touch();
+	store.storeInode(parent_o);
 	store.setInodeMeta(parent, name, dir_entry);
 
 	// add ..
@@ -288,6 +290,9 @@ void S3FS::fuse_rmdir(QtFuseRequest *req, fuse_ino_t parent, const QByteArray &n
 		return;
 	}
 
+	parent_o.touch();
+	store.storeInode(parent_o);
+
 	req->error(0);
 }
 
@@ -311,6 +316,8 @@ void S3FS::fuse_symlink(QtFuseRequest *req, const QByteArray &link, fuse_ino_t p
 	QByteArray dir_entry;
 	QDataStream(&dir_entry, QIODevice::WriteOnly) << symlink.getInode() << symlink.getFiletype();
 	store.setInodeMeta(parent, name, dir_entry);
+	parent_o.touch();
+	store.storeInode(parent_o);
 
 	req->entry(&symlink.constAttr());
 }
@@ -548,6 +555,8 @@ void S3FS::fuse_create(QtFuseRequest *req, fuse_ino_t parent, const QByteArray &
 	QByteArray dir_entry;
 	QDataStream(&dir_entry, QIODevice::WriteOnly) << new_file.getInode() << new_file.getFiletype();
 	store.setInodeMeta(parent, name, dir_entry);
+	parent_o.touch();
+	store.storeInode(parent_o);
 
 	req->create(&new_file.constAttr(), fi);
 }

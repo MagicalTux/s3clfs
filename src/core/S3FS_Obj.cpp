@@ -53,6 +53,7 @@ void S3FS_Obj::makeFile(quint64 ino, int mode, int uid, int gid) {
 }
 void S3FS_Obj::touch() {
 	quint64 t = time(NULL);
+	attr.st_ctime = t;
 	attr.st_mtime = t;
 }
 
