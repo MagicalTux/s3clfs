@@ -94,7 +94,7 @@ S3FS_Store::S3FS_Store(S3FS_Config *_cfg, QObject *parent): QObject(parent) {
 	lastaccess_cleaner.start(1800000); // 30min
 
 	// quick initialize
-	if (hasInode(1))
+	if (kv.contains(QByteArrayLiteral("\xff")))
 		aws_list_ready = true;
 
 	// fetchers
@@ -127,6 +127,8 @@ void S3FS_Store::receivedInodeList(S3FS_Aws_S3 *r) {
 
 	if (cfg->listFetchInterval())
 		cache_updater.start(cfg->listFetchInterval() * 1000);
+
+	kv.insert(QByteArrayLiteral("\xff"), QByteArray()); // mark list as fetched
 	if (aws_list_ready) return;
 	aws_list_ready = true;
 	if (aws_format_ready && aws_list_ready) ready();

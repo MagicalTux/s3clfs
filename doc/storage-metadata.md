@@ -40,4 +40,5 @@ Storage on leveldb has various prefixes.
 - 0x03: metadata meta information (latest revision info)
 - 0x11: inodes (last access time)
 - 0x12: data (last access time)
+- 0xff: only set after full sync
 
