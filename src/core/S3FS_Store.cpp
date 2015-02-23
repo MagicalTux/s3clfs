@@ -176,7 +176,7 @@ void S3FS_Store::learnFile(const QString &name, bool in_list) {
 			return;
 		}
 		// our version is newer, delete old stuff
-		if (in_list) {
+		if ((in_list) && (aws_list_ready)) {
 			QByteArray fn_hex = fn.toHex();
 			QByteArray rev_hex = rev.toHex();
 			QByteArray old_path = "metadata/"+fn_hex.right(1)+"/"+fn_hex.right(2)+"/"+fn_hex+"/"+newrev.toHex()+".dat";
