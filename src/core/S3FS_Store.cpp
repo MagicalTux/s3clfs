@@ -30,6 +30,7 @@
 
 S3FS_Store::S3FS_Store(S3FS_Config *_cfg, QObject *parent): QObject(parent) {
 	cfg = _cfg;
+	delete_ok_stamp = 0;
 	bucket = cfg->bucket();
 	aws_list_ready = false;
 	aws_format_ready = false;
@@ -92,6 +93,11 @@ S3FS_Store::S3FS_Store(S3FS_Config *_cfg, QObject *parent): QObject(parent) {
 	connect(&lastaccess_cleaner, SIGNAL(timeout()), this, SLOT(lastaccess_clean()));
 	lastaccess_cleaner.setSingleShot(false);
 	lastaccess_cleaner.start(1800000); // 30min
+
+	connect(&delete_ok_stamp_update, SIGNAL(timeout()), this, SLOT(updateDeleteOkStamp()));
+	delete_ok_stamp_update.setSingleShot(false);
+	delete_ok_stamp_update.start(60000); // 1 min
+	updateDeleteOkStamp();
 
 	// quick initialize
 	if (kv.contains(QByteArrayLiteral("\xff")))
@@ -177,10 +183,13 @@ void S3FS_Store::learnFile(const QString &name, bool in_list) {
 		}
 		// our version is newer, delete old stuff
 		if ((in_list) && (aws_list_ready)) {
-			QByteArray fn_hex = fn.toHex();
-			QByteArray rev_hex = rev.toHex();
-			QByteArray old_path = "metadata/"+fn_hex.right(1)+"/"+fn_hex.right(2)+"/"+fn_hex+"/"+newrev.toHex()+".dat";
-			S3FS_Aws_S3::deleteFile(bucket, old_path, aws);
+			// check if newrev < delete_ok_stamp
+			if (newrev < delete_ok_stamp) {
+				QByteArray fn_hex = fn.toHex();
+				QByteArray rev_hex = rev.toHex();
+				QByteArray old_path = "metadata/"+fn_hex.right(1)+"/"+fn_hex.right(2)+"/"+fn_hex+"/"+newrev.toHex()+".dat";
+				S3FS_Aws_S3::deleteFile(bucket, old_path, aws);
+			}
 		}
 		return;
 	}
@@ -286,6 +295,12 @@ void S3FS_Store::inodeUpdated(quint64 ino) {
 	if (!inodes_to_update.contains(ino))
 		inodes_to_update.insert(ino);
 	lastaccess_inode.insert(ino);
+}
+
+void S3FS_Store::updateDeleteOkStamp() {
+	quint64 t = QDateTime::currentMSecsSinceEpoch() - 3600000;
+	delete_ok_stamp.clear();
+	QDataStream(&delete_ok_stamp, QIODevice::WriteOnly) << t;
 }
 
 void S3FS_Store::updateInodes() {

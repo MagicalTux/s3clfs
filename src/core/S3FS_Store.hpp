@@ -79,6 +79,7 @@ public slots:
 	void getInodesList();
 	void gotNewFile(const QString&,const QString&);
 	void setOverloadStatus(bool);
+	void updateDeleteOkStamp();
 
 	void lastaccess_update();
 	void lastaccess_clean();
@@ -121,5 +122,8 @@ private:
 	QRegExp file_match;
 	S3FS_Config *cfg;
 	QDir data_path;
+
+	QTimer delete_ok_stamp_update;
+	QByteArray delete_ok_stamp;
 };
 
