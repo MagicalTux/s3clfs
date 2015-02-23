@@ -30,7 +30,6 @@
 
 S3FS_Store::S3FS_Store(S3FS_Config *_cfg, QObject *parent): QObject(parent) {
 	cfg = _cfg;
-	delete_ok_stamp = 0;
 	bucket = cfg->bucket();
 	aws_list_ready = false;
 	aws_format_ready = false;
