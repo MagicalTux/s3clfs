@@ -48,7 +48,6 @@ private:
 	leveldb::Options options;
 	leveldb::ReadOptions readoptions;
 	leveldb::WriteOptions writeoptions;
-	QCache<QByteArray,QByteArray> quick_cache;
 	friend class KeyvalIterator; // grants access to private and protected members of KeyvalIterator
 }; 
 

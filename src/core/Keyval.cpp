@@ -1,6 +1,3 @@
-#include "Keyval.hpp"
-#include <leveldb/comparator.h>
-
 /*  S3ClFS - AWS S3 backed cluster filesystem
  *  Copyright (C) 2015 Mark Karpeles
  *
@@ -18,6 +15,9 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "Keyval.hpp"
+#include <leveldb/comparator.h>
+#include <leveldb/cache.h>
 
 // DATA ACCESS LAYER (instance -> leveldb)
 
@@ -28,10 +28,9 @@ Keyval::Keyval(QObject *parent): QObject(parent) {
 	options.compression = leveldb::kNoCompression;
 	// TODO allow tweaking of values through command line
 	options.max_open_files = 1000; // TODO check ulimit fileno value and adapt
-	options.block_size = 65536; // 64kB, also largest size for values
 	options.write_buffer_size = 2*1024*1024; // 2MB (smaller means less stalls during reorg)
+	options.block_cache = leveldb::NewLRUCache(128*1024*1024);
 	readoptions.verify_checksums = true;
-	quick_cache.setMaxCost(1000);
 }
 
 Keyval::~Keyval() {
@@ -74,31 +73,24 @@ bool Keyval::create(const QString &filename) {
 }
 
 bool Keyval::insert(const QByteArray &key, const QByteArray &value) {
-	quick_cache.remove(key);
 	leveldb::Status status = db->Put(writeoptions, LEVELDB_SLICE(key), LEVELDB_SLICE(value));
 	return status.ok();
 }
 
 bool Keyval::remove(const QByteArray &key) {
-	quick_cache.remove(key);
 	leveldb::Status status = db->Delete(writeoptions, LEVELDB_SLICE(key));
 	return status.ok();
 }
 
 QByteArray Keyval::value(const QByteArray &key) {
-	if (quick_cache.contains(key)) return *quick_cache.object(key);
 	std::string res;
 	leveldb::Status status = db->Get(readoptions, LEVELDB_SLICE(key), &res);
 	if (!status.ok()) return QByteArray();
 	QByteArray qt_res(res.data(), res.size());
-	if (qt_res.length() < 1024) {
-		quick_cache.insert(key, new QByteArray(qt_res));
-	}
 	return qt_res;
 }
 
 bool Keyval::contains(const QByteArray &key) {
-	if (quick_cache.contains(key)) return true;
 	std::string res;
 	leveldb::Status status = db->Get(readoptions, LEVELDB_SLICE(key), &res);
 	return status.ok(); // could be another error, but not so likely
