@@ -29,7 +29,7 @@ Keyval::Keyval(QObject *parent): QObject(parent) {
 	// TODO allow tweaking of values through command line
 	options.max_open_files = 1000; // TODO check ulimit fileno value and adapt
 	options.write_buffer_size = 2*1024*1024; // 2MB (smaller means less stalls during reorg)
-	options.block_cache = leveldb::NewLRUCache(128*1024*1024);
+	options.block_cache = leveldb::NewLRUCache(256*1024*1024); // 256MB cache
 	readoptions.verify_checksums = true;
 }
 
