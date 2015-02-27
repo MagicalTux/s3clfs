@@ -128,6 +128,16 @@ S3FS_Aws_S3 *S3FS_Aws_S3::deleteFile(const QByteArray &bucket, const QByteArray 
 	return i;
 }
 
+S3FS_Aws_S3 *S3FS_Aws_S3::deleteFile(S3FS_Aws_S3 *req) {
+	if (!req->aws->isValid()) return NULL;
+	auto i = new S3FS_Aws_S3(req->bucket, req->aws);
+	if (!i->deleteFile(req->request.url().path().toUtf8())) {
+		delete i;
+		return NULL;
+	}
+	return i;
+}
+
 bool S3FS_Aws_S3::deleteFile(const QByteArray &path) {
 	QUrl url("https://"+bucket+".s3.amazonaws.com/"+path);
 	request = QNetworkRequest(url);

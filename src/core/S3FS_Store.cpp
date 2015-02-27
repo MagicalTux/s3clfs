@@ -403,6 +403,11 @@ void S3FS_Store::receivedInode(S3FS_Aws_S3*r) {
 		s >> key >> val;
 		kv.insert(QByteArrayLiteral("\x01")+ino_b+key, val);
 	}
+	if (!kv.contains(QByteArrayLiteral("\x01")+ino_b)) {
+		// TODO: re-list files for prefix and find correct inode number
+//		qDebug("Broken inode, will remove this version from S3 and hopefully revert to a working one.");
+//		S3FS_Aws_S3::deleteFile(r);
+	}
 
 	// call callbacks
 	QList<Callback*> list = inode_download_callback.take(ino);
