@@ -48,6 +48,14 @@ public:
 
 	void setAttr(struct stat*);
 	struct stat *attr();
+	const struct stat *attr() const;
+	quint64 inode() const;
+	quint64 newInode() const;
+	const QByteArray &name() const;
+	const QByteArray &value() const;
+	int fuseInt() const;
+	size_t size() const;
+	off_t offset() const;
 
 	const struct fuse_ctx *context() const;
 
@@ -63,11 +71,16 @@ private:
 	fuse_req_t req;
 	QtFuse &parent;
 	bool answered;
-	
+
 	char *data_buf;
 	size_t buf_pos, buf_size;
 	struct fuse_file_info fuse_fi;
 	struct stat fuse_attr;
+	quint64 fuse_ino, fuse_newino;
+	QByteArray fuse_name, fuse_value;
+	int fuse_int;
+	size_t fuse_size;
+	off_t fuse_offset;
 };
 
 Q_DECLARE_METATYPE(QtFuseRequest*);

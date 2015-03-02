@@ -48,10 +48,13 @@ void QtFuse::fuse_destroy() {
 
 void QtFuse::priv_qtfuse_lookup(fuse_req_t req, fuse_ino_t parent, const char *name) {
 	QTFUSE_OBJ_FROM_REQ();
-	c->fuse_lookup(QTFUSE_REQ(), parent, name);
+	auto _req = QTFUSE_REQ();
+	_req->fuse_ino = parent;
+	_req->fuse_name = QByteArray(name); // null-terminated
+	c->fuse_lookup(_req);
 }
 
-void QtFuse::fuse_lookup(QtFuseRequest *req, fuse_ino_t, const QByteArray &) {
+void QtFuse::fuse_lookup(QtFuseRequest *req) {
 	QTFUSE_NOT_IMPL(ENOENT);
 }
 
@@ -67,11 +70,12 @@ void QtFuse::fuse_forget(fuse_ino_t node, unsigned long nlookup) {
 
 void QtFuse::priv_qtfuse_getattr(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi) {
 	QTFUSE_OBJ_FROM_REQ();
-	c->fuse_getattr(QTFUSE_REQ_FI(), ino);
+	auto _req = QTFUSE_REQ_FI();
+	_req->fuse_ino = ino;
+	c->fuse_getattr(_req);
 }
 
-void QtFuse::fuse_getattr(QtFuseRequest *req, fuse_ino_t) {
-//	req->attr(node->getAttr());
+void QtFuse::fuse_getattr(QtFuseRequest *req) {
 	QTFUSE_NOT_IMPL(ENOSYS);
 }
 
@@ -79,149 +83,196 @@ void QtFuse::priv_qtfuse_setattr(fuse_req_t req, fuse_ino_t ino, struct stat *at
 	QTFUSE_OBJ_FROM_REQ();
 	auto _req = QTFUSE_REQ_FI();
 	_req->setAttr(attr);
-	c->fuse_setattr(_req, ino, to_set);
+	_req->fuse_ino = ino;
+	_req->fuse_int = to_set;
+	c->fuse_setattr(_req);
 }
 
-void QtFuse::fuse_setattr(QtFuseRequest *req, fuse_ino_t, int) {
+void QtFuse::fuse_setattr(QtFuseRequest *req) {
 	QTFUSE_NOT_IMPL(ENOSYS);
 }
 
 void QtFuse::priv_qtfuse_readlink(fuse_req_t req, fuse_ino_t ino) {
 	QTFUSE_OBJ_FROM_REQ();
-	c->fuse_readlink(QTFUSE_REQ(), ino);
+	auto _req = QTFUSE_REQ();
+	_req->fuse_ino = ino;
+	c->fuse_readlink(_req);
 }
 
-void QtFuse::fuse_readlink(QtFuseRequest *req, fuse_ino_t ) {
+void QtFuse::fuse_readlink(QtFuseRequest *req) {
 	QTFUSE_NOT_IMPL(ENOSYS);
 }
 
 void QtFuse::priv_qtfuse_mknod(fuse_req_t req, fuse_ino_t parent, const char *name, mode_t mode, dev_t rdev) {
 	QTFUSE_OBJ_FROM_REQ();
-	c->fuse_mknod(QTFUSE_REQ(), parent, name, mode, rdev);
+	auto _req = QTFUSE_REQ();
+	_req->fuse_ino = parent;
+	_req->fuse_name = QByteArray(name);
+	_req->fuse_int = mode;
+	_req->fuse_newino = rdev; // 64bits int, shouldn't be used for that but well...
+	c->fuse_mknod(_req);
 }
 
-void QtFuse::fuse_mknod(QtFuseRequest *req, fuse_ino_t, const QByteArray&, mode_t, dev_t) {
+void QtFuse::fuse_mknod(QtFuseRequest *req) {
 	QTFUSE_NOT_IMPL(EPERM);
 }
 
 void QtFuse::priv_qtfuse_mkdir(fuse_req_t req, fuse_ino_t parent, const char *name, mode_t mode) {
 	QTFUSE_OBJ_FROM_REQ();
-	c->fuse_mkdir(QTFUSE_REQ(), parent, name, mode);
+	auto _req = QTFUSE_REQ();
+	_req->fuse_ino = parent;
+	_req->fuse_name = QByteArray(name);
+	_req->fuse_int = mode;
+	c->fuse_mkdir(QTFUSE_REQ());
 }
 
-void QtFuse::fuse_mkdir(QtFuseRequest *req, fuse_ino_t, const QByteArray&, int) {
+void QtFuse::fuse_mkdir(QtFuseRequest *req) {
 	QTFUSE_NOT_IMPL(ENOSYS);
 }
 
 void QtFuse::priv_qtfuse_unlink(fuse_req_t req, fuse_ino_t parent, const char *name) {
 	QTFUSE_OBJ_FROM_REQ();
-	c->fuse_unlink(QTFUSE_REQ(), parent, name);
+	auto _req = QTFUSE_REQ();
+	_req->fuse_ino = parent;
+	_req->fuse_name = name;
+	c->fuse_unlink(_req);
 }
 
-void QtFuse::fuse_unlink(QtFuseRequest *req, fuse_ino_t, const QByteArray&) {
+void QtFuse::fuse_unlink(QtFuseRequest *req) {
 	QTFUSE_NOT_IMPL(ENOSYS);
 }
 
 void QtFuse::priv_qtfuse_rmdir(fuse_req_t req, fuse_ino_t parent, const char *name) {
 	QTFUSE_OBJ_FROM_REQ();
-	c->fuse_rmdir(QTFUSE_REQ(), parent, name);
+	auto _req = QTFUSE_REQ();
+	_req->fuse_ino = parent;
+	_req->fuse_name = name;
+	c->fuse_rmdir(_req);
 }
 
-void QtFuse::fuse_rmdir(QtFuseRequest *req, fuse_ino_t, const QByteArray &) {
+void QtFuse::fuse_rmdir(QtFuseRequest *req) {
 	QTFUSE_NOT_IMPL(ENOSYS);
 }
 
 void QtFuse::priv_qtfuse_symlink(fuse_req_t req, const char *link, fuse_ino_t parent, const char *name) {
 	QTFUSE_OBJ_FROM_REQ();
-	c->fuse_symlink(QTFUSE_REQ(), link, parent, name);
+	auto _req = QTFUSE_REQ();
+	_req->fuse_ino = parent;
+	_req->fuse_name = QByteArray(name);
+	_req->fuse_value = QByteArray(link);
+	c->fuse_symlink(_req);
 }
 
-void QtFuse::fuse_symlink(QtFuseRequest *req, const QByteArray&, fuse_ino_t, const QByteArray&) {
+void QtFuse::fuse_symlink(QtFuseRequest *req) {
 	QTFUSE_NOT_IMPL(ENOSYS);
 }
 
 void QtFuse::priv_qtfuse_rename(fuse_req_t req, fuse_ino_t parent, const char *name, fuse_ino_t newparent, const char *newname) {
 	QTFUSE_OBJ_FROM_REQ();
-	c->fuse_rename(QTFUSE_REQ(), parent, name, newparent, newname);
+	auto _req = QTFUSE_REQ();
+	_req->fuse_ino = parent;
+	_req->fuse_newino = newparent;
+	_req->fuse_name = QByteArray(name);
+	_req->fuse_value = QByteArray(newname);
+	c->fuse_rename(_req);
 }
 
-void QtFuse::fuse_rename(QtFuseRequest *req, fuse_ino_t, const QByteArray&, fuse_ino_t, const QByteArray&) {
+void QtFuse::fuse_rename(QtFuseRequest *req) {
 	QTFUSE_NOT_IMPL(ENOSYS);
 }
 
 void QtFuse::priv_qtfuse_link(fuse_req_t req, fuse_ino_t ino, fuse_ino_t newparent, const char *newname) {
 	QTFUSE_OBJ_FROM_REQ();
-//	if (S_ISDIR(ino->getAttr()->st_mode)) {
-//		fuse_reply_err(req, EPERM); // "oldpath is a directory."
-//		return;
-//	}
-	c->fuse_link(QTFUSE_REQ(), ino, newparent, newname);
+	auto _req = QTFUSE_REQ();
+	_req->fuse_ino = ino;
+	_req->fuse_newino = newparent;
+	_req->fuse_value = QByteArray(newname);
+	c->fuse_link(_req);
 }
 
-void QtFuse::fuse_link(QtFuseRequest *req, fuse_ino_t, fuse_ino_t, const QByteArray&) {
+void QtFuse::fuse_link(QtFuseRequest *req) {
 	QTFUSE_NOT_IMPL(EPERM); // "The file system containing oldpath and newpath does not support the creation of hard links."
 }
 
 void QtFuse::priv_qtfuse_open(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi) {
 	QTFUSE_OBJ_FROM_REQ();
-	c->fuse_open(QTFUSE_REQ_FI(), ino);
+	auto _req = QTFUSE_REQ_FI();
+	_req->fuse_ino = ino;
+	c->fuse_open(_req);
 }
 
-void QtFuse::fuse_open(QtFuseRequest *req, fuse_ino_t) {
+void QtFuse::fuse_open(QtFuseRequest *req) {
 	QTFUSE_NOT_IMPL(ENOSYS);
 }
 
 void QtFuse::priv_qtfuse_read(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off, struct fuse_file_info *fi) {
 	QTFUSE_OBJ_FROM_REQ();
-	c->fuse_read(QTFUSE_REQ_FI(), ino, size, off);
+	auto _req = QTFUSE_REQ_FI();
+	_req->fuse_ino = ino;
+	_req->fuse_size = size;
+	_req->fuse_offset = off;
+	c->fuse_read(_req);
 }
 
-void QtFuse::fuse_read(QtFuseRequest *req, fuse_ino_t, size_t, off_t) {
+void QtFuse::fuse_read(QtFuseRequest *req) {
 	QTFUSE_NOT_IMPL(ENOSYS);
 }
 
 void QtFuse::priv_qtfuse_write(fuse_req_t req, fuse_ino_t ino, const char *buf, size_t size, off_t off, struct fuse_file_info *fi) {
 	QTFUSE_OBJ_FROM_REQ();
-	c->fuse_write(QTFUSE_REQ_FI(), ino, QByteArray(buf, size), off);
+	auto _req = QTFUSE_REQ_FI();
+	_req->fuse_ino = ino;
+	_req->fuse_value = QByteArray(buf, size);
+	_req->fuse_offset = off;
+	c->fuse_write(_req);
 }
 
-void QtFuse::fuse_write(QtFuseRequest *req, fuse_ino_t, const QByteArray&, off_t) {
+void QtFuse::fuse_write(QtFuseRequest *req) {
 	QTFUSE_NOT_IMPL(ENOSYS);
 }
 
 void QtFuse::priv_qtfuse_flush(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi) {
 	QTFUSE_OBJ_FROM_REQ();
-	c->fuse_flush(QTFUSE_REQ_FI(), ino);
+	auto _req = QTFUSE_REQ_FI();
+	_req->fuse_ino = ino;
+	c->fuse_flush(_req);
 }
 
-void QtFuse::fuse_flush(QtFuseRequest *req, fuse_ino_t) {
+void QtFuse::fuse_flush(QtFuseRequest *req) {
 	QTFUSE_NOT_IMPL(ENOSYS);
 }
 
 void QtFuse::priv_qtfuse_release(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi) {
 	QTFUSE_OBJ_FROM_REQ();
-	c->fuse_release(QTFUSE_REQ_FI(), ino);
+	auto _req = QTFUSE_REQ_FI();
+	_req->fuse_ino = ino;
+	c->fuse_release(_req);
 }
 
-void QtFuse::fuse_release(QtFuseRequest *req, fuse_ino_t) {
+void QtFuse::fuse_release(QtFuseRequest *req) {
 	QTFUSE_NOT_IMPL(ENOSYS);
 }
 
 void QtFuse::priv_qtfuse_fsync(fuse_req_t req, fuse_ino_t ino, int datasync, struct fuse_file_info *fi) {
 	QTFUSE_OBJ_FROM_REQ();
-	c->fuse_fsync(QTFUSE_REQ_FI(), ino, datasync);
+	auto _req = QTFUSE_REQ_FI();
+	_req->fuse_ino = ino;
+	_req->fuse_int = datasync;
+	c->fuse_fsync(_req);
 }
 
-void QtFuse::fuse_fsync(QtFuseRequest *req, fuse_ino_t, int) {
+void QtFuse::fuse_fsync(QtFuseRequest *req) {
 	QTFUSE_NOT_IMPL(ENOSYS);
 }
 
 void QtFuse::priv_qtfuse_opendir(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi) {
 	QTFUSE_OBJ_FROM_REQ();
-	c->fuse_opendir(QTFUSE_REQ_FI(), ino);
+	auto _req = QTFUSE_REQ_FI();
+	_req->fuse_ino = ino;
+	c->fuse_opendir(_req);
 }
 
-void QtFuse::fuse_opendir(QtFuseRequest *req, fuse_ino_t) {
+void QtFuse::fuse_opendir(QtFuseRequest *req) {
 	QTFUSE_NOT_IMPL(ENOSYS);
 }
 
@@ -229,91 +280,123 @@ void QtFuse::priv_qtfuse_readdir(fuse_req_t req, fuse_ino_t ino, size_t size, of
 	QTFUSE_OBJ_FROM_REQ();
 	QtFuseRequest *_req = QTFUSE_REQ_FI();
 	_req->prepareBuffer(size);
-	c->fuse_readdir(_req, ino, off);
+	_req->fuse_ino = ino;
+	_req->fuse_offset = off;
+	c->fuse_readdir(_req);
 }
 
-void QtFuse::fuse_readdir(QtFuseRequest *req, fuse_ino_t, off_t) {
+void QtFuse::fuse_readdir(QtFuseRequest *req) {
 	QTFUSE_NOT_IMPL(ENOSYS);
 }
 
 void QtFuse::priv_qtfuse_releasedir(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi) {
 	QTFUSE_OBJ_FROM_REQ();
-	c->fuse_releasedir(QTFUSE_REQ_FI(), ino);
+	auto _req = QTFUSE_REQ_FI();
+	_req->fuse_ino = ino;
+	c->fuse_releasedir(_req);
 }
 
-void QtFuse::fuse_releasedir(QtFuseRequest *req, fuse_ino_t) {
+void QtFuse::fuse_releasedir(QtFuseRequest *req) {
 	QTFUSE_NOT_IMPL(ENOSYS);
 }
 
 void QtFuse::priv_qtfuse_fsyncdir(fuse_req_t req, fuse_ino_t ino, int datasync, struct fuse_file_info *fi) {
 	QTFUSE_OBJ_FROM_REQ();
-	c->fuse_fsyncdir(QTFUSE_REQ_FI(), ino, datasync);
+	auto _req = QTFUSE_REQ_FI();
+	_req->fuse_ino = ino;
+	_req->fuse_int = datasync;
+	c->fuse_fsyncdir(_req);
 }
 
-void QtFuse::fuse_fsyncdir(QtFuseRequest *req, fuse_ino_t, int) {
+void QtFuse::fuse_fsyncdir(QtFuseRequest *req) {
 	QTFUSE_NOT_IMPL(ENOSYS);
 }
 
 void QtFuse::priv_qtfuse_statfs(fuse_req_t req, fuse_ino_t ino) {
 	QTFUSE_OBJ_FROM_REQ();
-	c->fuse_statfs(QTFUSE_REQ(), ino);
+	auto _req = QTFUSE_REQ();
+	_req->fuse_ino = ino;
+	c->fuse_statfs(_req);
 }
 
-void QtFuse::fuse_statfs(QtFuseRequest *req, fuse_ino_t) {
+void QtFuse::fuse_statfs(QtFuseRequest *req) {
 	QTFUSE_NOT_IMPL(ENOSYS);
 }
 
 void QtFuse::priv_qtfuse_setxattr(fuse_req_t req, fuse_ino_t ino, const char *name, const char *value, size_t size, int flags) {
 	QTFUSE_OBJ_FROM_REQ();
-	c->fuse_setxattr(QTFUSE_REQ(), ino, name, value, size, flags);
+	auto _req = QTFUSE_REQ();
+	_req->fuse_ino = ino;
+	_req->fuse_name = QByteArray(name);
+	_req->fuse_value = QByteArray(value);
+	_req->fuse_size = size;
+	_req->fuse_int = flags;
+	c->fuse_setxattr(_req);
 }
 
-void QtFuse::fuse_setxattr(QtFuseRequest *req, fuse_ino_t, const char *, const char *, size_t, int) {
+void QtFuse::fuse_setxattr(QtFuseRequest *req) {
 	QTFUSE_NOT_IMPL(ENOTSUP);
 }
 
 void QtFuse::priv_qtfuse_getxattr(fuse_req_t req, fuse_ino_t ino, const char *name, size_t size) {
 	QTFUSE_OBJ_FROM_REQ();
-	c->fuse_getxattr(QTFUSE_REQ(), ino, QByteArray(name), size);
+	auto _req = QTFUSE_REQ();
+	_req->fuse_ino = ino;
+	_req->fuse_name = QByteArray(name);
+	_req->fuse_size = size;
+	c->fuse_getxattr(_req);
 }
 
-void QtFuse::fuse_getxattr(QtFuseRequest *req, fuse_ino_t, const QByteArray&, size_t) {
+void QtFuse::fuse_getxattr(QtFuseRequest *req) {
 	QTFUSE_NOT_IMPL(ENOTSUP);
 }
 
 void QtFuse::priv_qtfuse_listxattr(fuse_req_t req, fuse_ino_t ino, size_t size) {
 	QTFUSE_OBJ_FROM_REQ();
-	c->fuse_listxattr(QTFUSE_REQ(), ino, size);
+	auto _req = QTFUSE_REQ();
+	_req->fuse_ino = ino;
+	_req->fuse_size = size;
+	c->fuse_listxattr(_req);
 }
 
-void QtFuse::fuse_listxattr(QtFuseRequest *req, fuse_ino_t, size_t) {
+void QtFuse::fuse_listxattr(QtFuseRequest *req) {
 	QTFUSE_NOT_IMPL(ENOTSUP);
 }
 
 void QtFuse::priv_qtfuse_removexattr(fuse_req_t req, fuse_ino_t ino, const char *name) {
 	QTFUSE_OBJ_FROM_REQ();
-	c->fuse_removexattr(QTFUSE_REQ(), ino, name);
+	auto _req = QTFUSE_REQ();
+	_req->fuse_ino = ino;
+	_req->fuse_name = QByteArray(name);
+	c->fuse_removexattr(_req);
 }
 
-void QtFuse::fuse_removexattr(QtFuseRequest *req, fuse_ino_t, const char *) {
+void QtFuse::fuse_removexattr(QtFuseRequest *req) {
 	QTFUSE_NOT_IMPL(ENOTSUP);
 }
 
 void QtFuse::priv_qtfuse_access(fuse_req_t req, fuse_ino_t ino, int mask) {
 	QTFUSE_OBJ_FROM_REQ();
-	c->fuse_access(QTFUSE_REQ(), ino, mask);
+	auto _req = QTFUSE_REQ();
+	_req->fuse_ino = ino;
+	_req->fuse_int = mask;
+	c->fuse_access(_req);
 }
 
-void QtFuse::fuse_access(QtFuseRequest *req, fuse_ino_t, int) {
+void QtFuse::fuse_access(QtFuseRequest *req) {
 	QTFUSE_NOT_IMPL(ENOSYS);
 }
 
 void QtFuse::priv_qtfuse_create(fuse_req_t req, fuse_ino_t parent, const char *name, mode_t mode, struct fuse_file_info *fi) {
 	QTFUSE_OBJ_FROM_REQ();
-	c->fuse_create(QTFUSE_REQ_FI(), parent, name, mode);
+	auto _req = QTFUSE_REQ_FI();
+	_req->fuse_ino = parent;
+	_req->fuse_name = QByteArray(name);
+	_req->fuse_int = mode;
+	c->fuse_create(_req);
 }
 
-void QtFuse::fuse_create(QtFuseRequest *req, fuse_ino_t, const char*, mode_t) {
+void QtFuse::fuse_create(QtFuseRequest *req) {
 	QTFUSE_NOT_IMPL(ENOSYS);
 }
 
@@ -364,11 +447,25 @@ void QtFuse::fuse_poll(QtFuseRequest *req, fuse_ino_t, struct fuse_pollhandle*) 
 
 void QtFuse::priv_qtfuse_write_buf(fuse_req_t req, fuse_ino_t ino, struct fuse_bufvec *bufv, off_t off, struct fuse_file_info *fi) {
 	QTFUSE_OBJ_FROM_REQ();
-	c->fuse_write_buf(QTFUSE_REQ_FI(), ino, bufv, off);
-}
+	auto _req = QTFUSE_REQ_FI();
 
-void QtFuse::fuse_write_buf(QtFuseRequest *req, fuse_ino_t, struct fuse_bufvec *, off_t) {
-	QTFUSE_NOT_IMPL(ENOSYS);
+	struct fuse_bufvec dst = FUSE_BUFVEC_INIT(fuse_buf_size(bufv));
+	QByteArray dst_buf;
+	dst_buf.resize(fuse_buf_size(bufv));
+	dst.buf[0].mem = dst_buf.data();
+	ssize_t res = fuse_buf_copy(&dst, bufv, FUSE_BUF_NO_SPLICE);
+
+	if (res < 0) {
+		_req->error(-res);
+		return;
+	}
+
+	dst_buf.resize(res);
+
+	_req->fuse_ino = ino;
+	_req->fuse_value = dst_buf;
+	_req->fuse_offset = off;
+	c->fuse_write(_req);
 }
 
 void QtFuse::priv_qtfuse_retrieve_reply(fuse_req_t req, void *cookie, fuse_ino_t ino, off_t offset, struct fuse_bufvec *bufv) {

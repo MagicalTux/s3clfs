@@ -177,3 +177,36 @@ struct stat *QtFuseRequest::attr() {
 	return &fuse_attr;
 }
 
+const struct stat *QtFuseRequest::attr() const {
+	return &fuse_attr;
+}
+
+quint64 QtFuseRequest::inode() const {
+	return fuse_ino;
+}
+
+quint64 QtFuseRequest::newInode() const {
+	return fuse_newino;
+}
+
+const QByteArray &QtFuseRequest::name() const {
+	return fuse_name;
+}
+
+const QByteArray &QtFuseRequest::value() const {
+	return fuse_value;
+}
+
+int QtFuseRequest::fuseInt() const {
+	return fuse_int;
+}
+
+size_t QtFuseRequest::size() const {
+	return fuse_size;
+}
+
+off_t QtFuseRequest::offset() const {
+	return fuse_offset;
+}
+
+

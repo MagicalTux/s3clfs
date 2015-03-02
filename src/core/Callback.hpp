@@ -1,8 +1,3 @@
-#include <QObject>
-#include <QGenericArgument>
-#include <QPointer>
-#include <QVariant>
-
 /*  S3ClFS - AWS S3 backed cluster filesystem
  *  Copyright (C) 2015 Mark Karpeles
  *
@@ -20,30 +15,28 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <QObject>
+#include <QGenericArgument>
+#include <QPointer>
+#include <QVariant>
+
+#pragma once
+
+class S3FS;
+class QtFuseRequest;
+
 class Callback: public QObject {
 	Q_OBJECT
 public:
-	Callback(QObject *obj, const char *member,
-		QGenericArgument val0 = QGenericArgument(0),
-		QGenericArgument val1 = QGenericArgument(),
-		QGenericArgument val2 = QGenericArgument(),
-		QGenericArgument val3 = QGenericArgument(),
-		QGenericArgument val4 = QGenericArgument(),
-		QGenericArgument val5 = QGenericArgument(),
-		QGenericArgument val6 = QGenericArgument(),
-		QGenericArgument val7 = QGenericArgument(),
-		QGenericArgument val8 = QGenericArgument(),
-		QGenericArgument val9 = QGenericArgument());
-
-	Callback(QObject *obj, const char *member, const QList<QGenericArgument>&);
+	typedef void (S3FS::*callback_method)(QtFuseRequest *);
+	Callback(S3FS *parent, callback_method cb, QtFuseRequest *req);
 
 public slots:
 	void trigger();
 
 private:
-	QPointer<QObject> obj;
-	QByteArray member; // using QByteArray to ensure copy is kept
-	QVariant v0, v1, v2, v3, v4, v5, v6, v7, v8, v9;
-	QByteArray n0, n1, n2, n3, n4, n5, n6, n7, n8, n9;
+	S3FS *parent;
+	callback_method cb;
+	QtFuseRequest *req;
 };
 

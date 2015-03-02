@@ -23,8 +23,8 @@
 #include "S3FS_Store_MetaIterator.hpp"
 #include <QDateTime>
 
-#define CALLBACK() new Callback(this, __func__, func_args)
-#define METHOD_ARGS(...) QList<QGenericArgument> func_args = {__VA_ARGS__}
+#define METHOD_DEF(_x) Callback::callback_method func = &S3FS::_x
+#define CALLBACK() new Callback(this, func, req)
 #define WAIT_READY() if (!is_ready) { connect(this, SIGNAL(ready()), CALLBACK(), SLOT(trigger())); return; } if (is_overloaded) { connect(this, SIGNAL(loadReduced()), CALLBACK(), SLOT(trigger())); return; }
 #define GET_INODE(ino) \
 	if (!store.hasInode(ino)) { req->error(ENOENT); return; } \
@@ -81,9 +81,10 @@ void S3FS::format() {
 	store.setInodeMeta(1, "..", dir_entry);
 }
 
-void S3FS::fuse_lookup(QtFuseRequest *req, fuse_ino_t ino, const QByteArray &path) {
-	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, ino), Q_ARG(const QByteArray&, path));
+void S3FS::fuse_lookup(QtFuseRequest *req) {
+	METHOD_DEF(fuse_lookup);
 	WAIT_READY();
+	quint64 ino = req->inode();
 	GET_INODE(ino);
 
 //	qDebug("S3FS: lookup(%s) from inode %lu", qPrintable(path), ino);
@@ -93,13 +94,13 @@ void S3FS::fuse_lookup(QtFuseRequest *req, fuse_ino_t ino, const QByteArray &pat
 		return;
 	}
 
-	if (!store.hasInodeMeta(ino, path)) {
+	if (!store.hasInodeMeta(ino, req->name())) {
 		// file not found
 		req->error(ENOENT);
 		return;
 	}
 
-	QByteArray res_ino_bin = store.getInodeMeta(ino, path);
+	QByteArray res_ino_bin = store.getInodeMeta(ino, req->name());
 	quint64 res_ino;
 	QDataStream(res_ino_bin) >> res_ino;
 	if (res_ino <= 1) {
@@ -109,8 +110,8 @@ void S3FS::fuse_lookup(QtFuseRequest *req, fuse_ino_t ino, const QByteArray &pat
 	}
 	if (!store.hasInode(res_ino)) {
 		// corrupted inode?
-		qDebug("S3FS: Entry %s of inode %lu is corrupted, removed from tree", path.data(), ino);
-		store.removeInodeMeta(ino, path); // remove reference to inode
+		qDebug("S3FS: Entry %s of inode %llu is corrupted, removed from tree", req->name().data(), ino);
+		store.removeInodeMeta(ino, req->name()); // remove reference to inode
 		req->error(ENOENT);
 		return;
 	}
@@ -124,11 +125,13 @@ void S3FS::fuse_forget(fuse_ino_t, unsigned long) {
 	// TODO? 
 }
 
-void S3FS::fuse_setattr(QtFuseRequest *req, fuse_ino_t ino, int to_set) {
-	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, ino), Q_ARG(int, to_set));
+void S3FS::fuse_setattr(QtFuseRequest *req) {
+	METHOD_DEF(fuse_setattr);
 	WAIT_READY();
+	quint64 ino = req->inode();
 	GET_INODE(ino);
 	auto attr = req->attr();
+	int to_set = req->fuseInt();
 
 //	qDebug("S3FS: about to setattr on inode %lu", ino);
 
@@ -153,27 +156,29 @@ void S3FS::fuse_setattr(QtFuseRequest *req, fuse_ino_t ino, int to_set) {
 	req->attr(&ino_o.constAttr());
 }
 
-void S3FS::fuse_getattr(QtFuseRequest *req, fuse_ino_t ino) {
-	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, ino));
+void S3FS::fuse_getattr(QtFuseRequest *req) {
+	METHOD_DEF(fuse_getattr);
 	WAIT_READY();
+	quint64 ino = req->inode();
 	GET_INODE(ino);
 
 	req->attr(&(ino_o.constAttr()));
 }
 
-void S3FS::fuse_unlink(QtFuseRequest *req, fuse_ino_t parent, const QByteArray &name) {
-	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, parent), Q_ARG(const QByteArray &,name));
+void S3FS::fuse_unlink(QtFuseRequest *req) {
+	METHOD_DEF(fuse_unlink);
 	WAIT_READY();
+	quint64 parent = req->inode();
 	GET_INODE(parent);
 
-	if (!store.hasInodeMeta(parent, name)) {
+	if (!store.hasInodeMeta(parent, req->name())) {
 		req->error(ENOENT);
 		return;
 	}
 
 	quint64 ino_n;
 	quint32 type_n;
-	QDataStream(store.getInodeMeta(parent, name)) >> ino_n >> type_n;
+	QDataStream(store.getInodeMeta(parent, req->name())) >> ino_n >> type_n;
 	if (ino_n <= 1) {
 		qDebug("S3FS: filesystem seems corrupted, please run fsck");
 		req->error(ENOENT);
@@ -185,7 +190,7 @@ void S3FS::fuse_unlink(QtFuseRequest *req, fuse_ino_t parent, const QByteArray &
 		return;
 	}
 
-	if (!store.removeInodeMeta(parent, name)) {
+	if (!store.removeInodeMeta(parent, req->name())) {
 		req->error(EIO);
 		return;
 	}
@@ -193,9 +198,10 @@ void S3FS::fuse_unlink(QtFuseRequest *req, fuse_ino_t parent, const QByteArray &
 	req->error(0);
 }
 
-void S3FS::fuse_readlink(QtFuseRequest *req, fuse_ino_t node) {
-	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, node));
+void S3FS::fuse_readlink(QtFuseRequest *req) {
+	METHOD_DEF(fuse_readlink);
 	WAIT_READY();
+	quint64 node = req->inode();
 	GET_INODE(node);
 
 	if (!node_o.isSymlink()) {
@@ -206,12 +212,14 @@ void S3FS::fuse_readlink(QtFuseRequest *req, fuse_ino_t node) {
 	req->readlink(store.getInodeMeta(node, QByteArrayLiteral("\x00")));
 }
 
-void S3FS::fuse_mkdir(QtFuseRequest *req, fuse_ino_t parent, const QByteArray &name, int mode) {
-	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, parent), Q_ARG(const QByteArray &,name), Q_ARG(int,mode));
+void S3FS::fuse_mkdir(QtFuseRequest *req) {
+	METHOD_DEF(fuse_mkdir);
 	WAIT_READY();
+	quint64 parent = req->inode();
 	GET_INODE(parent);
+	int mode = req->fuseInt();
 
-	if (store.hasInodeMeta(parent, name)) {
+	if (store.hasInodeMeta(parent, req->name())) {
 		req->error(EEXIST);
 		return;
 	}
@@ -229,7 +237,7 @@ void S3FS::fuse_mkdir(QtFuseRequest *req, fuse_ino_t parent, const QByteArray &n
 	// store dir entry
 	parent_o.touch();
 	store.storeInode(parent_o);
-	store.setInodeMeta(parent, name, dir_entry);
+	store.setInodeMeta(parent, req->name(), dir_entry);
 
 	// add ..
 	dir_entry.clear();
@@ -239,24 +247,25 @@ void S3FS::fuse_mkdir(QtFuseRequest *req, fuse_ino_t parent, const QByteArray &n
 	req->entry(&new_dir.constAttr());
 }
 
-void S3FS::fuse_rmdir(QtFuseRequest *req, fuse_ino_t parent, const QByteArray &name) {
-	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, parent), Q_ARG(const QByteArray &,name));
+void S3FS::fuse_rmdir(QtFuseRequest *req) {
+	METHOD_DEF(fuse_rmdir);
 	WAIT_READY();
+	quint64 parent = req->inode();
 	GET_INODE(parent);
 
-	if (!store.hasInodeMeta(parent, name)) {
+	if (!store.hasInodeMeta(parent, req->name())) {
 		req->error(ENOENT);
 		return;
 	}
 
-	if ((name == ".") || (name == "..")) {
+	if ((req->name() == ".") || (req->name() == "..")) {
 		req->error(EINVAL);
 		return;
 	}
 
 	quint64 ino_n;
 	quint32 type_n;
-	QDataStream(store.getInodeMeta(parent, name)) >> ino_n >> type_n;
+	QDataStream(store.getInodeMeta(parent, req->name())) >> ino_n >> type_n;
 	if (ino_n <= 1) {
 		qDebug("S3FS: filesystem seems corrupted, please run fsck");
 		req->error(ENOENT);
@@ -285,7 +294,7 @@ void S3FS::fuse_rmdir(QtFuseRequest *req, fuse_ino_t parent, const QByteArray &n
 		return;
 	}
 
-	if (!store.removeInodeMeta(parent, name)) {
+	if (!store.removeInodeMeta(parent, req->name())) {
 		req->error(EIO);
 		return;
 	}
@@ -296,12 +305,13 @@ void S3FS::fuse_rmdir(QtFuseRequest *req, fuse_ino_t parent, const QByteArray &n
 	req->error(0);
 }
 
-void S3FS::fuse_symlink(QtFuseRequest *req, const QByteArray &link, fuse_ino_t parent, const QByteArray &name) {
-	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(const QByteArray&,link), Q_ARG(fuse_ino_t,parent), Q_ARG(const QByteArray&,name));
+void S3FS::fuse_symlink(QtFuseRequest *req) {
+	METHOD_DEF(fuse_symlink);
 	WAIT_READY();
+	quint64 parent = req->inode();
 	GET_INODE(parent);
 
-	if (store.hasInodeMeta(parent, name)) {
+	if (store.hasInodeMeta(parent, req->name())) {
 		req->error(EEXIST);
 		return;
 	}
@@ -310,21 +320,23 @@ void S3FS::fuse_symlink(QtFuseRequest *req, const QByteArray &link, fuse_ino_t p
 	symlink.makeEntry(makeInode(), S_IFLNK, 0777, req->context()->uid, req->context()->gid);
 
 	store.storeInode(symlink);
-	store.setInodeMeta(symlink.getInode(), QByteArrayLiteral("\x00"), link);
+	store.setInodeMeta(symlink.getInode(), QByteArrayLiteral("\x00"), req->value());
 
 	// store dir entry
 	QByteArray dir_entry;
 	QDataStream(&dir_entry, QIODevice::WriteOnly) << symlink.getInode() << symlink.getFiletype();
-	store.setInodeMeta(parent, name, dir_entry);
+	store.setInodeMeta(parent, req->name(), dir_entry);
 	parent_o.touch();
 	store.storeInode(parent_o);
 
 	req->entry(&symlink.constAttr());
 }
 
-void S3FS::fuse_rename(QtFuseRequest *req, fuse_ino_t parent, const QByteArray &name, fuse_ino_t newparent, const QByteArray &newname) {
-	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, parent), Q_ARG(const QByteArray &,name), Q_ARG(fuse_ino_t, newparent), Q_ARG(const QByteArray &,newname));
+void S3FS::fuse_rename(QtFuseRequest *req) {
+	METHOD_DEF(fuse_rename);
 	WAIT_READY();
+	quint64 parent = req->inode();
+	quint64 newparent = req->newInode();
 	GET_INODE(parent);
 	GET_INODE(newparent);
 
@@ -333,20 +345,20 @@ void S3FS::fuse_rename(QtFuseRequest *req, fuse_ino_t parent, const QByteArray &
 		return;
 	}
 
-	if (!store.hasInodeMeta(parent, name)) {
+	if (!store.hasInodeMeta(parent, req->name())) {
 		req->error(ENOENT);
 		return;
 	}
 
-	QByteArray file_ino_type = store.getInodeMeta(parent, name);
+	QByteArray file_ino_type = store.getInodeMeta(parent, req->name());
 
-	if (!store.hasInodeMeta(newparent, newname)) {
+	if (!store.hasInodeMeta(newparent, req->value())) {
 		// most simple, rename target doesn't exist
-		if (!store.setInodeMeta(newparent, newname, file_ino_type)) {
+		if (!store.setInodeMeta(newparent, req->value(), file_ino_type)) {
 			req->error(EIO);
 			return;
 		}
-		store.removeInodeMeta(parent, name);
+		store.removeInodeMeta(parent, req->name());
 		req->error(0);
 		return;
 	}
@@ -355,12 +367,12 @@ void S3FS::fuse_rename(QtFuseRequest *req, fuse_ino_t parent, const QByteArray &
 	QDataStream(file_ino_type) >> file_ino >> file_type;
 
 	quint64 newfile_ino, newfile_type;
-	QByteArray newfile_ino_type = store.getInodeMeta(newparent, newname);
+	QByteArray newfile_ino_type = store.getInodeMeta(newparent, req->value());
 	QDataStream(newfile_ino_type) >> newfile_ino >> newfile_type;
 
 	if (file_ino == newfile_ino) {
 		// actually the same file, just remove old name & be done with it
-		store.removeInodeMeta(parent, name);
+		store.removeInodeMeta(parent, req->name());
 		req->error(0);
 		return;
 	}
@@ -377,17 +389,19 @@ void S3FS::fuse_rename(QtFuseRequest *req, fuse_ino_t parent, const QByteArray &
 	}
 
 	// TODO: if both are directories, check that target dir is empty
-	if (!store.setInodeMeta(newparent, newname, file_ino_type)) {
+	if (!store.setInodeMeta(newparent, req->value(), file_ino_type)) {
 		req->error(EIO);
 		return;
 	}
-	store.removeInodeMeta(parent, name);
+	store.removeInodeMeta(parent, req->name());
 	req->error(0);
 }
 
-void S3FS::fuse_link(QtFuseRequest *req, fuse_ino_t ino, fuse_ino_t newparent, const QByteArray &newname) {
-	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, ino), Q_ARG(fuse_ino_t, newparent), Q_ARG(const QByteArray &,newname));
+void S3FS::fuse_link(QtFuseRequest *req) {
+	METHOD_DEF(fuse_link);
 	WAIT_READY();
+	quint64 ino = req->inode();
+	quint64 newparent = req->newInode();
 	GET_INODE(ino);
 	GET_INODE(newparent);
 
@@ -401,7 +415,7 @@ void S3FS::fuse_link(QtFuseRequest *req, fuse_ino_t ino, fuse_ino_t newparent, c
 		return;
 	}
 
-	if (store.hasInodeMeta(newparent, newname)) {
+	if (store.hasInodeMeta(newparent, req->value())) {
 		req->error(EEXIST);
 		return;
 	}
@@ -409,24 +423,25 @@ void S3FS::fuse_link(QtFuseRequest *req, fuse_ino_t ino, fuse_ino_t newparent, c
 	// store dir entry
 	QByteArray dir_entry;
 	QDataStream(&dir_entry, QIODevice::WriteOnly) << ino_o.getInode() << ino_o.getFiletype();
-	store.setInodeMeta(newparent, newname, dir_entry);
+	store.setInodeMeta(newparent, req->value(), dir_entry);
 
 	req->entry(&ino_o.constAttr());
 }
 
-void S3FS::fuse_flush(QtFuseRequest *req, fuse_ino_t) {
+void S3FS::fuse_flush(QtFuseRequest *req) {
 	// nothing here for now
 	req->error(0);
 }
 
-void S3FS::fuse_release(QtFuseRequest *req, fuse_ino_t) {
+void S3FS::fuse_release(QtFuseRequest *req) {
 	// nothing here for now
 	req->error(0);
 }
 
-void S3FS::fuse_open(QtFuseRequest *req, fuse_ino_t ino) {
-	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, ino));
+void S3FS::fuse_open(QtFuseRequest *req) {
+	METHOD_DEF(fuse_open);
 	WAIT_READY();
+	quint64 ino = req->inode();
 	GET_INODE(ino);
 	auto fi = req->fi();
 
@@ -449,9 +464,10 @@ void S3FS::fuse_open(QtFuseRequest *req, fuse_ino_t ino) {
 	req->open(fi);
 }
 
-void S3FS::fuse_opendir(QtFuseRequest *req, fuse_ino_t ino) {
-	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, ino));
+void S3FS::fuse_opendir(QtFuseRequest *req) {
+	METHOD_DEF(fuse_opendir);
 	WAIT_READY();
+	quint64 ino = req->inode();
 	GET_INODE(ino);
 	auto fi = req->fi();
 
@@ -465,9 +481,10 @@ void S3FS::fuse_opendir(QtFuseRequest *req, fuse_ino_t ino) {
 	req->open(fi);
 }
 
-void S3FS::fuse_readdir(QtFuseRequest *req, fuse_ino_t ino, off_t off) {
-	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, ino), Q_ARG(off_t, off));
+void S3FS::fuse_readdir(QtFuseRequest *req) {
+	METHOD_DEF(fuse_readdir);
 	WAIT_READY();
+	quint64 ino = req->inode();
 	GET_INODE(ino);
 	auto fi = req->fi();
 
@@ -481,6 +498,8 @@ void S3FS::fuse_readdir(QtFuseRequest *req, fuse_ino_t ino, off_t off) {
 		req->error(EBADF);
 		return;
 	}
+
+	off_t off = req->offset();
 
 	while(true) {
 		if (!fh->isValid()) {
@@ -511,9 +530,10 @@ void S3FS::fuse_readdir(QtFuseRequest *req, fuse_ino_t ino, off_t off) {
 	}
 }
 
-void S3FS::fuse_releasedir(QtFuseRequest *req, fuse_ino_t ino) {
-	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, ino));
+void S3FS::fuse_releasedir(QtFuseRequest *req) {
+	METHOD_DEF(fuse_releasedir);
 	WAIT_READY();
+	quint64 ino = req->inode();
 	GET_INODE(ino);
 
 	S3FS_Store_MetaIterator *fh = (S3FS_Store_MetaIterator*)req->fi()->fh;
@@ -523,17 +543,19 @@ void S3FS::fuse_releasedir(QtFuseRequest *req, fuse_ino_t ino) {
 	req->error(0); // success
 }
 
-void S3FS::fuse_create(QtFuseRequest *req, fuse_ino_t parent, const QByteArray &name, mode_t mode) {
-	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, parent), Q_ARG(const QByteArray&,name), Q_ARG(mode_t,mode));
+void S3FS::fuse_create(QtFuseRequest *req) {
+	METHOD_DEF(fuse_create);
 	WAIT_READY();
+	quint64 parent = req->inode();
 	GET_INODE(parent);
 	auto fi = req->fi();
+	mode_t mode = req->fuseInt();
 
 	// check if file exists
-	if (store.hasInodeMeta(parent, name)) {
+	if (store.hasInodeMeta(parent, req->name())) {
 		// TODO handle fi->flags (open file)
 		quint64 child_ino;
-		QDataStream(store.getInodeMeta(parent, name)) >> child_ino;
+		QDataStream(store.getInodeMeta(parent, req->name())) >> child_ino;
 		if (child_ino > 1) {
 			GET_INODE(child_ino);
 			// should we truncate file?
@@ -554,19 +576,23 @@ void S3FS::fuse_create(QtFuseRequest *req, fuse_ino_t parent, const QByteArray &
 	// store dir entry
 	QByteArray dir_entry;
 	QDataStream(&dir_entry, QIODevice::WriteOnly) << new_file.getInode() << new_file.getFiletype();
-	store.setInodeMeta(parent, name, dir_entry);
+	store.setInodeMeta(parent, req->name(), dir_entry);
 	parent_o.touch();
 	store.storeInode(parent_o);
 
 	req->create(&new_file.constAttr(), fi);
 }
 
-void S3FS::fuse_read(QtFuseRequest *req, fuse_ino_t ino, size_t size, off_t offset) {
-	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, ino), Q_ARG(size_t,size), Q_ARG(off_t,offset));
+void S3FS::fuse_read(QtFuseRequest *req) {
+	METHOD_DEF(fuse_read);
 	WAIT_READY();
+	quint64 ino = req->inode();
 	GET_INODE(ino);
 
 	QByteArray buf;
+
+	size_t size = req->size();
+	off_t offset = req->offset();
 
 	if ((quint64)offset >= ino_o.size()) {
 		req->buf(QByteArray()); // no data
@@ -618,11 +644,15 @@ void S3FS::fuse_read(QtFuseRequest *req, fuse_ino_t ino, size_t size, off_t offs
 	req->buf(buf);
 }
 
-void S3FS::fuse_write(QtFuseRequest *req, fuse_ino_t ino, const QByteArray &buf, off_t offset) {
-	METHOD_ARGS(Q_ARG(QtFuseRequest*, req), Q_ARG(fuse_ino_t, ino), Q_ARG(const QByteArray&,buf), Q_ARG(off_t,offset));
+void S3FS::fuse_write(QtFuseRequest *req) {
+	METHOD_DEF(fuse_write);
 	WAIT_READY();
+	quint64 ino = req->inode();
 	GET_INODE(ino);
 	bool need_wait = false;
+
+	const QByteArray &buf = req->value();
+	off_t offset = req->offset();
 
 	// write data
 	if (buf.isEmpty()) {
@@ -636,7 +666,7 @@ void S3FS::fuse_write(QtFuseRequest *req, fuse_ino_t ino, const QByteArray &buf,
 	if (offset % S3FUSE_BLOCK_SIZE) {
 		qint64 maxlen = S3FUSE_BLOCK_SIZE - (offset % S3FUSE_BLOCK_SIZE);
 		if (buf.length() < maxlen) {
-			if (!real_write(ino_o, buf, offset, func_args, need_wait)) {
+			if (!real_write(ino_o, buf, offset, req, func, need_wait)) {
 				ino_o.touch();
 				store.storeInode(ino_o);
 				if (need_wait) return;
@@ -649,7 +679,7 @@ void S3FS::fuse_write(QtFuseRequest *req, fuse_ino_t ino, const QByteArray &buf,
 			return;
 		}
 		// too bad, buf doesn't fit
-		if (!real_write(ino_o, buf.left(maxlen), offset, func_args, need_wait)) {
+		if (!real_write(ino_o, buf.left(maxlen), offset, req, func, need_wait)) {
 			store.storeInode(ino_o);
 			if (need_wait) return;
 			req->error(EIO);
@@ -663,7 +693,7 @@ void S3FS::fuse_write(QtFuseRequest *req, fuse_ino_t ino, const QByteArray &buf,
 	while(pos < len) {
 		if (pos + S3FUSE_BLOCK_SIZE > len) {
 			// final block
-			if (!real_write(ino_o, buf.mid(pos), offset+pos, func_args, need_wait)) {
+			if (!real_write(ino_o, buf.mid(pos), offset+pos, req, func, need_wait)) {
 				ino_o.touch();
 				store.storeInode(ino_o);
 				if (need_wait) return;
@@ -676,7 +706,7 @@ void S3FS::fuse_write(QtFuseRequest *req, fuse_ino_t ino, const QByteArray &buf,
 			return;
 		}
 		// middle write
-		if (!real_write(ino_o, buf.mid(pos, S3FUSE_BLOCK_SIZE), offset+pos, func_args, need_wait)) {
+		if (!real_write(ino_o, buf.mid(pos, S3FUSE_BLOCK_SIZE), offset+pos, req, func, need_wait)) {
 			ino_o.touch();
 			store.storeInode(ino_o);
 			if (need_wait) return;
@@ -691,7 +721,7 @@ void S3FS::fuse_write(QtFuseRequest *req, fuse_ino_t ino, const QByteArray &buf,
 }
 
 // hing this as inline for optimization
-inline bool S3FS::real_write(S3FS_Obj &ino, const QByteArray &buf, off_t offset, QList<QGenericArgument> &func_args, bool &need_wait) {
+inline bool S3FS::real_write(S3FS_Obj &ino, const QByteArray &buf, off_t offset, QtFuseRequest *req, Callback::callback_method func, bool &need_wait) {
 	qint64 offset_block = offset - (offset % S3FUSE_BLOCK_SIZE);
 	qint64 offset_in_block = offset - offset_block;
 
@@ -721,7 +751,7 @@ inline bool S3FS::real_write(S3FS_Obj &ino, const QByteArray &buf, off_t offset,
 		QByteArray old_block_id = store.getInodeMeta(ino.getInode(), offset_block_b);
 		if (!store.hasBlockLocally(old_block_id)) {
 			// need to get block & retry
-			Callback *cb = new Callback(this, "fuse_write", func_args);
+			Callback *cb = CALLBACK();
 			store.callbackOnBlockCached(old_block_id, cb);
 			need_wait = true;
 			return false;

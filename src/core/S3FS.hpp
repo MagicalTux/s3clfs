@@ -19,6 +19,7 @@
 #include "S3FS_Store.hpp"
 #include "Keyval.hpp"
 #include "QtFuseRequest.hpp"
+#include "Callback.hpp"
 
 #pragma once
 
@@ -38,33 +39,33 @@ signals:
 	void loadReduced();
 
 public slots:
-	void fuse_lookup(QtFuseRequest *req, fuse_ino_t ino, const QByteArray &path);
+	void fuse_lookup(QtFuseRequest *req);
 	void fuse_forget(fuse_ino_t ino, unsigned long nlookup);
-	void fuse_setattr(QtFuseRequest *req, fuse_ino_t node, int to_set);
-	void fuse_getattr(QtFuseRequest *req, fuse_ino_t node);
-	void fuse_unlink(QtFuseRequest *req, fuse_ino_t parent_ino, const QByteArray &name);
-	void fuse_readlink(QtFuseRequest *req, fuse_ino_t node);
-	void fuse_mkdir(QtFuseRequest *req, fuse_ino_t parent, const QByteArray &name, int mode);
-	void fuse_rmdir(QtFuseRequest *req, fuse_ino_t parent, const QByteArray &name);
-	void fuse_symlink(QtFuseRequest *req, const QByteArray &link, fuse_ino_t parent, const QByteArray &name);
-	void fuse_rename(QtFuseRequest *req, fuse_ino_t parent, const QByteArray &name, fuse_ino_t newparent, const QByteArray &newname);
-	void fuse_link(QtFuseRequest *req, fuse_ino_t ino, fuse_ino_t newparent, const QByteArray &newname);
-	void fuse_flush(QtFuseRequest *req, fuse_ino_t ino);
-	void fuse_release(QtFuseRequest *req, fuse_ino_t ino);
-	void fuse_open(QtFuseRequest *req, fuse_ino_t ino);
-	void fuse_opendir(QtFuseRequest *req, fuse_ino_t ino);
-	void fuse_readdir(QtFuseRequest *req, fuse_ino_t ino, off_t off);
-	void fuse_releasedir(QtFuseRequest *req, fuse_ino_t ino);
-	void fuse_create(QtFuseRequest *req, fuse_ino_t parent, const QByteArray &name, mode_t mode);
-	void fuse_read(QtFuseRequest *req, fuse_ino_t ino, size_t size, off_t offset);
-	void fuse_write(QtFuseRequest *req, fuse_ino_t ino, const QByteArray &buf, off_t offset);
+	void fuse_setattr(QtFuseRequest *req);
+	void fuse_getattr(QtFuseRequest *req);
+	void fuse_unlink(QtFuseRequest *req);
+	void fuse_readlink(QtFuseRequest *req);
+	void fuse_mkdir(QtFuseRequest *req);
+	void fuse_rmdir(QtFuseRequest *req);
+	void fuse_symlink(QtFuseRequest *req);
+	void fuse_rename(QtFuseRequest *req);
+	void fuse_link(QtFuseRequest *req);
+	void fuse_flush(QtFuseRequest *req);
+	void fuse_release(QtFuseRequest *req);
+	void fuse_open(QtFuseRequest *req);
+	void fuse_opendir(QtFuseRequest *req);
+	void fuse_readdir(QtFuseRequest *req);
+	void fuse_releasedir(QtFuseRequest *req);
+	void fuse_create(QtFuseRequest *req);
+	void fuse_read(QtFuseRequest *req);
+	void fuse_write(QtFuseRequest *req);
 	void storeIsReady();
 
 	void setOverload(bool);
 
 protected:
 	quint64 makeInode();
-	bool real_write(S3FS_Obj &ino, const QByteArray &buf, off_t offset, QList<QGenericArgument>&, bool &wait);
+	bool real_write(S3FS_Obj &ino, const QByteArray &buf, off_t offset, QtFuseRequest *, Callback::callback_method, bool &wait);
 
 private:
 	S3FS_Store store;
