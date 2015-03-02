@@ -459,6 +459,8 @@ void S3FS::fuse_open(QtFuseRequest *req) {
 	if (fi->flags & O_TRUNC) {
 		// need to truncate whole file
 		store.clearInodeMeta(ino);
+		ino_o.setSize(0);
+		store.storeInode(ino_o);
 	}
 
 	req->open(fi);
@@ -562,6 +564,8 @@ void S3FS::fuse_create(QtFuseRequest *req) {
 			if (fi->flags & O_TRUNC) {
 				// need to truncate whole file
 				store.clearInodeMeta(child_ino);
+				child_ino_o.setSize(0);
+				store.storeInode(child_ino_o);
 			}
 			req->create(&child_ino_o.constAttr(), fi);
 			return;
