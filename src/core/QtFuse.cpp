@@ -123,7 +123,7 @@ void QtFuse::priv_qtfuse_mkdir(fuse_req_t req, fuse_ino_t parent, const char *na
 	_req->fuse_ino = parent;
 	_req->fuse_name = QByteArray(name);
 	_req->fuse_int = mode;
-	c->fuse_mkdir(QTFUSE_REQ());
+	c->fuse_mkdir(_req);
 }
 
 void QtFuse::fuse_mkdir(QtFuseRequest *req) {
