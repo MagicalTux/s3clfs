@@ -22,6 +22,7 @@
 #include "Callback.hpp"
 #include "S3FS_Store_MetaIterator.hpp"
 #include <QDateTime>
+#include <sys/time.h>
 
 #define METHOD_DEF(_x) Callback::callback_method func = &S3FS::_x
 #define CALLBACK() new Callback(this, func, req)
@@ -144,12 +145,17 @@ void S3FS::fuse_setattr(QtFuseRequest *req) {
 		if (to_set & FUSE_SET_ATTR_SIZE) s.st_size = attr->st_size; // TODO drop data that shouldn't be there anymore
 	}
 	if ((to_set & FUSE_SET_ATTR_ATIME_NOW) || (to_set & FUSE_SET_ATTR_MTIME_NOW)) {
-		time_t t = time(NULL);
-		if (to_set | FUSE_SET_ATTR_ATIME_NOW) s.st_atime = t;
-		if (to_set | FUSE_SET_ATTR_MTIME_NOW) s.st_mtime = t;
+		struct timeval tmp;
+		gettimeofday(&tmp, NULL);
+		struct timespec t;
+		t.tv_sec = tmp.tv_sec;
+		t.tv_nsec = tmp.tv_usec * 1000;
+
+		if (to_set | FUSE_SET_ATTR_ATIME_NOW) s.st_atim = t;
+		if (to_set | FUSE_SET_ATTR_MTIME_NOW) s.st_mtim = t;
 	}
-	if (to_set & FUSE_SET_ATTR_ATIME) s.st_atime = attr->st_atime;
-	if (to_set & FUSE_SET_ATTR_MTIME) s.st_mtime = attr->st_mtime;
+	if (to_set & FUSE_SET_ATTR_ATIME) s.st_atim = attr->st_atim;
+	if (to_set & FUSE_SET_ATTR_MTIME) s.st_mtim = attr->st_mtim;
 
 	ino_o.setAttr(s);
 	store.storeInode(ino_o);

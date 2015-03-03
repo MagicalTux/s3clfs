@@ -1,6 +1,7 @@
 #include <S3FS_Obj.hpp>
 #include <unistd.h>
 #include <sys/types.h>
+#include <sys/time.h>
 
 /*  S3ClFS - AWS S3 backed cluster filesystem
  *  Copyright (C) 2015 Mark Karpeles
@@ -52,13 +53,22 @@ void S3FS_Obj::makeFile(quint64 ino, int mode, int uid, int gid) {
 	makeEntry(ino, S_IFREG, mode, uid, gid);
 }
 void S3FS_Obj::touch() {
-	quint64 t = time(NULL);
-	attr.st_ctime = t;
-	attr.st_mtime = t;
+	struct timeval tmp;
+	gettimeofday(&tmp, NULL);
+	struct timespec t;
+	t.tv_sec = tmp.tv_sec;
+	t.tv_nsec = tmp.tv_usec * 1000;
+
+	attr.st_ctim = t;
+	attr.st_mtim = t;
 }
 
 void S3FS_Obj::makeEntry(quint64 ino, int type, int mode, int uid, int gid) {
-	quint64 t = time(NULL);
+	struct timeval tmp;
+	gettimeofday(&tmp, NULL);
+	struct timespec t;
+	t.tv_sec = tmp.tv_sec;
+	t.tv_nsec = tmp.tv_usec * 1000;
 
 	reset();
 	attr.st_ino = ino;
@@ -66,9 +76,9 @@ void S3FS_Obj::makeEntry(quint64 ino, int type, int mode, int uid, int gid) {
 	attr.st_uid = uid;
 	attr.st_gid = gid;
 	attr.st_size = 0;
-	attr.st_ctime = t;
-	attr.st_mtime = t;
-	attr.st_atime = t;
+	attr.st_ctim = t;
+	attr.st_mtim = t;
+	attr.st_atim = t;
 }
 
 QByteArray S3FS_Obj::encode() const {
@@ -80,9 +90,13 @@ QByteArray S3FS_Obj::encode() const {
 	STORE_VAL(mode);
 	STORE_VAL(uid);
 	STORE_VAL(gid);
-	STORE_VAL_T(ctime, quint64);
+	STORE_VAL_T(rdev, quint64);
+	STORE_VAL_T(ctime, qint64);
 	STORE_VAL_T(mtime, qint64);
 	STORE_VAL_T(atime, qint64);
+	STORE_VAL_T(ctim.tv_nsec, quint64);
+	STORE_VAL_T(mtim.tv_nsec, quint64);
+	STORE_VAL_T(atim.tv_nsec, quint64);
 	STORE_VAL_T(size, quint64);
 
 	QVariantMap props;
@@ -119,9 +133,13 @@ bool S3FS_Obj::decode(const QByteArray &buf) {
 	attr.st_mode = attrs.value("mode").toUInt();
 	attr.st_uid = attrs.value("uid").toUInt();
 	attr.st_gid = attrs.value("gid").toUInt();
-	attr.st_ctime = attrs.value("ctime").toULongLong();
-	attr.st_mtime = attrs.value("mtime").toULongLong();
-	attr.st_atime = attrs.value("atime").toULongLong();
+	attr.st_rdev = attrs.value("rdev").toULongLong(); // dev_t is currently a uint32, but it can't hurt to store it more
+	attr.st_ctime = attrs.value("ctime").toLongLong();
+	attr.st_mtime = attrs.value("mtime").toLongLong();
+	attr.st_atime = attrs.value("atime").toLongLong();
+	attr.st_ctim.tv_nsec = attrs.value("ctim.tv_nsec").toULongLong();
+	attr.st_mtim.tv_nsec = attrs.value("mtim.tv_nsec").toULongLong();
+	attr.st_atim.tv_nsec = attrs.value("atim.tv_nsec").toULongLong();
 	attr.st_size = attrs.value("size").toULongLong();
 
 	return true;
