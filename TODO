@@ -6,12 +6,21 @@ Handle HTTP errors (access denied) by exiting and warning user
 
 Handle HTTP errors (missing files) by sending EIO
 
-Automatic file system checks on idle
-=> build mesh of inodes, detect orphan inodes and purge
-=> also detect unused data hashes, and purge
-=> detect missing inodes, and remove links (or create empty inodes instead)
-=> detect missing pieces of data, and remove from list (and/or move corrupted file away)
+Create a control channel (unix socket?) and a management tool
+
+filesystem check: clean inodes
+=> Download full tree (all directory inodes)
+=> Create list of all inodes in use
+=> Delete any inode created before check started
+
+filesystem check: unused hashes
+=> create list of all hashes
+=> download all file/dir inodes
+=> remove all actually used hashes from previous list
+=> delete anything remaining in the list
 
 Add better configuration system (config file?)
 
 Implement encryption and compression
+
+OPTIMIZE for speed!
