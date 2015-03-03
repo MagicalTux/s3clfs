@@ -52,7 +52,7 @@ void S3FS_Obj::makeDir(quint64 ino, int mode, int uid, int gid) {
 void S3FS_Obj::makeFile(quint64 ino, int mode, int uid, int gid) {
 	makeEntry(ino, S_IFREG, mode, uid, gid);
 }
-void S3FS_Obj::touch() {
+void S3FS_Obj::touch(bool mtime) {
 	struct timeval tmp;
 	gettimeofday(&tmp, NULL);
 	struct timespec t;
@@ -60,7 +60,7 @@ void S3FS_Obj::touch() {
 	t.tv_nsec = tmp.tv_usec * 1000;
 
 	attr.st_ctim = t;
-	attr.st_mtim = t;
+	if (mtime) attr.st_mtim = t;
 }
 
 void S3FS_Obj::makeEntry(quint64 ino, int type, int mode, int uid, int gid) {
