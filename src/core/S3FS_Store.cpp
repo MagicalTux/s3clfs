@@ -62,6 +62,10 @@ S3FS_Store::S3FS_Store(S3FS_Config *_cfg, QObject *parent): QObject(parent) {
 		qFatal("S3FS_Store: Failed to open cache");
 	}
 
+	// protect directories (actually Qt doesn't seem to have an api to set permissions on directories, so...)
+	chmod(kv_location.toLocal8Bit().data(), 0700);
+	chmod(data_path.path().toLocal8Bit().data(), 0700);
+
 	// initialize AWS
 	aws = new S3FS_Aws(cfg, this);
 
