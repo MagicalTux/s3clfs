@@ -28,9 +28,6 @@ public:
 	quint64 expireBlocks() const;
 	void setExpireBlocks(quint64);
 
-	quint64 expireInodes() const;
-	void setExpireInodes(quint64);
-
 	quint64 listFetchInterval() const;
 	void setListFetchInterval(quint64);
 
@@ -49,7 +46,6 @@ private:
 	QString cache_path; // Path where to store leveldb
 	QString data_path; // Path where to store cached data
 	quint64 expire_blocks; // expiration of cached blocks, in seconds
-	quint64 expire_inodes; // expiration of cached inodes, in seconds
 	quint64 list_fetch_interval; // how often to re-fetch the inodes list on S3
 	bool cache_data;
 	QString aws_credentials_url; // for example http://169.254.169.254/latest/meta-data/iam/security-credentials/policy-name
