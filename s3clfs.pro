@@ -114,6 +114,8 @@ equals(BUILD_TYPE,test) {
 equals(BUILD_MODE,debug) {
 	CONFIG += debug
 	DEFINES += S3CLFS_DEBUG
+	gprof:QMAKE_CXXFLAGS_DEBUG += -pg
+	gprof:QMAKE_LFLAGS_DEBUG += -pg
 } else {
 	DEFINES += QT_NO_DEBUG
 }

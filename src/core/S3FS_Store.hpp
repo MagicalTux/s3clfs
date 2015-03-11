@@ -102,7 +102,6 @@ private:
 	// lastaccess pruning system
 	QTimer lastaccess_updater;
 	QTimer lastaccess_cleaner;
-	QSet<quint64> lastaccess_inode;
 	QSet<QByteArray> lastaccess_data;
 	quint64 expire_blocks; // expiration of cached blocks, in seconds
 	quint64 expire_inodes; // expiration of cached inodes, in seconds
