@@ -158,6 +158,7 @@ void S3FS::fuse_setattr(QtFuseRequest *req) {
 	if (to_set & FUSE_SET_ATTR_MTIME) s.st_mtim = attr->st_mtim;
 
 	ino_o.setAttr(s);
+	ino_o.touch(false); // update ctime
 	store.storeInode(ino_o);
 	req->attr(&ino_o.constAttr());
 }
@@ -201,6 +202,9 @@ void S3FS::fuse_unlink(QtFuseRequest *req) {
 		return;
 	}
 
+	parent_o.touch(true);
+	store.storeInode(parent_o);
+
 	req->error(0);
 }
 
@@ -241,7 +245,7 @@ void S3FS::fuse_mkdir(QtFuseRequest *req) {
 	store.setInodeMeta(new_dir.getInode(), ".", dir_entry);
 
 	// store dir entry
-	parent_o.touch();
+	parent_o.touch(true);
 	store.storeInode(parent_o);
 	store.setInodeMeta(parent, req->name(), dir_entry);
 
@@ -305,7 +309,7 @@ void S3FS::fuse_rmdir(QtFuseRequest *req) {
 		return;
 	}
 
-	parent_o.touch();
+	parent_o.touch(true);
 	store.storeInode(parent_o);
 
 	req->error(0);
@@ -332,7 +336,7 @@ void S3FS::fuse_symlink(QtFuseRequest *req) {
 	QByteArray dir_entry;
 	QDataStream(&dir_entry, QIODevice::WriteOnly) << symlink.getInode() << symlink.getFiletype();
 	store.setInodeMeta(parent, req->name(), dir_entry);
-	parent_o.touch();
+	parent_o.touch(true);
 	store.storeInode(parent_o);
 
 	req->entry(&symlink.constAttr());
@@ -400,6 +404,12 @@ void S3FS::fuse_rename(QtFuseRequest *req) {
 		return;
 	}
 	store.removeInodeMeta(parent, req->name());
+
+	parent_o.touch(true);
+	store.storeInode(parent_o);
+	newparent_o.touch(true);
+	store.storeInode(newparent_o);
+
 	req->error(0);
 }
 
@@ -430,6 +440,9 @@ void S3FS::fuse_link(QtFuseRequest *req) {
 	QByteArray dir_entry;
 	QDataStream(&dir_entry, QIODevice::WriteOnly) << ino_o.getInode() << ino_o.getFiletype();
 	store.setInodeMeta(newparent, req->value(), dir_entry);
+
+	newparent_o.touch(true);
+	store.storeInode(newparent_o);
 
 	req->entry(&ino_o.constAttr());
 }
@@ -587,7 +600,7 @@ void S3FS::fuse_create(QtFuseRequest *req) {
 	QByteArray dir_entry;
 	QDataStream(&dir_entry, QIODevice::WriteOnly) << new_file.getInode() << new_file.getFiletype();
 	store.setInodeMeta(parent, req->name(), dir_entry);
-	parent_o.touch();
+	parent_o.touch(true);
 	store.storeInode(parent_o);
 
 	req->create(&new_file.constAttr(), fi);
@@ -677,13 +690,13 @@ void S3FS::fuse_write(QtFuseRequest *req) {
 		qint64 maxlen = S3FUSE_BLOCK_SIZE - (offset % S3FUSE_BLOCK_SIZE);
 		if (buf.length() < maxlen) {
 			if (!real_write(ino_o, buf, offset, req, func, need_wait)) {
-				ino_o.touch();
+				ino_o.touch(true);
 				store.storeInode(ino_o);
 				if (need_wait) return;
 				req->error(EIO);
 				return;
 			}
-			ino_o.touch();
+			ino_o.touch(true);
 			store.storeInode(ino_o);
 			req->write(buf.length());
 			return;
@@ -704,20 +717,20 @@ void S3FS::fuse_write(QtFuseRequest *req) {
 		if (pos + S3FUSE_BLOCK_SIZE > len) {
 			// final block
 			if (!real_write(ino_o, buf.mid(pos), offset+pos, req, func, need_wait)) {
-				ino_o.touch();
+				ino_o.touch(true);
 				store.storeInode(ino_o);
 				if (need_wait) return;
 				req->error(EIO);
 				return;
 			}
-			ino_o.touch();
+			ino_o.touch(true);
 			store.storeInode(ino_o);
 			req->write(len);
 			return;
 		}
 		// middle write
 		if (!real_write(ino_o, buf.mid(pos, S3FUSE_BLOCK_SIZE), offset+pos, req, func, need_wait)) {
-			ino_o.touch();
+			ino_o.touch(true);
 			store.storeInode(ino_o);
 			if (need_wait) return;
 			req->error(EIO);
@@ -725,7 +738,7 @@ void S3FS::fuse_write(QtFuseRequest *req) {
 		}
 		pos += S3FUSE_BLOCK_SIZE;
 	}
-	ino_o.touch();
+	ino_o.touch(true);
 	store.storeInode(ino_o);
 	req->write(pos); // if len was a multiple of S3FUSE_BLOCK_SIZE
 }
