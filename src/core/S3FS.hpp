@@ -19,7 +19,6 @@
 #include "S3FS_Store.hpp"
 #include "Keyval.hpp"
 #include "QtFuseRequest.hpp"
-#include "Callback.hpp"
 
 #pragma once
 
@@ -65,7 +64,7 @@ public slots:
 
 protected:
 	quint64 makeInode();
-	bool real_write(S3FS_Obj &ino, const QByteArray &buf, off_t offset, QtFuseRequest *, Callback::callback_method, bool &wait);
+	bool real_write(S3FS_Obj &ino, const QByteArray &buf, off_t offset, QtFuseRequest *, bool &wait);
 
 private:
 	S3FS_Store store;

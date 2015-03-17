@@ -19,18 +19,16 @@
 #include "S3FS_Config.hpp"
 #include "S3Fuse.hpp"
 #include "QtFuseRequest.hpp"
-#include "Callback.hpp"
 #include "S3FS_Store_MetaIterator.hpp"
 #include <QDateTime>
 #include <sys/time.h>
 
-#define METHOD_DEF(_x) Callback::callback_method func = &S3FS::_x
-#define CALLBACK() new Callback(this, func, req)
-#define WAIT_READY() if (!is_ready) { connect(this, SIGNAL(ready()), CALLBACK(), SLOT(trigger())); return; } if (is_overloaded) { connect(this, SIGNAL(loadReduced()), CALLBACK(), SLOT(trigger())); return; }
+#define METHOD_DEF(_x) req->setMethod<S3FS>(this, &S3FS::_x)
+#define WAIT_READY() if (!is_ready) { connect(this, SIGNAL(ready()), req, SLOT(trigger())); return; } if (is_overloaded) { connect(this, SIGNAL(loadReduced()), req, SLOT(trigger())); return; }
 #define GET_INODE(ino) \
 	if (!store.hasInode(ino)) { req->error(ENOENT); return; } \
-	if (!store.hasInodeLocally(ino)) { store.callbackOnInodeCached(ino, CALLBACK()); return; } S3FS_Obj &ino ## _o = *store.getInode(ino); \
-	if ((!ino ## _o.isValid()) || (ino ## _o.getInode() != ino)) { store.brokenInode(ino); QTimer::singleShot(100, CALLBACK(), SLOT(trigger())); return; }
+	if (!store.hasInodeLocally(ino)) { store.callbackOnInodeCached(ino, req); return; } S3FS_Obj &ino ## _o = *store.getInode(ino); \
+	if ((!ino ## _o.isValid()) || (ino ## _o.getInode() != ino)) { store.brokenInode(ino); QTimer::singleShot(100, req, SLOT(trigger())); return; }
 
 S3FS::S3FS(S3FS_Config *_cfg): store(_cfg) {
 	cfg = _cfg;
@@ -643,7 +641,7 @@ void S3FS::fuse_read(QtFuseRequest *req) {
 
 			if (!store.hasBlockLocally(block_id)) {
 				// need to get block & retry
-				store.callbackOnBlockCached(block_id, CALLBACK());
+				store.callbackOnBlockCached(block_id, req);
 				return;
 			}
 			quint64 block_pos = pos % S3FUSE_BLOCK_SIZE;
@@ -689,7 +687,7 @@ void S3FS::fuse_write(QtFuseRequest *req) {
 	if (offset % S3FUSE_BLOCK_SIZE) {
 		qint64 maxlen = S3FUSE_BLOCK_SIZE - (offset % S3FUSE_BLOCK_SIZE);
 		if (buf.length() < maxlen) {
-			if (!real_write(ino_o, buf, offset, req, func, need_wait)) {
+			if (!real_write(ino_o, buf, offset, req, need_wait)) {
 				ino_o.touch(true);
 				store.storeInode(ino_o);
 				if (need_wait) return;
@@ -702,7 +700,7 @@ void S3FS::fuse_write(QtFuseRequest *req) {
 			return;
 		}
 		// too bad, buf doesn't fit
-		if (!real_write(ino_o, buf.left(maxlen), offset, req, func, need_wait)) {
+		if (!real_write(ino_o, buf.left(maxlen), offset, req, need_wait)) {
 			store.storeInode(ino_o);
 			if (need_wait) return;
 			req->error(EIO);
@@ -716,7 +714,7 @@ void S3FS::fuse_write(QtFuseRequest *req) {
 	while(pos < len) {
 		if (pos + S3FUSE_BLOCK_SIZE > len) {
 			// final block
-			if (!real_write(ino_o, buf.mid(pos), offset+pos, req, func, need_wait)) {
+			if (!real_write(ino_o, buf.mid(pos), offset+pos, req, need_wait)) {
 				ino_o.touch(true);
 				store.storeInode(ino_o);
 				if (need_wait) return;
@@ -729,7 +727,7 @@ void S3FS::fuse_write(QtFuseRequest *req) {
 			return;
 		}
 		// middle write
-		if (!real_write(ino_o, buf.mid(pos, S3FUSE_BLOCK_SIZE), offset+pos, req, func, need_wait)) {
+		if (!real_write(ino_o, buf.mid(pos, S3FUSE_BLOCK_SIZE), offset+pos, req, need_wait)) {
 			ino_o.touch(true);
 			store.storeInode(ino_o);
 			if (need_wait) return;
@@ -744,7 +742,7 @@ void S3FS::fuse_write(QtFuseRequest *req) {
 }
 
 // hing this as inline for optimization
-inline bool S3FS::real_write(S3FS_Obj &ino, const QByteArray &buf, off_t offset, QtFuseRequest *req, Callback::callback_method func, bool &need_wait) {
+inline bool S3FS::real_write(S3FS_Obj &ino, const QByteArray &buf, off_t offset, QtFuseRequest *req, bool &need_wait) {
 	qint64 offset_block = offset - (offset % S3FUSE_BLOCK_SIZE);
 	qint64 offset_in_block = offset - offset_block;
 
@@ -774,8 +772,7 @@ inline bool S3FS::real_write(S3FS_Obj &ino, const QByteArray &buf, off_t offset,
 		QByteArray old_block_id = store.getInodeMeta(ino.getInode(), offset_block_b);
 		if (!store.hasBlockLocally(old_block_id)) {
 			// need to get block & retry
-			Callback *cb = CALLBACK();
-			store.callbackOnBlockCached(old_block_id, cb);
+			store.callbackOnBlockCached(old_block_id, req);
 			need_wait = true;
 			return false;
 		}

@@ -30,10 +30,21 @@ QtFuseRequest::QtFuseRequest(fuse_req_t _req, QtFuse &_parent, struct fuse_file_
 	data_buf = NULL;
 	buf_size = 0;
 	buf_pos = 0;
+	cb_obj = NULL;
 }
 
 QtFuseRequest::~QtFuseRequest() {
 	if (data_buf != NULL) delete data_buf;
+}
+
+void QtFuseRequest::setMethod(QtFuseRequestDummyCallback *obj, void (QtFuseRequestDummyCallback::*cb)(QtFuseRequest*)) {
+	cb_obj = obj;
+	cb_func = cb;
+}
+
+void QtFuseRequest::trigger() {
+	if (cb_obj == NULL) return; // nope!
+	(cb_obj->*cb_func)(this);
 }
 
 const struct fuse_ctx *QtFuseRequest::context() const {

@@ -19,6 +19,8 @@
 
 #pragma once
 
+class QtFuseRequestDummyCallback;
+
 class QtFuseRequest: public QObject {
 	Q_OBJECT;
 
@@ -29,6 +31,7 @@ public:
 public slots:
 	void error(int);
 	void none();
+	void trigger(); // calls method defined by setMethod()
 
 public:
 	void entry(const struct stat*, int generation = 1);
@@ -43,6 +46,9 @@ public:
 	void xattr(size_t count);
 	void lock(struct flock *lock);
 	void bmap(uint64_t idx);
+
+	template<class T> void setMethod(T *obj, void (T::*cb)(QtFuseRequest*)) { setMethod((QtFuseRequestDummyCallback*)obj, (void(QtFuseRequestDummyCallback::*)(QtFuseRequest*))cb); }
+	void setMethod(QtFuseRequestDummyCallback *obj, void (QtFuseRequestDummyCallback::*cb)(QtFuseRequest*));
 
 	struct fuse_file_info *fi();
 
@@ -81,6 +87,9 @@ private:
 	int fuse_int;
 	size_t fuse_size;
 	off_t fuse_offset;
+
+	QtFuseRequestDummyCallback *cb_obj;
+	void (QtFuseRequestDummyCallback::*cb_func)(QtFuseRequest*);
 };
 
 Q_DECLARE_METATYPE(QtFuseRequest*);
