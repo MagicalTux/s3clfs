@@ -1,7 +1,3 @@
-#include "KeyvalIterator.hpp"
-#include "Keyval.hpp"
-#include <leveldb/iterator.h>
-
 /*  S3ClFS - AWS S3 backed cluster filesystem
  *  Copyright (C) 2015 Mark Karpeles
  *
@@ -19,135 +15,157 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-// leveldb iterator for Keyval
+#include "KeyvalIterator.hpp"
+#include "Keyval.hpp"
+
+// lmdb iterator for Keyval
 KeyvalIterator::KeyvalIterator(Keyval *_kv) {
 	kv = _kv;
-	i = kv->db->NewIterator(kv->readoptions);
-	Q_CHECK_PTR(i);
+	mdb_txn_begin(kv->mdb_env, NULL, MDB_RDONLY, &txn);
+	Q_CHECK_PTR(txn);
+	mdb_cursor_open(txn, kv->mdb_dbi, &cursor);
+	Q_CHECK_PTR(cursor);
 
-	i->SeekToFirst();
+	mdb_cursor_get(cursor, NULL, NULL, MDB_FIRST);
 	location = 1; // iterator starts before first value, so we can call hasNext() immediately
 }
 
 KeyvalIterator::~KeyvalIterator() {
-	delete i;
+	mdb_cursor_close(cursor);
+	mdb_txn_commit(txn);
 }
 
 void KeyvalIterator::toBack() {
-	i->SeekToLast();
+	mdb_cursor_get(cursor, NULL, NULL, MDB_LAST);
 	location = -1;
 }
 
 void KeyvalIterator::toFront() {
-	i->SeekToFirst();
+	mdb_cursor_get(cursor, NULL, NULL, MDB_FIRST);
 	location = 1;
 }
 
 bool KeyvalIterator::find(const QByteArray &s) {
+	MDB_val db_val;
+	db_val.mv_size = s.length();
+	db_val.mv_data = const_cast<char*>(s.data());
+
 	location = 0;
-	i->Seek(LEVELDB_SLICE(s));
-	return i->Valid();
+	int rc = mdb_cursor_get(cursor, &db_val, NULL, MDB_SET_RANGE);
+	return (rc == 0);
 }
 
 bool KeyvalIterator::hasNext() {
+	int rc;
 	switch(location) {
 		case -1:
-			i->Next();
+			rc = mdb_cursor_get(cursor, NULL, NULL, MDB_NEXT);
+			if (rc != 0) return false;
+			location = 0;
 		case 0:
-			i->Next();
+			rc = mdb_cursor_get(cursor, NULL, NULL, MDB_NEXT);
+			if (rc != 0) return false;
+			location = 1;
+		case 1:
+			return true;
 	}
-	location = 1;
-	return i->Valid();
+	return false;
 }
 
 QByteArray KeyvalIterator::nextKey() {
-	switch(location) {
-		case -1:
-			i->Next();
-		case 0:
-			i->Next();
-	}
-	location = 1;
-	if (!i->Valid()) return QByteArray();
-	const auto &k = i->key();
-	return QByteArray(k.data(), k.size());
+	if (!hasNext()) return QByteArray();
+	if (location != 1) return QByteArray();
+
+	MDB_val db_val;
+
+	int rc = mdb_cursor_get(cursor, &db_val, NULL, MDB_GET_CURRENT);
+	if (rc != 0) return QByteArray();
+
+	return QByteArray((char*)db_val.mv_data, db_val.mv_size);
 }
 
 bool KeyvalIterator::next() {
-	switch(location) {
-		case -1:
-			i->Next();
-		case 0:
-			i->Next();
-	}
+	if (!hasNext()) return false;
+	if (location != 1) return false;
 	location = 0;
-	return i->Valid();
+	return true;
 }
 
 bool KeyvalIterator::hasPrevious() {
+	int rc;
 	switch(location) {
 		case 1:
-			i->Prev();
+			rc = mdb_cursor_get(cursor, NULL, NULL, MDB_PREV);
+			if (rc != 0) return false;
+			location = 0;
 		case 0:
-			i->Prev();
+			rc = mdb_cursor_get(cursor, NULL, NULL, MDB_PREV);
+			if (rc != 0) return false;
+			location = -1;
+		case -1:
+			return true;
 	}
-	location = -1;
-	return i->Valid();
+	return false;
 }
 
 bool KeyvalIterator::previous() {
-	switch(location) {
-		case 1:
-			i->Prev();
-		case 0:
-			i->Prev();
-	}
+	if (!hasPrevious()) return false;
+	if (location != -1) return false;
 	location = 0;
-	return i->Valid();
+	return true;
 }
 
 bool KeyvalIterator::isValid() {
+	int rc;
 	switch(location) {
-		case 1: i->Prev(); break;
-		case -1: i->Next(); break;
+		case 1:
+			rc = mdb_cursor_get(cursor, NULL, NULL, MDB_PREV);
+			if (rc != 0) return false;
+			location = 0;
+			return true;
+		case -1:
+			rc = mdb_cursor_get(cursor, NULL, NULL, MDB_NEXT);
+			if (rc != 0) return false;
+			location = 0;
+			return true;
 	}
-	location = 0;
-
-	return i->Valid();
+	return true;
 }
 
 QByteArray KeyvalIterator::key() {
-	switch(location) {
-		case 1: i->Prev(); break;
-		case -1: i->Next(); break;
-	}
-	location = 0;
+	if (!isValid()) return QByteArray();
+	if (location != 0) return QByteArray();
 
-	if (!i->Valid()) return QByteArray();
+	MDB_val db_val;
 
-	const auto &k = i->key();
-	return QByteArray(k.data(), k.size());
+	mdb_cursor_get(cursor, &db_val, NULL, MDB_GET_CURRENT);
+
+	return QByteArray((char*)db_val.mv_data, db_val.mv_size);
 }
 
 QByteArray KeyvalIterator::value() {
-	switch(location) {
-		case 1: i->Prev(); break;
-		case -1: i->Next(); break;
-	}
-	location = 0;
+	if (!isValid()) return QByteArray();
+	if (location != 0) return QByteArray();
 
-	const auto &k = i->value();
-	return QByteArray(k.data(), k.size());
+	MDB_val db_val;
+	
+	mdb_cursor_get(cursor, NULL, &db_val, MDB_GET_CURRENT);
+
+	return QByteArray((char*)db_val.mv_data, db_val.mv_size);
 }
 
 void KeyvalIterator::operator=(Keyval*_kv) {
 	kv = _kv;
 
-	delete i;
-	i = kv->db->NewIterator(kv->readoptions);
-	Q_CHECK_PTR(i);
+	mdb_cursor_close(cursor);
+	mdb_txn_commit(txn);
 
-	i->SeekToFirst();
+	mdb_txn_begin(kv->mdb_env, NULL, MDB_RDONLY, &txn);
+	Q_CHECK_PTR(txn);
+	mdb_cursor_open(txn, kv->mdb_dbi, &cursor);
+	Q_CHECK_PTR(cursor);
+
+	mdb_cursor_get(cursor, NULL, NULL, MDB_FIRST);
 	location = 1; // iterator starts before first value, so we can call hasNext() immediately
 }
 

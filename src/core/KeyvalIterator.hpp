@@ -1,5 +1,3 @@
-#include <QByteArray>
-
 /*  S3ClFS - AWS S3 backed cluster filesystem
  *  Copyright (C) 2015 Mark Karpeles
  *
@@ -16,6 +14,9 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+#include <QByteArray>
+#include <lmdb.h>
 
 #pragma once
 
@@ -47,7 +48,8 @@ public:
 	void operator=(Keyval*);
 
 private:
-	leveldb::Iterator *i;
+	MDB_txn *txn;
+	MDB_cursor *cursor;
 	Keyval *kv;
 	int location;
 };

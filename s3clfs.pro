@@ -60,7 +60,7 @@ SOURCES += src/$${BUILD_TYPE}/main.cpp
 CONFIG += silent
 LIBS += -lfuse
 
-include(src/leveldb.pri)
+include(src/lmdb.pri)
 
 x11 {
 	CONFIG += link_pkgconfig

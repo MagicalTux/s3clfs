@@ -15,96 +15,161 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <QDir>
 #include "Keyval.hpp"
-#include <leveldb/comparator.h>
-#include <leveldb/cache.h>
 
-// DATA ACCESS LAYER (instance -> leveldb)
+// DATA ACCESS LAYER (instance -> lmdb)
 
 Keyval::Keyval(QObject *parent): QObject(parent) {
-	db = NULL;
-	// setup default options
-	options.create_if_missing = true;
-	options.compression = leveldb::kNoCompression;
-	// TODO allow tweaking of values through command line
-	options.max_open_files = 1000; // TODO check ulimit fileno value and adapt
-	options.write_buffer_size = 2*1024*1024; // 2MB (smaller means less stalls during reorg)
-	options.block_cache = leveldb::NewLRUCache(256*1024*1024); // 256MB cache
-	readoptions.verify_checksums = true;
+	mdb_env = NULL;
 }
 
 Keyval::~Keyval() {
-	if (db) {
-		delete db;
-		db = NULL;
+	if (mdb_env) {
+		mdb_env_close(mdb_env);
+		mdb_env = NULL;
 	}
 }
 
 void Keyval::close() {
-	if (db) {
-		delete db;
-		db = NULL;
+	if (mdb_env) {
+		mdb_env_close(mdb_env);
+		mdb_env = NULL;
 	}
 }
 
-bool Keyval::destroy(const QString &filename) {
-	leveldb::Options options;
-	leveldb::Status status = leveldb::DestroyDB(filename.toStdString(), options); // XXX leveldb do not handle wstring
-	return status.ok();
+bool Keyval::destroy(const QString &) {
+	return false; // TODO
 }
 
 bool Keyval::open(const QString &filename) {
-	leveldb::Status status = leveldb::DB::Open(options, filename.toStdString(), &db); // XXX leveldb do not handle wstring
-	if (!status.ok()) {
-		qCritical("Failed to open database %s: %s", qPrintable(filename), status.ToString().c_str());
+	int rc;
+	if (mdb_env) close();
+
+	rc = mdb_env_create(&mdb_env);
+	if (rc != 0) {
+		qCritical("Failed to initialize LMDB");
+		return false;
+	}
+	mdb_env_set_mapsize(mdb_env, 4LL*1024*1024*1024); // 4GB
+	QDir(filename).mkpath(".");
+	rc = mdb_env_open(mdb_env, filename.toLocal8Bit().data(), MDB_NOMETASYNC | MDB_NOSYNC | MDB_NORDAHEAD | MDB_NOTLS, 0664);
+	if (rc != 0) {
+		qCritical("Failed to open database %s: %s", qPrintable(filename), mdb_strerror(rc));
+		return false;
+	}
+
+	// open in a transaction
+	MDB_txn *mdb_txn;
+	mdb_txn_begin(mdb_env, NULL, 0, &mdb_txn);
+	rc = mdb_dbi_open(mdb_txn, NULL, MDB_CREATE, &mdb_dbi);
+	if (rc != 0) {
+		qCritical("Failed to open database %s: %s", qPrintable(filename), mdb_strerror(rc));
+		mdb_txn_abort(mdb_txn);
+		return false;
+	}
+	rc = mdb_txn_commit(mdb_txn);
+	if (rc != 0) {
+		qCritical("Failed to open database %s: %s", qPrintable(filename), mdb_strerror(rc));
 		return false;
 	}
 	return true;
 }
 
 bool Keyval::create(const QString &filename) {
-	options.error_if_exists = true;
-	leveldb::Status status = leveldb::DB::Open(options, filename.toStdString(), &db); // XXX leveldb do not handle wstring
-	if (!status.ok()) {
-		qCritical("Failed to create database %s: %s", qPrintable(filename), status.ToString().c_str());
+	return open(filename); // TODO
+}
+
+bool Keyval::insert(const QByteArray &key, const QByteArray &value) {
+	MDB_val db_key, db_data;
+	MDB_txn *txn;
+	int rc;
+	db_key.mv_size = key.length();
+	db_key.mv_data = const_cast<char*>(key.data());
+	db_data.mv_size = value.length();
+	db_data.mv_data = const_cast<char*>(value.data());
+
+	rc = mdb_txn_begin(mdb_env, NULL, 0, &txn);
+	rc = mdb_put(txn, mdb_dbi, &db_key, &db_data, 0);
+	rc = mdb_txn_commit(txn);
+	if (rc != 0) {
+		qCritical("Failed to insert in db: %s", mdb_strerror(rc));
 		return false;
 	}
 	return true;
 }
 
-bool Keyval::insert(const QByteArray &key, const QByteArray &value) {
-	leveldb::Status status = db->Put(writeoptions, LEVELDB_SLICE(key), LEVELDB_SLICE(value));
-	return status.ok();
-}
-
 bool Keyval::remove(const QByteArray &key) {
-	leveldb::Status status = db->Delete(writeoptions, LEVELDB_SLICE(key));
-	return status.ok();
+	MDB_val db_key;
+	MDB_txn *txn;
+	int rc;
+
+	db_key.mv_size = key.length();
+	db_key.mv_data = const_cast<char*>(key.data());
+
+	rc = mdb_txn_begin(mdb_env, NULL, 0, &txn);
+	rc = mdb_del(txn, mdb_dbi, &db_key, NULL);
+	rc = mdb_txn_commit(txn);
+	if (rc != 0) {
+		qCritical("Failed to remove from db: %s", mdb_strerror(rc));
+		return false;
+	}
+	return true;
 }
 
 QByteArray Keyval::value(const QByteArray &key) {
-	std::string res;
-	leveldb::Status status = db->Get(readoptions, LEVELDB_SLICE(key), &res);
-	if (!status.ok()) return QByteArray();
-	QByteArray qt_res(res.data(), res.size());
-	return qt_res;
+	MDB_val db_key, db_data;
+	MDB_txn *txn;
+	int rc;
+	db_key.mv_size = key.length();
+	db_key.mv_data = const_cast<char*>(key.data());
+
+	rc = mdb_txn_begin(mdb_env, NULL, MDB_RDONLY, &txn);
+	rc = mdb_get(txn, mdb_dbi, &db_key, &db_data);
+	if (rc != 0) {
+		mdb_txn_abort(txn);
+		return QByteArray();
+	}
+	QByteArray res((char*)db_data.mv_data, db_data.mv_size); // deep copy
+	mdb_txn_commit(txn);
+	return res;
 }
 
 bool Keyval::contains(const QByteArray &key) {
-	std::string res;
-	leveldb::Status status = db->Get(readoptions, LEVELDB_SLICE(key), &res);
-	return status.ok(); // could be another error, but not so likely
+	MDB_val db_key, db_data;
+	MDB_txn *txn;
+	int rc;
+	db_key.mv_size = key.length();
+	db_key.mv_data = const_cast<char*>(key.data());
+
+	rc = mdb_txn_begin(mdb_env, NULL, MDB_RDONLY, &txn);
+	if (rc != 0) {
+		qFatal("Failed to create transaction: %s", mdb_strerror(rc));
+	}
+	rc = mdb_get(txn, mdb_dbi, &db_key, &db_data);
+	mdb_txn_commit(txn);
+	if (rc != 0) { // ie. MDB_NOTFOUND
+		return false;
+	}
+	return true;
 }
 
 bool Keyval::isValid() const {
-	return (bool)db;
+	return (bool)mdb_dbi;
 }
 
 bool Keyval::isEmpty() {
-	auto i = db->NewIterator(readoptions);
-	i->SeekToFirst();
-	bool res = !(i->Valid());
-	delete i;
-	return res;
+	MDB_txn *txn;
+	MDB_cursor *cursor;
+	int rc;
+
+	rc = mdb_txn_begin(mdb_env, NULL, MDB_RDONLY, &txn);
+	rc = mdb_cursor_open(txn, mdb_dbi, &cursor);
+	rc = mdb_cursor_get(cursor, NULL, NULL, MDB_FIRST);
+	
+	mdb_cursor_close(cursor);
+	mdb_txn_commit(txn);
+
+	return rc == MDB_NOTFOUND;
 }
 

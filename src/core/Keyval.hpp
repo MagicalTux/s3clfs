@@ -15,12 +15,10 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <QObject>
-#include <leveldb/db.h>
+#include <lmdb.h>
 #include <QCache>
 
 #pragma once
-
-#define LEVELDB_SLICE(_x) leveldb::Slice(_x.data(), _x.length())
 
 class KeyvalIterator;
 
@@ -44,10 +42,8 @@ public:
 	static bool destroy(const QString &filename);
 
 private:
-	leveldb::DB *db;
-	leveldb::Options options;
-	leveldb::ReadOptions readoptions;
-	leveldb::WriteOptions writeoptions;
+	MDB_env *mdb_env;
+	MDB_dbi mdb_dbi;
 	friend class KeyvalIterator; // grants access to private and protected members of KeyvalIterator
 }; 
 
