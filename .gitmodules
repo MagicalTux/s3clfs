@@ -1,6 +1,3 @@
-[submodule "src/leveldb"]
-	path = src/leveldb
-	url = https://github.com/google/leveldb.git
 [submodule "src/lmdb"]
 	path = src/lmdb
 	url = git://git.openldap.org/openldap.git
