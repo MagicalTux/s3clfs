@@ -47,6 +47,16 @@ void QtFuseRequest::trigger() {
 	(cb_obj->*cb_func)(this);
 }
 
+void QtFuseRequest::triggerLater() {
+	QCoreApplication::postEvent(this, new QEvent((QEvent::Type)(QEvent::User+1)));
+}
+
+void QtFuseRequest::customEvent(QEvent *e) {
+	switch((int)e->type()) {
+		case QEvent::User+1: trigger(); break;
+	}
+}
+
 const struct fuse_ctx *QtFuseRequest::context() const {
 	return fuse_req_ctx(req);
 }

@@ -33,13 +33,7 @@ public:
 	bool isReady() const;
 	S3FS_Store &getStore();
 
-signals:
-	void ready();
-	void loadReduced();
-
-public slots:
 	void fuse_lookup(QtFuseRequest *req);
-	void fuse_forget(fuse_ino_t ino, unsigned long nlookup);
 	void fuse_setattr(QtFuseRequest *req);
 	void fuse_getattr(QtFuseRequest *req);
 	void fuse_unlink(QtFuseRequest *req);
@@ -58,6 +52,13 @@ public slots:
 	void fuse_create(QtFuseRequest *req);
 	void fuse_read(QtFuseRequest *req);
 	void fuse_write(QtFuseRequest *req);
+
+signals:
+	void ready();
+	void loadReduced();
+
+public slots:
+	void fuse_forget(fuse_ino_t ino, unsigned long nlookup);
 	void storeIsReady();
 
 	void setOverload(bool);

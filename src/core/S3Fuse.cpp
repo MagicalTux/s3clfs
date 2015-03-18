@@ -23,8 +23,6 @@ S3Fuse::S3Fuse(S3FS_Config *cfg, S3FS *_parent): QtFuse(cfg->mountPath(), cfg->b
 	parent = _parent;
 
 	// connect
-	#define s3fuse_connect(_x) connect(this, &S3Fuse::signal_ ## _x, parent, &S3FS::fuse_ ## _x, Qt::QueuedConnection);
-	FOREACH_s3fuseOps(s3fuse_connect)
 	connect(this, &S3Fuse::signal_forget, parent, &S3FS::fuse_forget);
 }
 
@@ -46,6 +44,6 @@ void S3Fuse::fuse_getxattr(QtFuseRequest *req) {
 	req->error(ENOTSUP); // just return ENOSYS here to avoid log full of "getxattr not impl"
 }
 
-#define s3fuse_sig_handle(_x) void S3Fuse::fuse_ ## _x(QtFuseRequest *req) { signal_ ## _x(req); }
+#define s3fuse_sig_handle(_x) void S3Fuse::fuse_ ## _x(QtFuseRequest *req) { req->setMethod<S3FS>(parent, &S3FS::fuse_ ## _x); req->triggerLater(); }
 FOREACH_s3fuseOps(s3fuse_sig_handle);
 

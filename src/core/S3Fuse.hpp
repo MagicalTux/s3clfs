@@ -29,7 +29,6 @@
 	X(create)
 
 #define s3fuse_signature(_x) virtual void fuse_ ## _x(QtFuseRequest*);
-#define s3fuse_signals(_x) void signal_ ## _x(QtFuseRequest*);
 
 class S3FS;
 class S3FS_Config;
@@ -41,7 +40,6 @@ public:
 
 signals:
 	void signal_forget(fuse_ino_t ino, unsigned long nlookup);
-	FOREACH_s3fuseOps(s3fuse_signals);
 
 protected:
 	virtual void fuse_init(struct fuse_conn_info *);

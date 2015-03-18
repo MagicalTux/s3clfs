@@ -32,6 +32,7 @@ public slots:
 	void error(int);
 	void none();
 	void trigger(); // calls method defined by setMethod()
+	void triggerLater(); // calls method defined by setMethod()... later.
 
 public:
 	void entry(const struct stat*, int generation = 1);
@@ -70,6 +71,7 @@ public:
 
 protected:
 	void prepareBuffer(size_t size);
+	virtual void customEvent(QEvent *e);
 
 	friend class QtFuse;
 
