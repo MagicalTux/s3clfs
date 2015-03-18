@@ -23,7 +23,6 @@
 #include <QDateTime>
 #include <sys/time.h>
 
-#define METHOD_DEF(_x) req->setMethod<S3FS>(this, &S3FS::_x)
 #define WAIT_READY() if (!is_ready) { connect(this, SIGNAL(ready()), req, SLOT(trigger())); return; } if (is_overloaded) { connect(this, SIGNAL(loadReduced()), req, SLOT(trigger())); return; }
 #define GET_INODE(ino) \
 	if (!store.hasInode(ino)) { req->error(ENOENT); return; } \
@@ -81,7 +80,6 @@ void S3FS::format() {
 }
 
 void S3FS::fuse_lookup(QtFuseRequest *req) {
-	METHOD_DEF(fuse_lookup);
 	WAIT_READY();
 	quint64 ino = req->inode();
 	GET_INODE(ino);
@@ -125,7 +123,6 @@ void S3FS::fuse_forget(fuse_ino_t, unsigned long) {
 }
 
 void S3FS::fuse_setattr(QtFuseRequest *req) {
-	METHOD_DEF(fuse_setattr);
 	WAIT_READY();
 	quint64 ino = req->inode();
 	GET_INODE(ino);
@@ -162,7 +159,6 @@ void S3FS::fuse_setattr(QtFuseRequest *req) {
 }
 
 void S3FS::fuse_getattr(QtFuseRequest *req) {
-	METHOD_DEF(fuse_getattr);
 	WAIT_READY();
 	quint64 ino = req->inode();
 	GET_INODE(ino);
@@ -171,7 +167,6 @@ void S3FS::fuse_getattr(QtFuseRequest *req) {
 }
 
 void S3FS::fuse_unlink(QtFuseRequest *req) {
-	METHOD_DEF(fuse_unlink);
 	WAIT_READY();
 	quint64 parent = req->inode();
 	GET_INODE(parent);
@@ -207,7 +202,6 @@ void S3FS::fuse_unlink(QtFuseRequest *req) {
 }
 
 void S3FS::fuse_readlink(QtFuseRequest *req) {
-	METHOD_DEF(fuse_readlink);
 	WAIT_READY();
 	quint64 node = req->inode();
 	GET_INODE(node);
@@ -221,7 +215,6 @@ void S3FS::fuse_readlink(QtFuseRequest *req) {
 }
 
 void S3FS::fuse_mkdir(QtFuseRequest *req) {
-	METHOD_DEF(fuse_mkdir);
 	WAIT_READY();
 	quint64 parent = req->inode();
 	GET_INODE(parent);
@@ -256,7 +249,6 @@ void S3FS::fuse_mkdir(QtFuseRequest *req) {
 }
 
 void S3FS::fuse_rmdir(QtFuseRequest *req) {
-	METHOD_DEF(fuse_rmdir);
 	WAIT_READY();
 	quint64 parent = req->inode();
 	GET_INODE(parent);
@@ -314,7 +306,6 @@ void S3FS::fuse_rmdir(QtFuseRequest *req) {
 }
 
 void S3FS::fuse_symlink(QtFuseRequest *req) {
-	METHOD_DEF(fuse_symlink);
 	WAIT_READY();
 	quint64 parent = req->inode();
 	GET_INODE(parent);
@@ -341,7 +332,6 @@ void S3FS::fuse_symlink(QtFuseRequest *req) {
 }
 
 void S3FS::fuse_rename(QtFuseRequest *req) {
-	METHOD_DEF(fuse_rename);
 	WAIT_READY();
 	quint64 parent = req->inode();
 	quint64 newparent = req->newInode();
@@ -412,7 +402,6 @@ void S3FS::fuse_rename(QtFuseRequest *req) {
 }
 
 void S3FS::fuse_link(QtFuseRequest *req) {
-	METHOD_DEF(fuse_link);
 	WAIT_READY();
 	quint64 ino = req->inode();
 	quint64 newparent = req->newInode();
@@ -456,7 +445,6 @@ void S3FS::fuse_release(QtFuseRequest *req) {
 }
 
 void S3FS::fuse_open(QtFuseRequest *req) {
-	METHOD_DEF(fuse_open);
 	WAIT_READY();
 	quint64 ino = req->inode();
 	GET_INODE(ino);
@@ -484,7 +472,6 @@ void S3FS::fuse_open(QtFuseRequest *req) {
 }
 
 void S3FS::fuse_opendir(QtFuseRequest *req) {
-	METHOD_DEF(fuse_opendir);
 	WAIT_READY();
 	quint64 ino = req->inode();
 	GET_INODE(ino);
@@ -501,7 +488,6 @@ void S3FS::fuse_opendir(QtFuseRequest *req) {
 }
 
 void S3FS::fuse_readdir(QtFuseRequest *req) {
-	METHOD_DEF(fuse_readdir);
 	WAIT_READY();
 	quint64 ino = req->inode();
 	GET_INODE(ino);
@@ -550,7 +536,6 @@ void S3FS::fuse_readdir(QtFuseRequest *req) {
 }
 
 void S3FS::fuse_releasedir(QtFuseRequest *req) {
-	METHOD_DEF(fuse_releasedir);
 	WAIT_READY();
 	quint64 ino = req->inode();
 	GET_INODE(ino);
@@ -563,7 +548,6 @@ void S3FS::fuse_releasedir(QtFuseRequest *req) {
 }
 
 void S3FS::fuse_create(QtFuseRequest *req) {
-	METHOD_DEF(fuse_create);
 	WAIT_READY();
 	quint64 parent = req->inode();
 	GET_INODE(parent);
@@ -605,7 +589,6 @@ void S3FS::fuse_create(QtFuseRequest *req) {
 }
 
 void S3FS::fuse_read(QtFuseRequest *req) {
-	METHOD_DEF(fuse_read);
 	WAIT_READY();
 	quint64 ino = req->inode();
 	GET_INODE(ino);
@@ -666,7 +649,6 @@ void S3FS::fuse_read(QtFuseRequest *req) {
 }
 
 void S3FS::fuse_write(QtFuseRequest *req) {
-	METHOD_DEF(fuse_write);
 	WAIT_READY();
 	quint64 ino = req->inode();
 	GET_INODE(ino);
