@@ -384,11 +384,12 @@ void S3FS_Store::receivedInode(S3FS_Aws_S3*r) {
 	if (data.isEmpty()) {
 		// TODO: re-list the inode directory, find its actual name
 		qDebug("Inode %llu missing!", ino);
-		kv.remove(QByteArrayLiteral("\x03")+ino_b); // remove this inode from known inodes
+		// Do not remove inode from list, that's bad!
+//		kv.remove(QByteArrayLiteral("\x03")+ino_b); // remove this inode from known inodes
 		// call callbacks
 		QList<QtFuseRequest*> list = inode_download_callback.take(ino);
 		foreach(auto cb, list)
-			cb->trigger();
+			cb->error(EIO);
 		return;
 	}
 	QDataStream s(data);
@@ -493,6 +494,12 @@ void S3FS_Store::callbackOnBlockCached(const QByteArray &block, QtFuseRequest *c
 void S3FS_Store::receivedBlock(S3FS_Aws_S3*r) {
 	QByteArray block = r->property("_block_id").toByteArray();
 	QByteArray data = r->body();
+	if (data.isEmpty()) {
+		QList<QtFuseRequest*> list = block_download_callback.take(block);
+		foreach(auto cb, list)
+			cb->error(EIO);
+		return;
+	}
 	if (cfg->cacheData()) {
 		// make block path
 		QByteArray hash_hex = block.toHex();
