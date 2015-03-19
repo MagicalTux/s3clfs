@@ -283,6 +283,7 @@ void S3FS::fuse_rmdir(QtFuseRequest *req) {
 
 	// check if not empty
 	GET_INODE(ino_n);
+	Q_UNUSED(ino_n_o);
 	auto i = store.getInodeMetaIterator(ino_n);
 	bool is_empty = true;
 	do {
@@ -544,6 +545,7 @@ void S3FS::fuse_releasedir(QtFuseRequest *req) {
 	WAIT_READY();
 	quint64 ino = req->inode();
 	GET_INODE(ino);
+	Q_UNUSED(ino_o);
 
 	S3FS_Store_MetaIterator *fh = (S3FS_Store_MetaIterator*)req->fi()->fh;
 	if (fh)

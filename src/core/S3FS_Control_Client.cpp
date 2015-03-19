@@ -36,9 +36,9 @@ void S3FS_Control_Client::cmd_fsck(const QJsonObject &pkt) {
 	QVariant id = pkt.value("id").toVariant();
 
 	QJsonObject res;
-	res.insert("command", "fsck_reply");
+	res.insert("command", QStringLiteral("fsck_reply"));
 	res.insert("id", QJsonValue::fromVariant(id));
-	res.insert("status", "ack");
+	res.insert("status", QStringLiteral("ack"));
 	send(res);
 
 	// TODO: handle fsck options (recover or delete orphan inodes?)
@@ -47,7 +47,7 @@ void S3FS_Control_Client::cmd_fsck(const QJsonObject &pkt) {
 
 void S3FS_Control_Client::cmd_ping(const QJsonObject &pkt) {
 	QJsonObject res(pkt);
-	res.insert("command", "pong");
+	res.insert("command", QStringLiteral("pong"));
 	send(res);
 }
 
@@ -62,8 +62,8 @@ void S3FS_Control_Client::handlePacket(const QByteArray &packet) {
 	auto cmd = obj.value("command").toString();
 	if (!control_cmds.contains(cmd)) {
 		QJsonObject res;
-		res.insert("command","error");
-		res.insert("error","invalid_command");
+		res.insert("command",QStringLiteral("error"));
+		res.insert("error",QStringLiteral("invalid_command"));
 		res.insert("unknown_command",cmd);
 		if (obj.contains("id")) res.insert("id", obj.value("id"));
 		send(res);
