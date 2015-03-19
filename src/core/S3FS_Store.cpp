@@ -168,17 +168,7 @@ void S3FS_Store::learnFile(const QString &name, bool in_list) {
 			if (kv.contains(QByteArrayLiteral("\x01")+fn)) {
 				// clear this inode from cache
 				qDebug("S3FS_Store: Inode %s has changed, invalidating cache", fn.toHex().data());
-				inodes_cache.remove(fn_ino);
-				auto i = new KeyvalIterator(&kv);
-				i->find(QByteArrayLiteral("\x01")+fn);
-				do {
-					if (i->key().left(fn.length()+1) == QByteArrayLiteral("\x01")+fn) {
-						kv.remove(i->key());
-					} else {
-						break;
-					}
-				} while(i->next());
-				delete i;
+				removeInodeFromCache(fn_ino);
 			}
 			return;
 		}

@@ -53,7 +53,7 @@ void S3FS_Store_InodeDoctor::receivedInode(S3FS_Aws_S3 *r) {
 	QByteArray data = r->body();
 	if (data.isEmpty()) {
 		// invalid!
-		S3FS_Aws_S3::deleteFile(parent->bucket, current_test_rev, parent->aws);
+//		S3FS_Aws_S3::deleteFile(parent->bucket, current_test_rev, parent->aws);
 		getLastRevision();
 		return;
 	}
@@ -68,7 +68,7 @@ void S3FS_Store_InodeDoctor::receivedInode(S3FS_Aws_S3 *r) {
 	}
 	if (!parent->kv.contains(QByteArrayLiteral("\x01")+ino_b)) {
 		// missing "" entry
-		S3FS_Aws_S3::deleteFile(parent->bucket, current_test_rev, parent->aws);
+//		S3FS_Aws_S3::deleteFile(parent->bucket, current_test_rev, parent->aws);
 		parent->kv.remove(QByteArrayLiteral("\x01")+ino_b); // avoid others to get this data
 		getLastRevision();
 		return;
@@ -78,7 +78,7 @@ void S3FS_Store_InodeDoctor::receivedInode(S3FS_Aws_S3 *r) {
 	auto ino_o = parent->getInode(ino);
 	if ((!ino_o->isValid()) || (ino_o->getInode() != ino)) {
 		// still not right
-		S3FS_Aws_S3::deleteFile(parent->bucket, current_test_rev, parent->aws);
+//		S3FS_Aws_S3::deleteFile(parent->bucket, current_test_rev, parent->aws);
 		parent->kv.remove(QByteArrayLiteral("\x01")+ino_b);
 		parent->inodes_cache.remove(ino);
 		getLastRevision();
@@ -94,7 +94,7 @@ void S3FS_Store_InodeDoctor::receivedInode(S3FS_Aws_S3 *r) {
 void S3FS_Store_InodeDoctor::failed() {
 	qWarning("S3FS_Store_InodeDoctor: broken inode %llu could not be fixed, removing data and notifying failure", ino);
 
-	parent->destroyInode(ino);
+//	parent->destroyInode(ino);
 
 	QList<QtFuseCallback*> list = parent->inode_download_callback.take(ino);
 	foreach(auto cb, list)
