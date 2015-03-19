@@ -23,7 +23,11 @@ S3FS_Control::S3FS_Control(S3FS *_parent, S3FS_Config *_cfg): QObject(_parent) {
 	parent = _parent;
 	cfg = _cfg;
 	server_socket = new QLocalServer(this);
+#if QT_VERSION >= 0x050400
+	// there is a bug in older Qt where setting a socket option will cause the generation to fail if the socket path is absolute
+	// see: https://qt.gitorious.org/qt/qtbase/commit/320360131559df76ba1f635b665659f57e147665
 	server_socket->setSocketOptions(QLocalServer::UserAccessOption);
+#endif
 	connect(server_socket, SIGNAL(newConnection()), this, SLOT(acceptNewClient()));
 
 	QString sock_loc = cfg->controlSocket();
