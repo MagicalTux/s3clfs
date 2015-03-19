@@ -64,7 +64,9 @@ void S3FS_Store_InodeDoctor::receivedInode(S3FS_Aws_S3 *r) {
 	while(!s.atEnd()) {
 		QByteArray key, val;
 		s >> key >> val;
-		parent->kv.insert(QByteArrayLiteral("\x01")+ino_b+key, val);
+		if (!parent->kv.insert(QByteArrayLiteral("\x01")+ino_b+key, val)) {
+			qFatal("Insert into keyval failed for inode %llu", ino);
+		}
 	}
 	if (!parent->kv.contains(QByteArrayLiteral("\x01")+ino_b)) {
 		// missing "" entry

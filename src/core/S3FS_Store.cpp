@@ -135,7 +135,9 @@ void S3FS_Store::receivedInodeList(S3FS_Aws_S3 *r) {
 	if (cfg->listFetchInterval())
 		cache_updater.start(cfg->listFetchInterval() * 1000);
 
-	kv.insert(QByteArrayLiteral("\xff"), QByteArray()); // mark list as fetched
+	if (!kv.insert(QByteArrayLiteral("\xff"), QByteArray())) { // mark list as fetched
+		qFatal("Database corruption possible, insert failed");
+	}
 	if (aws_list_ready) return;
 	aws_list_ready = true;
 	if (aws_format_ready && aws_list_ready) ready();
@@ -164,7 +166,9 @@ void S3FS_Store::learnFile(const QString &name, bool in_list) {
 		if (rev < newrev) {
 			// our version is older, update our value and do not delete from S3
 			qDebug("S3FS_Store: inode %s update - our version %s, s3 has %s", fn.toHex().data(), rev.toHex().data(), newrev.toHex().data());
-			kv.insert(QByteArrayLiteral("\x03")+fn, newrev);
+			if (!kv.insert(QByteArrayLiteral("\x03")+fn, newrev)) {
+				qFatal("Database insertion failed, corruption likely");
+			}
 			if (kv.contains(QByteArrayLiteral("\x01")+fn)) {
 				// clear this inode from cache
 				qDebug("S3FS_Store: Inode %s has changed, invalidating cache", fn.toHex().data());
@@ -184,7 +188,9 @@ void S3FS_Store::learnFile(const QString &name, bool in_list) {
 		}
 		return;
 	}
-	kv.insert(QByteArrayLiteral("\x03")+fn, newrev);
+	if (!kv.insert(QByteArrayLiteral("\x03")+fn, newrev)) {
+		qFatal("Database insertion failed, corruption likely");
+	}
 }
 
 void S3FS_Store::removeInodeFromCache(quint64 ino) {
@@ -314,7 +320,9 @@ void S3FS_Store::sendInodeToAws(quint64 ino) {
 
 	QByteArray ino_hex = ino_b.toHex();
 	S3FS_Aws_S3::putFile(bucket, "metadata/"+ino_hex.right(1)+"/"+ino_hex.right(2)+"/"+ino_hex+"/"+ino_rev_b.toHex()+".dat", data, aws);
-	kv.insert(QByteArrayLiteral("\x03")+ino_b, ino_rev_b);
+	if (!kv.insert(QByteArrayLiteral("\x03")+ino_b, ino_rev_b)) {
+		qFatal("Database insertion failed, corruption likely");
+	}
 }
 
 S3FS_Obj *S3FS_Store::getInode(quint64 ino) {
@@ -398,7 +406,9 @@ void S3FS_Store::receivedInode(S3FS_Aws_S3*r) {
 	while(!s.atEnd()) {
 		QByteArray key, val;
 		s >> key >> val;
-		kv.insert(QByteArrayLiteral("\x01")+ino_b+key, val);
+		if (!kv.insert(QByteArrayLiteral("\x01")+ino_b+key, val)) {
+			qFatal("Database insertion failed, corruption likely");
+		}
 	}
 	if (!kv.contains(QByteArrayLiteral("\x01")+ino_b)) {
 		new S3FS_Store_InodeDoctor(this, ino);
