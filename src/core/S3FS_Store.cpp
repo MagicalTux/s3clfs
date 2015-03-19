@@ -411,7 +411,7 @@ void S3FS_Store::receivedInode(S3FS_Aws_S3*r) {
 		return;
 	}
 	auto ino_o = getInode(ino);
-	if (ino_o->getInode() != ino) {
+	if ((!ino_o->isValid()) || (ino_o->getInode() != ino)) {
 		// not right
 		inodes_cache.remove(ino);
 		kv.remove(QByteArrayLiteral("\x01")+ino_b);

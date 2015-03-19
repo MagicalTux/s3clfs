@@ -76,7 +76,7 @@ void S3FS_Store_InodeDoctor::receivedInode(S3FS_Aws_S3 *r) {
 
 	parent->inodes_cache.remove(ino);
 	auto ino_o = parent->getInode(ino);
-	if (ino_o->getInode() != ino) {
+	if ((!ino_o->isValid()) || (ino_o->getInode() != ino)) {
 		// still not right
 		S3FS_Aws_S3::deleteFile(r);
 		parent->kv.remove(QByteArrayLiteral("\x01")+ino_b);
