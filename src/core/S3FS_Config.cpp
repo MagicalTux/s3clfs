@@ -87,11 +87,19 @@ void S3FS_Config::setCacheData(bool b) {
 	cache_data = b;
 }
 
-QString S3FS_Config::awsCredentialsUrl() const {
+const QString &S3FS_Config::awsCredentialsUrl() const {
 	return aws_credentials_url;
 }
 
 void S3FS_Config::setAwsCredentialsUrl(const QString &s) {
 	aws_credentials_url = s;
+}
+
+const QString &S3FS_Config::controlSocket() const {
+	return control_socket;
+}
+
+void S3FS_Config::setControlSocket(const QString &p) {
+	control_socket = p;
 }
 

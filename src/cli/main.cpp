@@ -39,6 +39,7 @@ int main(int argc, char *argv[]) {
 	parser.addOption({{"c", "cache"}, QCoreApplication::translate("main", "Where to store cache, default %1/s3clfs-<bucket>").arg(QStandardPaths::writableLocation(QStandardPaths::TempLocation)), "path"});
 	parser.addOption({{"d", "data-path"}, QCoreApplication::translate("main", "Where to store data, default %1/s3clfs-<bucket>-data").arg(QStandardPaths::writableLocation(QStandardPaths::TempLocation)), "path"});
 	parser.addOption({{"n", "node-id"}, QCoreApplication::translate("main", "Identifier for current node"), "id"});
+	parser.addOption({{"s", "control-socket"}, QCoreApplication::translate("main", "Location of control socket"), "path"});
 	parser.addOption({"quick-forget", QCoreApplication::translate("main", "Quickly purge data from the database. Useful if used as rsync target only.")});
 	parser.addOption({"disable-data-cache", QCoreApplication::translate("main", "Do not keep data in the LevelDB cache.")});
 	parser.addOption({"ec2-iam-role", QCoreApplication::translate("main", "Obtain AWS access from IAM role set to this EC2 instance."), "role"});
@@ -59,6 +60,7 @@ int main(int argc, char *argv[]) {
 	cfg.setQueue(parser.value(QStringLiteral("queue")).toLocal8Bit());
 	cfg.setCachePath(parser.value(QStringLiteral("cache")));
 	cfg.setDataPath(parser.value(QStringLiteral("data-path")));
+	cfg.setControlSocket(parser.value(QStringLiteral("control-socket")));
 	if (parser.isSet("node-id")) cfg.setClusterId(parser.value(QStringLiteral("node-id")).toInt());
 	if (parser.isSet("quick-forget")) cfg.setExpireBlocks(1800); // 30min
 	if (parser.isSet("disable-data-cache")) cfg.setCacheData(false);

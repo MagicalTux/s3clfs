@@ -23,6 +23,7 @@
 #pragma once
 
 class S3FS_Config;
+class S3FS_Control;
 
 class S3FS: public QObject {
 	Q_OBJECT

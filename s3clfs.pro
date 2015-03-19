@@ -81,6 +81,7 @@ CPP_CLASSES = \
 	core/S3Fuse \
 	core/S3FS \
 	core/S3FS_Config \
+	core/S3FS_Control \
 	core/S3FS_Obj \
 	core/S3FS_Store \
 	core/S3FS_Store_MetaIterator \

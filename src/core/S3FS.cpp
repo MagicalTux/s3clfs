@@ -17,6 +17,7 @@
 #include "S3FS.hpp"
 #include "S3FS_Obj.hpp"
 #include "S3FS_Config.hpp"
+#include "S3FS_Control.hpp"
 #include "S3Fuse.hpp"
 #include "QtFuseRequest.hpp"
 #include "S3FS_Store_MetaIterator.hpp"
@@ -37,6 +38,8 @@ S3FS::S3FS(S3FS_Config *_cfg): store(_cfg) {
 
 	connect(&store, SIGNAL(ready()), this, SLOT(storeIsReady()));
 	connect(&store, SIGNAL(overloadStatus(bool)), this, SLOT(setOverload(bool)));
+
+	new S3FS_Control(this, cfg);
 }
 
 S3FS_Store &S3FS::getStore() {

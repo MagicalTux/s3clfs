@@ -34,8 +34,11 @@ public:
 	bool cacheData() const;
 	void setCacheData(bool);
 
-	QString awsCredentialsUrl() const;
+	const QString &awsCredentialsUrl() const;
 	void setAwsCredentialsUrl(const QString&);
+
+	const QString &controlSocket() const;
+	void setControlSocket(const QString&);
 
 private:
 	int cluster_id; // node id within cluster
@@ -49,5 +52,6 @@ private:
 	quint64 list_fetch_interval; // how often to re-fetch the inodes list on S3
 	bool cache_data;
 	QString aws_credentials_url; // for example http://169.254.169.254/latest/meta-data/iam/security-credentials/policy-name
+	QString control_socket;
 };
 
