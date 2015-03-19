@@ -20,7 +20,7 @@
 #include "S3FS_Aws_S3.hpp"
 #include "S3FS_Aws_SQS.hpp"
 #include "S3FS_Store_MetaIterator.hpp"
-#include "QtFuseRequest.hpp"
+#include "QtFuseCallback.hpp"
 #include <QDir>
 #include <QUuid>
 #include <QDataStream>
@@ -347,7 +347,7 @@ bool S3FS_Store::hasInodeLocally(quint64 ino) {
 //	return (kv.value(key).length() > 0); // if length == 0, means we don't have this locally
 }
 
-void S3FS_Store::callbackOnInodeCached(quint64 ino, QtFuseRequest *cb) {
+void S3FS_Store::callbackOnInodeCached(quint64 ino, QtFuseCallback *cb) {
 	// we need to try to get that inode
 	if (inode_download_callback.contains(ino)) {
 		if (cb)
@@ -357,7 +357,7 @@ void S3FS_Store::callbackOnInodeCached(quint64 ino, QtFuseRequest *cb) {
 
 	// create wait queue
 	if (cb)
-		inode_download_callback.insert(ino, QList<QtFuseRequest*>({cb}));
+		inode_download_callback.insert(ino, QList<QtFuseCallback*>({cb}));
 
 	INT_TO_BYTES(ino);
 
@@ -388,7 +388,7 @@ void S3FS_Store::receivedInode(S3FS_Aws_S3*r) {
 		// Do not remove inode from list, that's bad!
 //		kv.remove(QByteArrayLiteral("\x03")+ino_b); // remove this inode from known inodes
 		// call callbacks
-		QList<QtFuseRequest*> list = inode_download_callback.take(ino);
+		QList<QtFuseCallback*> list = inode_download_callback.take(ino);
 		foreach(auto cb, list)
 			cb->error(EIO);
 		return;
@@ -408,7 +408,7 @@ void S3FS_Store::receivedInode(S3FS_Aws_S3*r) {
 	}
 
 	// call callbacks
-	QList<QtFuseRequest*> list = inode_download_callback.take(ino);
+	QList<QtFuseCallback*> list = inode_download_callback.take(ino);
 	foreach(auto cb, list)
 		cb->trigger();
 }
@@ -470,7 +470,7 @@ bool S3FS_Store::hasBlockLocally(const QByteArray &hash) {
 	return QFile::exists(block_path);
 }
 
-void S3FS_Store::callbackOnBlockCached(const QByteArray &block, QtFuseRequest *cb) {
+void S3FS_Store::callbackOnBlockCached(const QByteArray &block, QtFuseCallback *cb) {
 	lastaccess_data.insert(block);
 	// we need to try to get that block
 	if (block_download_callback.contains(block)) {
@@ -479,7 +479,7 @@ void S3FS_Store::callbackOnBlockCached(const QByteArray &block, QtFuseRequest *c
 	}
 
 	// create wait queue
-	block_download_callback.insert(block, QList<QtFuseRequest*>() << cb);
+	block_download_callback.insert(block, QList<QtFuseCallback*>() << cb);
 
 	// send request
 	QByteArray block_hex = block.toHex();
@@ -496,7 +496,7 @@ void S3FS_Store::receivedBlock(S3FS_Aws_S3*r) {
 	QByteArray block = r->property("_block_id").toByteArray();
 	QByteArray data = r->body();
 	if (data.isEmpty()) {
-		QList<QtFuseRequest*> list = block_download_callback.take(block);
+		QList<QtFuseCallback*> list = block_download_callback.take(block);
 		foreach(auto cb, list)
 			cb->error(EIO);
 		return;
@@ -520,7 +520,7 @@ void S3FS_Store::receivedBlock(S3FS_Aws_S3*r) {
 	blocks_cache.insert(block, new QByteArray(data));
 
 	// call callbacks
-	QList<QtFuseRequest*> list = block_download_callback.take(block);
+	QList<QtFuseCallback*> list = block_download_callback.take(block);
 	foreach(auto cb, list)
 		cb->trigger();
 }

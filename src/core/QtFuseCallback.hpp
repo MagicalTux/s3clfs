@@ -28,10 +28,12 @@ public:
 
 	template<class T> void setMethod(T *obj, void (T::*cb)(void*)) { setMethod((QtFuseCallbackDummyCallback*)obj, (void(QtFuseCallbackDummyCallback::*)(QtFuseCallback*))cb); }
 	void setMethod(QtFuseCallbackDummyCallback *obj, void (QtFuseCallbackDummyCallback::*cb)(QtFuseCallback*));
+	int getError() const;
 
 public slots:
 	void trigger(); // calls method defined by setMethod()
 	void triggerLater(); // calls method defined by setMethod()... later.
+	virtual void error(int);
 
 protected:
 	virtual void customEvent(QEvent *e);
@@ -39,5 +41,6 @@ protected:
 private:
 	QtFuseCallbackDummyCallback *cb_obj;
 	void (QtFuseCallbackDummyCallback::*cb_func)(QtFuseCallback*);
+	int error_no;
 };
 

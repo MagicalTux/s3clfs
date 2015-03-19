@@ -31,7 +31,7 @@ class S3FS_Aws_S3;
 class S3FS_Aws_SQS;
 class S3FS_Config;
 class S3FS_Store_MetaIterator;
-class QtFuseRequest;
+class QtFuseCallback;
 
 class S3FS_Store: public QObject {
 	Q_OBJECT
@@ -49,7 +49,7 @@ public:
 	bool storeInode(const S3FS_Obj&);
 	S3FS_Obj *getInode(quint64);
 	bool hasInodeLocally(quint64);
-	void callbackOnInodeCached(quint64, QtFuseRequest*);
+	void callbackOnInodeCached(quint64, QtFuseCallback*);
 	void removeInodeFromCache(quint64);
 	void brokenInode(quint64);
 
@@ -57,7 +57,7 @@ public:
 	QByteArray writeBlock(const QByteArray &buf);
 	QByteArray readBlock(const QByteArray &buf);
 	bool hasBlockLocally(const QByteArray&);
-	void callbackOnBlockCached(const QByteArray&, QtFuseRequest*);
+	void callbackOnBlockCached(const QByteArray&, QtFuseCallback*);
 
 	// inode meta
 	bool hasInodeMeta(quint64 ino, const QByteArray &key);
@@ -96,8 +96,8 @@ private:
 	QSet<quint64> inodes_to_update;
 	QTimer inodes_updater;
 	QTimer cache_updater;
-	QMap<quint64, QList<QtFuseRequest*> > inode_download_callback;
-	QMap<QByteArray, QList<QtFuseRequest*> > block_download_callback;
+	QMap<quint64, QList<QtFuseCallback*> > inode_download_callback;
+	QMap<QByteArray, QList<QtFuseCallback*> > block_download_callback;
 	QCache<QByteArray, QByteArray> blocks_cache;
 	QCache<quint64, S3FS_Obj> inodes_cache;
 

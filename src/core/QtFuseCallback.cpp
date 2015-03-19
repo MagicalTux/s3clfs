@@ -3,6 +3,7 @@
 
 QtFuseCallback::QtFuseCallback(QObject *parent): QObject(parent) {
 	cb_obj = NULL;
+	errno = 0;
 }
 
 void QtFuseCallback::setMethod(QtFuseCallbackDummyCallback *obj, void (QtFuseCallbackDummyCallback::*cb)(QtFuseCallback*)) {
@@ -23,5 +24,14 @@ void QtFuseCallback::customEvent(QEvent *e) {
 	switch((int)e->type()) {
 		case QEvent::User+1: trigger(); break;
 	}
+}
+
+void QtFuseCallback::error(int _errno) {
+	error_no = _errno;
+	triggerLater();
+}
+
+int QtFuseCallback::getError() const {
+	return error_no;
 }
 
