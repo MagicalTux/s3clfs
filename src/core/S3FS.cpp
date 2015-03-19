@@ -28,7 +28,7 @@
 #define GET_INODE(ino) \
 	if (!store.hasInode(ino)) { req->error(ENOENT); return; } \
 	if (!store.hasInodeLocally(ino)) { store.callbackOnInodeCached(ino, req); return; } S3FS_Obj &ino ## _o = *store.getInode(ino); \
-	if ((!ino ## _o.isValid()) || (ino ## _o.getInode() != ino)) { store.brokenInode(ino); QTimer::singleShot(100, req, SLOT(trigger())); return; }
+	if ((!ino ## _o.isValid()) || (ino ## _o.getInode() != ino)) { req->error(EIO); return; }
 
 S3FS::S3FS(S3FS_Config *_cfg): store(_cfg) {
 	cfg = _cfg;
@@ -303,6 +303,7 @@ void S3FS::fuse_rmdir(QtFuseRequest *req) {
 		req->error(EIO);
 		return;
 	}
+	store.clearInodeMeta(ino_n); // remove . and ..
 
 	parent_o.touch(true);
 	store.storeInode(parent_o);

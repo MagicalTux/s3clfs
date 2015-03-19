@@ -26,7 +26,7 @@ class QtFuseCallback: public QObject {
 public:
 	QtFuseCallback(QObject *parent = 0);
 
-	template<class T> void setMethod(T *obj, void (T::*cb)(void*)) { setMethod((QtFuseCallbackDummyCallback*)obj, (void(QtFuseCallbackDummyCallback::*)(QtFuseCallback*))cb); }
+	template<class T> void setMethod(T *obj, void (T::*cb)(QtFuseCallback*)) { setMethod((QtFuseCallbackDummyCallback*)obj, (void(QtFuseCallbackDummyCallback::*)(QtFuseCallback*))cb); }
 	void setMethod(QtFuseCallbackDummyCallback *obj, void (QtFuseCallbackDummyCallback::*cb)(QtFuseCallback*));
 	int getError() const;
 

@@ -51,7 +51,7 @@ public:
 	bool hasInodeLocally(quint64);
 	void callbackOnInodeCached(quint64, QtFuseCallback*);
 	void removeInodeFromCache(quint64);
-	void brokenInode(quint64);
+	S3FS_Store_MetaIterator *getInodeListIterator(); // iterator for all inodes
 
 	// blocks
 	QByteArray writeBlock(const QByteArray &buf);

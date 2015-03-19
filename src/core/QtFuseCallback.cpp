@@ -3,7 +3,7 @@
 
 QtFuseCallback::QtFuseCallback(QObject *parent): QObject(parent) {
 	cb_obj = NULL;
-	errno = 0;
+	error_no = 0;
 }
 
 void QtFuseCallback::setMethod(QtFuseCallbackDummyCallback *obj, void (QtFuseCallbackDummyCallback::*cb)(QtFuseCallback*)) {
