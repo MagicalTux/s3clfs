@@ -31,6 +31,7 @@ class S3FS_Aws_S3;
 class S3FS_Aws_SQS;
 class S3FS_Config;
 class S3FS_Store_MetaIterator;
+class S3FS_Store_InodeDoctor;
 class QtFuseCallback;
 
 class S3FS_Store: public QObject {
@@ -125,5 +126,7 @@ private:
 
 	QTimer delete_ok_stamp_update;
 	QByteArray delete_ok_stamp;
+
+	friend class S3FS_Store_InodeDoctor;
 };
 

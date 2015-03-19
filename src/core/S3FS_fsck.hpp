@@ -27,6 +27,7 @@ private:
 	QTimer idle_timer;
 	S3FS_Store_MetaIterator *iterator;
 	quint64 fsck_ino; // inode where to store various fsck related stuff
+	quint64 fsck_ino_max;
 
 	void process_0(QtFuseCallback *n = 0);
 	void process_1(QtFuseCallback *n = 0);

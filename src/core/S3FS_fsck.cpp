@@ -12,6 +12,7 @@ S3FS_fsck::S3FS_fsck(S3FS *_main, S3FS_Control_Client *requestor, QVariant _id):
 	scan_inode = 1;
 	known_inodes.insert(1);
 	iterator = NULL;
+	fsck_ino_max = main->makeInode();
 
 	connect(this, SIGNAL(send(const QVariant&)), requestor, SLOT(send(const QVariant&)));
 
@@ -235,6 +236,7 @@ void S3FS_fsck::process_2(QtFuseCallback *_cb) {
 		if (!iterator->isValid()) return;
 		quint64 ino_n;
 		QDataStream(iterator->key()) >> ino_n;
+		if (ino_n > fsck_ino_max) continue; // out of bound inode (we should probably be able to break here)
 		if (known_inodes.contains(ino_n)) continue; // inode is in the known inodes tree
 		if (!store.hasInodeLocally(ino_n)) {
 			auto cb = new QtFuseCallback(this);

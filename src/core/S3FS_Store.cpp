@@ -20,6 +20,7 @@
 #include "S3FS_Aws_S3.hpp"
 #include "S3FS_Aws_SQS.hpp"
 #include "S3FS_Store_MetaIterator.hpp"
+#include "S3FS_Store_InodeDoctor.hpp"
 #include "QtFuseCallback.hpp"
 #include <QDir>
 #include <QUuid>
@@ -376,14 +377,7 @@ void S3FS_Store::receivedInode(S3FS_Aws_S3*r) {
 	INT_TO_BYTES(ino);
 	QByteArray data = r->body();
 	if (data.isEmpty()) {
-		// TODO: re-list the inode directory, find its actual name
-		qDebug("Inode %llu missing!", ino);
-		// Do not remove inode from list, that's bad!
-//		kv.remove(QByteArrayLiteral("\x03")+ino_b); // remove this inode from known inodes
-		// call callbacks
-		QList<QtFuseCallback*> list = inode_download_callback.take(ino);
-		foreach(auto cb, list)
-			cb->error(EIO);
+		new S3FS_Store_InodeDoctor(this, ino);
 		return;
 	}
 	QDataStream s(data);
@@ -395,9 +389,16 @@ void S3FS_Store::receivedInode(S3FS_Aws_S3*r) {
 		kv.insert(QByteArrayLiteral("\x01")+ino_b+key, val);
 	}
 	if (!kv.contains(QByteArrayLiteral("\x01")+ino_b)) {
-		// TODO: re-list files for prefix and find correct inode number
-//		qDebug("Broken inode, will remove this version from S3 and hopefully revert to a working one.");
-//		S3FS_Aws_S3::deleteFile(r);
+		new S3FS_Store_InodeDoctor(this, ino);
+		return;
+	}
+	auto ino_o = getInode(ino);
+	if (ino_o->getInode() != ino) {
+		// not right
+		inodes_cache.remove(ino);
+		kv.remove(QByteArrayLiteral("\x01")+ino_b);
+		new S3FS_Store_InodeDoctor(this, ino);
+		return;
 	}
 
 	// call callbacks
