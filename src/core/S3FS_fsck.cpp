@@ -258,8 +258,8 @@ void S3FS_fsck::process_2(QtFuseCallback *_cb) {
 
 		if (!meta_count) {
 			// empty!
-			qDebug("Found orphan and empty inode %llu, dropped (TODO)", ino_n);
-			// TODO
+			qDebug("Found orphan and empty inode %llu, dropped", ino_n);
+			store.destroyInode(ino_n);
 			continue;
 		}
 
@@ -275,8 +275,10 @@ void S3FS_fsck::process_2(QtFuseCallback *_cb) {
 			quint64 parent_ino_n;
 			QDataStream(parent_info) >> parent_ino_n;
 			if (!known_inodes.contains(parent_ino_n)) {
-				qDebug("Skipping orphan inode %llu since it might be a child of another inode we have yet to recover", ino_n);
-				continue;
+				if (store.hasInode(parent_ino_n)) {
+					qDebug("Skipping orphan inode %llu since it might be a child of another inode we have yet to recover", ino_n);
+					continue;
+				}
 			}
 		}
 

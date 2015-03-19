@@ -340,6 +340,24 @@ bool S3FS_Store::hasInodeLocally(quint64 ino) {
 	return kv.contains(key);
 //	return (kv.value(key).length() > 0); // if length == 0, means we don't have this locally
 }
+void S3FS_Store::destroyInode(quint64 ino) {
+	INT_TO_BYTES(ino);
+
+	inodes_cache.remove(ino);
+
+	QByteArray ino_rev = kv.value(QByteArrayLiteral("\x03")+ino_b);
+	if (ino_rev.isEmpty()) {
+		qCritical("S3FS_Store::destroyInode: Could not fetch inode revision!");
+		return;
+	}
+
+	QByteArray ino_hex = ino_b.toHex();
+	QByteArray ino_rev_hex = ino_rev.toHex();
+	QByteArray path = QByteArrayLiteral("metadata/")+ino_hex.right(1)+QByteArrayLiteral("/")+ino_hex.right(2)+QByteArrayLiteral("/")+ino_hex+QByteArrayLiteral("/")+ino_rev_hex+QByteArrayLiteral(".dat");
+	S3FS_Aws_S3::deleteFile(bucket, path, aws);
+
+	kv.remove(QByteArrayLiteral("\x03")+ino_b);
+}
 
 void S3FS_Store::callbackOnInodeCached(quint64 ino, QtFuseCallback *cb) {
 	// we need to try to get that inode

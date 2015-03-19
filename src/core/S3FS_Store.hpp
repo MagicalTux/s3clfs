@@ -53,6 +53,7 @@ public:
 	void callbackOnInodeCached(quint64, QtFuseCallback*);
 	void removeInodeFromCache(quint64);
 	S3FS_Store_MetaIterator *getInodeListIterator(); // iterator for all inodes
+	void destroyInode(quint64);
 
 	// blocks
 	QByteArray writeBlock(const QByteArray &buf);

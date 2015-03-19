@@ -45,7 +45,7 @@ void S3FS_Store_InodeDoctor::getLastRevision() {
 	current_test_rev = revisionsList.takeLast().toUtf8();
 	qDebug("S3FS_Store_InodeDoctor: attempting recovery of inode %llu from revision %s", ino, current_test_rev.data());
 
-	S3FS_Aws_S3 *req = S3FS_Aws_S3::getFile(parent->bucket, list_prefix+current_test_rev, parent->aws);
+	S3FS_Aws_S3 *req = S3FS_Aws_S3::getFile(parent->bucket, current_test_rev, parent->aws);
 	connect(req, SIGNAL(finished(S3FS_Aws_S3*)), this, SLOT(receivedInode(S3FS_Aws_S3*)));
 }
 
@@ -85,12 +85,16 @@ void S3FS_Store_InodeDoctor::receivedInode(S3FS_Aws_S3 *r) {
 		return;
 	}
 
+	parent->storeInode(*ino_o); // make a new revision with the correct data
+
 	// YAY! this worked!
 	success();
 }
 
 void S3FS_Store_InodeDoctor::failed() {
 	qWarning("S3FS_Store_InodeDoctor: broken inode %llu could not be fixed, removing data and notifying failure", ino);
+
+	parent->destroyInode(ino);
 
 	QList<QtFuseCallback*> list = parent->inode_download_callback.take(ino);
 	foreach(auto cb, list)
