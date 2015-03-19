@@ -77,6 +77,7 @@ CPP_CLASSES = \
 	core/Keyval \
 	core/KeyvalIterator \
 	core/QtFuse \
+	core/QtFuseCallback \
 	core/QtFuseRequest \
 	core/S3Fuse \
 	core/S3FS \

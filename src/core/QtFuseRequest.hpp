@@ -15,15 +15,13 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "QtFuse.hpp"
+#include "QtFuseCallback.hpp"
 #include <QObject>
 
 #pragma once
 
-class QtFuseRequestDummyCallback;
-
-class QtFuseRequest: public QObject {
-	Q_OBJECT;
-
+class QtFuseRequest: public QtFuseCallback {
+	Q_OBJECT
 public:
 	QtFuseRequest(fuse_req_t req, QtFuse &_parent, struct fuse_file_info *fi = 0);
 	~QtFuseRequest();
@@ -31,8 +29,6 @@ public:
 public slots:
 	void error(int);
 	void none();
-	void trigger(); // calls method defined by setMethod()
-	void triggerLater(); // calls method defined by setMethod()... later.
 
 public:
 	void entry(const struct stat*, int generation = 1);
@@ -47,9 +43,6 @@ public:
 	void xattr(size_t count);
 	void lock(struct flock *lock);
 	void bmap(uint64_t idx);
-
-	template<class T> void setMethod(T *obj, void (T::*cb)(QtFuseRequest*)) { setMethod((QtFuseRequestDummyCallback*)obj, (void(QtFuseRequestDummyCallback::*)(QtFuseRequest*))cb); }
-	void setMethod(QtFuseRequestDummyCallback *obj, void (QtFuseRequestDummyCallback::*cb)(QtFuseRequest*));
 
 	struct fuse_file_info *fi();
 
@@ -69,9 +62,11 @@ public:
 	bool dir_add(const QByteArray &name, const struct stat *stbuf, off_t next_offset);
 	void dir_send();
 
+	// for callbacks
+	template<class T> void setMethod(T *obj, void (T::*cb)(QtFuseRequest*)) { QtFuseCallback::setMethod((QtFuseCallbackDummyCallback*)obj, (void(QtFuseCallbackDummyCallback::*)(QtFuseCallback*))cb); }
+
 protected:
 	void prepareBuffer(size_t size);
-	virtual void customEvent(QEvent *e);
 
 	friend class QtFuse;
 
@@ -89,9 +84,6 @@ private:
 	int fuse_int;
 	size_t fuse_size;
 	off_t fuse_offset;
-
-	QtFuseRequestDummyCallback *cb_obj;
-	void (QtFuseRequestDummyCallback::*cb_func)(QtFuseRequest*);
 };
 
 Q_DECLARE_METATYPE(QtFuseRequest*);

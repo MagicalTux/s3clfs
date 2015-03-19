@@ -62,42 +62,6 @@ void S3FS::storeIsReady() {
 	store.callbackOnInodeCached(1, NULL);
 }
 
-quint64 S3FS::getLostFoundInode() {
-	if (!store.hasInode(1)) return 1; // best we can do
-	if (!store.hasInodeLocally(1)) {
-		store.callbackOnInodeCached(1, NULL);
-		return 1; // :(
-	}
-
-	if (!store.hasInodeMeta(1, "lost+found")) {
-		// create directory
-		S3FS_Obj new_dir;
-		if (store.hasInode(2)) {
-			new_dir.makeDir(makeInode(), 0700, 0, 0);
-		} else {
-			new_dir.makeDir(2, 0700, 0, 0);
-		}
-		store.storeInode(new_dir);
-
-		QByteArray dir_entry;
-		QDataStream(&dir_entry, QIODevice::WriteOnly) << new_dir.getInode() << new_dir.getFiletype();
-		store.setInodeMeta(1, "lost+found", dir_entry);
-		store.setInodeMeta(new_dir.getInode(), ".", dir_entry);
-
-		QByteArray root_dir_entry;
-		QDataStream(&root_dir_entry, QIODevice::WriteOnly) << (quint64)1 << (quint32)S_IFDIR;
-		store.setInodeMeta(new_dir.getInode(), "..", root_dir_entry);
-		return new_dir.getInode();
-	}
-
-	QByteArray dir_entry = store.getInodeMeta(1, "lost+found");
-	quint64 ino;
-	quint32 type;
-	QDataStream(dir_entry) >> ino >> type;
-	if (type != S_IFDIR) return 1;
-	return ino;
-}
-
 void S3FS::format() {
 	qDebug("S3FS: Formatting...");
 
@@ -118,8 +82,6 @@ void S3FS::format() {
 	QDataStream(&dir_entry, QIODevice::WriteOnly) << root.getInode() << root.getFiletype();
 	store.setInodeMeta(1, ".", dir_entry);
 	store.setInodeMeta(1, "..", dir_entry);
-
-	getLostFoundInode(); // will create lost+found
 }
 
 void S3FS::fuse_lookup(QtFuseRequest *req) {

@@ -34,7 +34,7 @@ public:
 	bool isReady() const;
 	S3FS_Store &getStore();
 
-	quint64 getLostFoundInode();
+	quint64 makeInode();
 
 	void fuse_lookup(QtFuseRequest *req);
 	void fuse_setattr(QtFuseRequest *req);
@@ -67,7 +67,6 @@ public slots:
 	void setOverload(bool);
 
 protected:
-	quint64 makeInode();
 	bool real_write(S3FS_Obj &ino, const QByteArray &buf, off_t offset, QtFuseRequest *, bool &wait);
 
 private:
@@ -77,5 +76,7 @@ private:
 	quint64 last_inode;
 	S3FS_Config *cfg;
 	int cluster_node_id;
+
+	friend class S3FS_fsck; // fsck needs access to S3FS internals
 };
 

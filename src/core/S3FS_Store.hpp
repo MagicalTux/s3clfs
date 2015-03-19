@@ -24,6 +24,8 @@
 #include <QDir>
 #include "S3FS_Obj.hpp"
 
+#pragma once
+
 class S3FS_Aws;
 class S3FS_Aws_S3;
 class S3FS_Aws_SQS;
