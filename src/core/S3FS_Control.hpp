@@ -15,6 +15,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <QObject>
+#include <QLocalServer>
+#include <QJsonDocument>
 
 #pragma once
 
@@ -26,8 +28,15 @@ class S3FS_Control: public QObject {
 public:
 	S3FS_Control(S3FS *parent, S3FS_Config *cfg);
 
+public slots:
+	void acceptNewClient();
+
+signals:
+	void broadcast(const QJsonDocument&);
+
 private:
 	S3FS *parent;
 	S3FS_Config *cfg;
+	QLocalServer *server_socket;
 };
 
