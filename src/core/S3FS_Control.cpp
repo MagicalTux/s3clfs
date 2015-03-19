@@ -36,7 +36,7 @@ S3FS_Control::S3FS_Control(S3FS *_parent, S3FS_Config *_cfg): QObject(_parent) {
 	}
 
 	if (!server_socket->listen(sock_loc)) {
-		qCritical("Failed to create control socket, remote control will not be available");
+		qCritical("S3FS_Control: Failed to create control socket %s: %s, remote control will not be available", qPrintable(sock_loc), qPrintable(server_socket->errorString()));
 		return;
 	}
 }
