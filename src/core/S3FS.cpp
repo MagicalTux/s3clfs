@@ -27,8 +27,7 @@
 #define WAIT_READY() if (!is_ready) { connect(this, SIGNAL(ready()), req, SLOT(trigger())); return; } if (is_overloaded) { connect(this, SIGNAL(loadReduced()), req, SLOT(trigger())); return; }
 #define GET_INODE(ino) \
 	if (!store.hasInode(ino)) { req->error(ENOENT); return; } \
-	if (!store.hasInodeLocally(ino)) { store.callbackOnInodeCached(ino, req); return; } S3FS_Obj &ino ## _o = *store.getInode(ino); \
-	if ((!ino ## _o.isValid()) || (ino ## _o.getInode() != ino)) { req->error(EIO); return; }
+	if (!store.hasInodeLocally(ino)) { store.callbackOnInodeCached(ino, req); return; } S3FS_Obj &ino ## _o = *store.getInode(ino);
 
 S3FS::S3FS(S3FS_Config *_cfg): store(_cfg) {
 	cfg = _cfg;
