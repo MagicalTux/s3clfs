@@ -350,12 +350,14 @@ bool S3FS_Store::hasInodeLocally(quint64 ino) {
 void S3FS_Store::callbackOnInodeCached(quint64 ino, QtFuseRequest *cb) {
 	// we need to try to get that inode
 	if (inode_download_callback.contains(ino)) {
-		inode_download_callback[ino].append(cb);
+		if (cb)
+			inode_download_callback[ino].append(cb);
 		return;
 	}
 
 	// create wait queue
-	inode_download_callback.insert(ino, QList<QtFuseRequest*>() << cb);
+	if (cb)
+		inode_download_callback.insert(ino, QList<QtFuseRequest*>({cb}));
 
 	INT_TO_BYTES(ino);
 

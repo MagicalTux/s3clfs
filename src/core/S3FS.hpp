@@ -34,6 +34,8 @@ public:
 	bool isReady() const;
 	S3FS_Store &getStore();
 
+	quint64 getLostFoundInode();
+
 	void fuse_lookup(QtFuseRequest *req);
 	void fuse_setattr(QtFuseRequest *req);
 	void fuse_getattr(QtFuseRequest *req);
