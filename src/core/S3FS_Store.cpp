@@ -302,6 +302,10 @@ void S3FS_Store::updateInodes() {
 void S3FS_Store::sendInodeToAws(quint64 ino) {
 	INT_TO_BYTES(ino);
 	// metadata/z/yz/xyz.dat
+	//
+	// TODO store log of inode, recover log if needed
+	
+	if (!hasInodeLocally(ino)) return; // :(
 
 	QByteArray data;
 	QDataStream data_stream(&data, QIODevice::WriteOnly);
