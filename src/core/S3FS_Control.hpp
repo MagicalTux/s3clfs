@@ -27,6 +27,7 @@ class S3FS_Control: public QObject {
 	Q_OBJECT
 public:
 	S3FS_Control(S3FS *parent, S3FS_Config *cfg);
+	S3FS *getParent();
 
 public slots:
 	void acceptNewClient();

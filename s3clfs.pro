@@ -80,6 +80,7 @@ CPP_CLASSES = \
 	core/QtFuseRequest \
 	core/S3Fuse \
 	core/S3FS \
+	core/S3FS_fsck \
 	core/S3FS_Config \
 	core/S3FS_Control \
 	core/S3FS_Control_Client \

@@ -60,7 +60,6 @@ void S3FS::storeIsReady() {
 	ready();
 	// force caching root & lost+found immediately
 	store.callbackOnInodeCached(1, NULL);
-	getLostFoundInode();
 }
 
 quint64 S3FS::getLostFoundInode() {

@@ -1,10 +1,13 @@
-#include "S3FS_Control_Client.hpp"
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QCoreApplication>
+#include "S3FS_Control.hpp"
+#include "S3FS_Control_Client.hpp"
+#include "S3FS_fsck.hpp"
 
 static QMap<QString, void(S3FS_Control_Client::*)(const QJsonObject&)> control_cmds({
-	{"ping",&S3FS_Control_Client::cmd_ping}
+	{"ping",&S3FS_Control_Client::cmd_ping},
+	{"fsck",&S3FS_Control_Client::cmd_fsck}
 });
 
 S3FS_Control_Client::S3FS_Control_Client(S3FS_Control *_parent, QLocalSocket *_socket) {
@@ -27,6 +30,19 @@ S3FS_Control_Client::S3FS_Control_Client(S3FS_Control *_parent, QLocalSocket *_s
 
 S3FS_Control_Client::~S3FS_Control_Client() {
 	delete socket;
+}
+
+void S3FS_Control_Client::cmd_fsck(const QJsonObject &pkt) {
+	QVariant id = pkt.value("id").toVariant();
+
+	QJsonObject res;
+	res.insert("command", "fsck_reply");
+	res.insert("id", QJsonValue::fromVariant(id));
+	res.insert("status", "ack");
+	send(res);
+
+	// TODO: handle fsck options (recover or delete orphan inodes?)
+	new S3FS_fsck(parent->getParent(), this, id);
 }
 
 void S3FS_Control_Client::cmd_ping(const QJsonObject &pkt) {

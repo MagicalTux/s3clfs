@@ -3,7 +3,10 @@
 $obj = new S3ClFS_Control('/tmp/s3clfs-s3clfs.sock');
 
 var_dump($obj->getInfo());
-$obj->ping();
+$id = $obj->ping();
+$obj->waitId($id);
+$obj->fsck();
+
 $obj->loop();
 
 class S3ClFS_Control {
@@ -28,6 +31,11 @@ class S3ClFS_Control {
 		return $this->id;
 	}
 
+	public function fsck() {
+		$this->sendPacket(['command' => 'fsck', 'id' => ++$this->id]);
+		return $this->id;
+	}
+
 	protected function handle_pong($dat) {
 		$now = (int)(microtime(true)*1000000);
 		$diff = $now - $dat['ts'];
@@ -36,14 +44,23 @@ class S3ClFS_Control {
 
 	public function loop() {
 		while(!feof($this->fp)) {
-			$this->handle();
+			$pkt = $this->readPacket();
+			if (!$pkt) return $pkt;
+			$this->handle($pkt);
 		}
 	}
 
-	public function handle() {
-		$pkt = $this->readPacket();
-		if (!$pkt) return $pkt;
+	public function waitId($id) {
+		while(!feof($this->fp)) {
+			$pkt = $this->readPacket();
+			if (!$pkt) return $pkt;
+			$this->handle($pkt);
+			if ($pkt['id'] == $id) return $pkt;
+		}
+		return false;
+	}
 
+	public function handle($pkt) {
 		$cmd = 'handle_'.$pkt['command'];
 		if (is_callable([$this,$cmd])) {
 			return $this->$cmd($pkt);

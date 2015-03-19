@@ -50,3 +50,6 @@ void S3FS_Control::acceptNewClient() {
 	}
 }
 
+S3FS *S3FS_Control::getParent() {
+	return parent;
+}

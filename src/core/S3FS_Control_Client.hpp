@@ -12,6 +12,7 @@ public:
 	~S3FS_Control_Client();
 
 	void cmd_ping(const QJsonObject&);
+	void cmd_fsck(const QJsonObject&);
 
 public slots:
 	void send(const QVariant&);
