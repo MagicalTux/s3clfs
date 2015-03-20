@@ -221,11 +221,21 @@ void S3FS_fsck::process_2(QtFuseCallback *_cb) {
 	if (_cb) {//called from a callback
 		_cb->deleteLater();
 		if (_cb->getError()) {
-			qDebug("S3FS_fsck: got error while trying to get an inode! Giving up!!");
-			send(QVariantMap({{"command","fsck_reply"},{"id",id},{"status","panic"}}));
-			idle_timer.stop();
-			deleteLater();
-			return;
+			if (iterator) {
+				qDebug("S3FS_fsck: got error while trying to get an inode, skipping");
+				if (!iterator->next()) {
+					status = 3;
+					idle_timer.start(0);
+					return;
+				}
+			} else {
+				qDebug("S3FS_fsck: got error in step 3 before even starting! Giving up!!");
+				send(QVariantMap({{"command","fsck_reply"},{"id",id},{"status","panic"}}));
+				idle_timer.stop();
+				deleteLater();
+				if (iterator) delete iterator;
+				return;
+			}
 		}
 	}
 
@@ -233,7 +243,7 @@ void S3FS_fsck::process_2(QtFuseCallback *_cb) {
 	if (!iterator) iterator = store.getInodeListIterator();
 
 	do {
-		if (!iterator->isValid()) return;
+		if (!iterator->isValid()) break;
 		quint64 ino_n;
 		QDataStream(iterator->key()) >> ino_n;
 		if (ino_n > fsck_ino_max) continue; // out of bound inode (we should probably be able to break here)
