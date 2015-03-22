@@ -292,6 +292,16 @@ void S3FS_fsck::process_2(QtFuseCallback *_cb) {
 			}
 		}
 
+		if (ino->getFiletype() == S_IFREG) {
+			if (fsck_found_files == 0) continue; // ignore files (default)
+			if (fsck_found_files == -1) {
+				// get rid of file
+				store.destroyInode(ino_n);
+				continue;
+			}
+			// if value is 1, continue to connect inode
+		}
+
 		// connect inode to fsck_ino
 		if (!store.hasInodeLocally(fsck_ino)) {
 			auto cb = new QtFuseCallback(this);

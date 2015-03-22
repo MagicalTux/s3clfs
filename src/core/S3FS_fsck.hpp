@@ -37,5 +37,7 @@ private:
 	quint64 scan_inode;
 	QList<quint64> scan_inode_queue;
 	QSet<quint64> known_inodes;
+
+	int fsck_found_files = 0;
 };
 
