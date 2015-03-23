@@ -57,7 +57,7 @@ S3FS_Store::S3FS_Store(S3FS_Config *_cfg, QObject *parent): QObject(parent) {
 	data_path.mkpath(".");
 	qDebug("S3FS: Data location: %s", qPrintable(data_path.path()));
 
-	if (!kv.open(kv_location)) {
+	if (!kv.open(kv_location, (quint64)cfg->databaseMaxSize() * 1024 * 1024 * 1024)) {
 		qFatal("S3FS_Store: Failed to open cache");
 	}
 

@@ -42,7 +42,7 @@ bool Keyval::destroy(const QString &) {
 	return false; // TODO
 }
 
-bool Keyval::open(const QString &filename) {
+bool Keyval::open(const QString &filename, quint64 max_size) {
 	int rc;
 	if (mdb_env) close();
 
@@ -51,7 +51,7 @@ bool Keyval::open(const QString &filename) {
 		qCritical("Failed to initialize LMDB");
 		return false;
 	}
-	mdb_env_set_mapsize(mdb_env, 4LL*1024*1024*1024); // 4GB
+	mdb_env_set_mapsize(mdb_env, max_size);
 	QDir(filename).mkpath(".");
 	rc = mdb_env_open(mdb_env, filename.toLocal8Bit().data(), MDB_NOMETASYNC | MDB_NOSYNC | MDB_NORDAHEAD | MDB_NOTLS, 0664);
 	if (rc != 0) {

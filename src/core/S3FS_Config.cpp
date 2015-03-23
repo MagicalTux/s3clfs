@@ -5,6 +5,7 @@ S3FS_Config::S3FS_Config() {
 	expire_blocks = 86400;
 	list_fetch_interval = 3600*48;
 	cache_data = true;
+	database_max_size = 2;
 }
 
 int S3FS_Config::clusterId() const {
@@ -101,5 +102,13 @@ const QString &S3FS_Config::controlSocket() const {
 
 void S3FS_Config::setControlSocket(const QString &p) {
 	control_socket = p;
+}
+
+int S3FS_Config::databaseMaxSize() const {
+	return database_max_size;
+}
+
+void S3FS_Config::setDatabaseMaxSize(int s) {
+	database_max_size = s;
 }
 

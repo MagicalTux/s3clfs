@@ -40,6 +40,9 @@ public:
 	const QString &controlSocket() const;
 	void setControlSocket(const QString&);
 
+	int databaseMaxSize() const;
+	void setDatabaseMaxSize(int);
+
 private:
 	int cluster_id; // node id within cluster
 	QByteArray mount_options; // mount options (allow_other, etc)
@@ -53,5 +56,7 @@ private:
 	bool cache_data;
 	QString aws_credentials_url; // for example http://169.254.169.254/latest/meta-data/iam/security-credentials/policy-name
 	QString control_socket;
+	int database_max_size;
+
 };
 

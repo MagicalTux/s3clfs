@@ -43,6 +43,7 @@ int main(int argc, char *argv[]) {
 	parser.addOption({"quick-forget", QCoreApplication::translate("main", "Quickly purge data from the database. Useful if used as rsync target only.")});
 	parser.addOption({"disable-data-cache", QCoreApplication::translate("main", "Do not keep data in the LevelDB cache.")});
 	parser.addOption({"ec2-iam-role", QCoreApplication::translate("main", "Obtain AWS access from IAM role set to this EC2 instance."), "role"});
+	parser.addOption({"database-max-size", QCoreApplication::translate("main", "Maximum size of meta-data database. Values larger than 2GB are not supported on 32bits machines."), "GiB"});
 
 	parser.process(app);
 
@@ -68,6 +69,7 @@ int main(int argc, char *argv[]) {
 		// gather AWS credentials from there (only valid for EC2 instances)
 		cfg.setAwsCredentialsUrl(QString("http://169.254.169.254/latest/meta-data/iam/security-credentials/")+parser.value("ec2-iam-role"));
 	}
+	if (parser.isSet("database-max-size")) cfg.setDatabaseMaxSize(parser.value(QStringLiteral("database-max-size")).toInt());
 
 	S3FS s3clfs(&cfg);
 	S3Fuse fuse(&cfg, &s3clfs);

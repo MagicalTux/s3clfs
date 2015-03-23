@@ -28,7 +28,7 @@ public:
 	Keyval(QObject *parent = 0);
 	~Keyval();
 
-	bool open(const QString &filename);
+	bool open(const QString &filename, quint64 max_size = 2LL * 1024 * 1024 * 1024);
 	void close();
 	bool create(const QString &filename);
 	bool insert(const QByteArray &key, const QByteArray &value);
