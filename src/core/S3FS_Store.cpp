@@ -38,7 +38,7 @@ S3FS_Store::S3FS_Store(S3FS_Config *_cfg, QObject *parent): QObject(parent) {
 	algo = QCryptographicHash::Sha3_256; // default value
 	cluster_node_id = cfg->clusterId();
 	expire_blocks = cfg->expireBlocks();
-	inodes_cache.setMaxCost(100000); // sizeof(S3FS_Obj) = 144, cache = 14.4MB
+	inodes_cache.setMaxCost(1000000); // sizeof(S3FS_Obj) = 144, cache = 144MB
 
 	// location of leveldb store
 	QString cache_path = cfg->cachePath();
