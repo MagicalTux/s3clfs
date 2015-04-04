@@ -30,7 +30,9 @@ void S3FS_fsck::process() {
 		case 0: process_0(); return;
 		case 1: process_1(); return;
 		case 2: process_2(); return;
-		case 3:
+		case 3: process_1(); return; // re-scan
+		case 4: process_2(); return; // cleanup stray inodes this time
+		case 5:
 			qDebug("S3FS_fsck: Finished");
 			send(QVariantMap({{"command","fsck_reply"},{"id",id},{"status","complete"}}));
 			idle_timer.stop();
@@ -135,7 +137,7 @@ void S3FS_fsck::process_0(QtFuseCallback *_cb) {
 	fsck_ino = new_dir.getInode();
 
 	send(QVariantMap({{"command","fsck_reply"},{"id",id},{"status","started"},{"directory",dir_name}}));
-	status = 1;
+	status++;
 	idle_timer.start(0);
 }
 
@@ -212,7 +214,7 @@ void S3FS_fsck::process_1(QtFuseCallback *_cb) {
 		scan_inode = scan_inode_queue.takeFirst();
 	} else {
 		send(QVariantMap({{"command","fsck_reply"},{"id",id},{"status","running"},{"found_inodes",known_inodes.size()}}));
-		status = 2;
+		status++;
 	}
 	idle_timer.start(0);
 }
@@ -224,7 +226,7 @@ void S3FS_fsck::process_2(QtFuseCallback *_cb) {
 			if (iterator) {
 				qDebug("S3FS_fsck: got error while trying to get an inode, skipping");
 				if (!iterator->next()) {
-					status = 3;
+					status++;
 					idle_timer.start(0);
 					return;
 				}
@@ -293,6 +295,7 @@ void S3FS_fsck::process_2(QtFuseCallback *_cb) {
 		}
 
 		if (ino->getFiletype() == S_IFREG) {
+			if (status < 3) continue; // too soon to get rid of files
 			if (fsck_found_files == 0) continue; // ignore files (default)
 			if (fsck_found_files == -1) {
 				// get rid of file
@@ -316,7 +319,7 @@ void S3FS_fsck::process_2(QtFuseCallback *_cb) {
 		store.setInodeMeta(fsck_ino, QByteArrayLiteral("orphan_")+QByteArray::number(ino->getInode(), 16), inode_entry);
 	} while(iterator->next());
 
-	status = 3;
+	status++;
 	idle_timer.start(0);
 }
 
