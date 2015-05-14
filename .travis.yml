@@ -1,5 +1,14 @@
-install:
+language: cpp
+
+compiler:
+  - gcc
+  - clang
+
+before_install:
+  - sudo add-apt-repository --yes ppa:ubuntu-sdk-team/ppa
   - sudo apt-get update
+
+install:
   - sudo apt-get install qt5-default qttools5-dev-tools libfuse-dev
   - sudo sed -i s/explicit// /usr/include/qt5/QtCore/qcommandlineoption.h
 
