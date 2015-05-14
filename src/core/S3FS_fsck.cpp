@@ -55,7 +55,7 @@ void S3FS_fsck::process_0(QtFuseCallback *_cb) {
 
 	if (!main->isReady()) {
 		auto cb = new QtFuseCallback(this);
-		cb->setMethod<S3FS_fsck>(this, &S3FS_fsck::process_0);
+		cb->setMethod(this, &S3FS_fsck::process_0);
 		connect(main, SIGNAL(ready()), cb, SLOT(trigger()));
 		idle_timer.stop();
 		return;
@@ -63,7 +63,7 @@ void S3FS_fsck::process_0(QtFuseCallback *_cb) {
 
 	if (!store.hasInodeLocally(1)) {
 		auto cb = new QtFuseCallback(this);
-		cb->setMethod<S3FS_fsck>(this, &S3FS_fsck::process_0);
+		cb->setMethod(this, &S3FS_fsck::process_0);
 		store.callbackOnInodeCached(1, cb);
 		idle_timer.stop();
 		return;
@@ -97,7 +97,7 @@ void S3FS_fsck::process_0(QtFuseCallback *_cb) {
 	// make sure we have a lost & found inode
 	if (!store.hasInodeLocally(lost_found_ino)) {
 		auto cb = new QtFuseCallback(this);
-		cb->setMethod<S3FS_fsck>(this, &S3FS_fsck::process_0);
+		cb->setMethod(this, &S3FS_fsck::process_0);
 		store.callbackOnInodeCached(lost_found_ino, cb);
 		idle_timer.stop();
 		return;
@@ -156,7 +156,7 @@ void S3FS_fsck::process_1(QtFuseCallback *_cb) {
 	// go through the tree, check for all inodes
 	if (!store.hasInodeLocally(scan_inode)) {
 		auto cb = new QtFuseCallback(this);
-		cb->setMethod<S3FS_fsck>(this, &S3FS_fsck::process_1);
+		cb->setMethod(this, &S3FS_fsck::process_1);
 		qDebug("S3FS_fsck: getting inode %llu", scan_inode);
 		store.callbackOnInodeCached(scan_inode, cb);
 		idle_timer.stop();
@@ -252,7 +252,7 @@ void S3FS_fsck::process_2(QtFuseCallback *_cb) {
 		if (known_inodes.contains(ino_n)) continue; // inode is in the known inodes tree
 		if (!store.hasInodeLocally(ino_n)) {
 			auto cb = new QtFuseCallback(this);
-			cb->setMethod<S3FS_fsck>(this, &S3FS_fsck::process_2);
+			cb->setMethod(this, &S3FS_fsck::process_2);
 			store.callbackOnInodeCached(ino_n, cb);
 			idle_timer.stop();
 			return;
@@ -308,7 +308,7 @@ void S3FS_fsck::process_2(QtFuseCallback *_cb) {
 		// connect inode to fsck_ino
 		if (!store.hasInodeLocally(fsck_ino)) {
 			auto cb = new QtFuseCallback(this);
-			cb->setMethod<S3FS_fsck>(this, &S3FS_fsck::process_2);
+			cb->setMethod(this, &S3FS_fsck::process_2);
 			store.callbackOnInodeCached(fsck_ino, cb);
 			idle_timer.stop();
 			return;
