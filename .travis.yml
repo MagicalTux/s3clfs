@@ -8,7 +8,7 @@ compiler:
 before_install:
   - sudo add-apt-repository "deb http://archive.ubuntu.com/ubuntu trusty universe"
   - sudo add-apt-repository "deb http://archive.ubuntu.com/ubuntu trusty main"
-  - sudo "echo 'force-confold' >>/etc/dpkg/dpkg.cfg"
+  - sudo /bin/sh -c "echo 'force-confold' >>/etc/dpkg/dpkg.cfg"
   - sudo apt-get update
   - DEBIAN_FRONTEND=noninteractive sudo -E apt-get upgrade -y
 
