@@ -10,6 +10,7 @@ before_install:
   - sudo add-apt-repository "deb http://archive.ubuntu.com/ubuntu trusty main"
   - sudo /bin/sh -c "echo 'force-confold' >>/etc/dpkg/dpkg.cfg"
   - sudo apt-get update
+  - sudo apt-get remove -y 'postgresql*'
   - DEBIAN_FRONTEND=noninteractive sudo -E apt-get upgrade -y
 
 install:
