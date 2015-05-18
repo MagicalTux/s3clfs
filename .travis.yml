@@ -3,12 +3,15 @@ language: cpp
 compiler:
   - gcc
 
+# see: https://gist.github.com/Kakadu/7dc6f7c9f8760f7fbace
+
 before_install:
-  - sudo add-apt-repository --yes ppa:ubuntu-sdk-team/ppa
+  - sudo add-apt-repository "deb http://archive.ubuntu.com/ubuntu trusty universe"
+  - sudo add-apt-repository "deb http://archive.ubuntu.com/ubuntu trusty main"
   - sudo apt-get update
 
 install:
-  - sudo apt-get install qt5-default qttools5-dev-tools libfuse-dev
+  - sudo apt-get install -y qt5-default qttools5-dev-tools libfuse-dev
   - sudo sed -i s/explicit// /usr/include/qt5/QtCore/qcommandlineoption.h
 
 script:
