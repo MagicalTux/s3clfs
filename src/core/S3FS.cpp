@@ -22,6 +22,7 @@
 #include "QtFuseRequest.hpp"
 #include "S3FS_Store_MetaIterator.hpp"
 #include <QDateTime>
+#include <QDataStream>
 #include <sys/time.h>
 
 #define WAIT_READY() if (!is_ready) { connect(this, SIGNAL(ready()), req, SLOT(trigger())); return; } if (is_overloaded) { connect(this, SIGNAL(loadReduced()), req, SLOT(trigger())); return; }

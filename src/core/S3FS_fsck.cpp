@@ -4,6 +4,7 @@
 #include "S3FS_Control_Client.hpp"
 #include "S3FS_Store_MetaIterator.hpp"
 #include <QDateTime>
+#include <QDataStream>
 
 S3FS_fsck::S3FS_fsck(S3FS *_main, S3FS_Control_Client *requestor, QVariant _id): store(_main->store) {
 	main = _main;

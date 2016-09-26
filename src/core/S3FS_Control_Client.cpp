@@ -1,6 +1,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QCoreApplication>
+#include <QDataStream>
 #include "S3FS_Control.hpp"
 #include "S3FS_Control_Client.hpp"
 #include "S3FS_fsck.hpp"

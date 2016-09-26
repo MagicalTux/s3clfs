@@ -2,6 +2,7 @@
 #include "S3FS_Aws_S3.hpp"
 #include "S3FS_Store.hpp"
 #include "QtFuseCallback.hpp"
+#include <QDataStream>
 
 #define INT_TO_BYTES(_x) QByteArray _x ## _b; { QDataStream s_tmp(&_x ## _b, QIODevice::WriteOnly); s_tmp << _x; }
 
