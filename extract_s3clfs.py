@@ -342,19 +342,42 @@ class S3ClFSExtractor:
         print(f"Found {len(inode_revisions)} unique inodes")
 
         skipped = 0
+        loaded = 0
+        total = len(inode_revisions)
+        last_percent = -1
+
         for ino, (rev, path) in inode_revisions.items():
-            inode = self.parse_metadata_file(path)
-            if inode:
-                self.inodes[ino] = inode
-                self.log(f"Loaded inode {ino}: {inode.type_str()}")
-            else:
+            # Progress indicator
+            loaded += 1
+            percent = (loaded * 100) // total
+            if percent != last_percent and percent % 5 == 0:
+                print(f"Loading inodes: {percent}% ({loaded}/{total})", flush=True)
+                last_percent = percent
+
+            try:
+                inode = self.parse_metadata_file(path)
+                if inode:
+                    self.inodes[ino] = inode
+                    self.log(f"Loaded inode {ino}: {inode.type_str()}")
+                else:
+                    skipped += 1
+            except Exception as e:
+                print(f"Error loading inode {ino} from {path}: {e}", flush=True)
                 skipped += 1
 
         print(f"Successfully loaded {len(self.inodes)} inodes ({skipped} skipped/corrupt)")
 
     def read_block(self, block_hash: bytes) -> Optional[bytes]:
         """Read a data block by its hash"""
+        if not block_hash:
+            self.log("Empty block hash")
+            return None
+
         hash_hex = block_hash.hex()
+        if len(hash_hex) < 2:
+            self.log(f"Block hash too short: {hash_hex}")
+            return None
+
         # Path: data/X/XY/HASH.dat
         block_path = self.data_dir / hash_hex[-1] / hash_hex[-2:] / f"{hash_hex}.dat"
 
@@ -398,7 +421,7 @@ class S3ClFSExtractor:
         return bytes(result[:inode.size])
 
     def extract_to_directory(self, output_dir: str):
-        """Extract the filesystem to a regular directory"""
+        """Extract the filesystem to a regular directory (iterative to avoid stack overflow)"""
         output_path = Path(output_dir)
         output_path.mkdir(parents=True, exist_ok=True)
 
@@ -407,56 +430,81 @@ class S3ClFSExtractor:
             print("Error: Root inode (1) not found!")
             return
 
-        def extract_inode(ino: int, dest_path: Path, name: str = ""):
+        print(f"Extracting to {output_path}...")
+
+        # Use iterative approach with a work queue to avoid stack overflow
+        # Queue items: (inode_number, destination_path)
+        work_queue: List[Tuple[int, Path]] = [(1, output_path)]
+        extracted = 0
+        errors = 0
+
+        while work_queue:
+            ino, dest_path = work_queue.pop(0)
+
             if ino not in self.inodes:
                 print(f"Warning: Inode {ino} not found")
-                return
+                errors += 1
+                continue
 
             inode = self.inodes[ino]
+            extracted += 1
 
-            if inode.is_dir():
-                dest_path.mkdir(parents=True, exist_ok=True)
-                self.log(f"Created directory: {dest_path}")
+            if extracted % 10000 == 0:
+                print(f"Extracted {extracted} items...", flush=True)
 
-                if inode.children:
-                    for child_name, (child_ino, child_type) in inode.children.items():
-                        if child_name in ('.', '..'):
-                            continue
-                        child_path = dest_path / child_name
-                        extract_inode(child_ino, child_path, child_name)
+            try:
+                if inode.is_dir():
+                    dest_path.mkdir(parents=True, exist_ok=True)
+                    self.log(f"Created directory: {dest_path}")
 
-            elif inode.is_file():
-                content = self.reconstruct_file(inode)
-                dest_path.write_bytes(content)
-                self.log(f"Extracted file: {dest_path} ({len(content)} bytes)")
+                    if inode.children:
+                        for child_name, (child_ino, child_type) in inode.children.items():
+                            if child_name in ('.', '..'):
+                                continue
+                            child_path = dest_path / child_name
+                            work_queue.append((child_ino, child_path))
 
-            elif inode.is_symlink():
-                if inode.symlink_target:
-                    try:
+                elif inode.is_file():
+                    # Ensure parent directory exists
+                    dest_path.parent.mkdir(parents=True, exist_ok=True)
+                    content = self.reconstruct_file(inode)
+                    dest_path.write_bytes(content)
+                    self.log(f"Extracted file: {dest_path} ({len(content)} bytes)")
+
+                elif inode.is_symlink():
+                    if inode.symlink_target:
+                        # Ensure parent directory exists
+                        dest_path.parent.mkdir(parents=True, exist_ok=True)
                         if dest_path.exists() or dest_path.is_symlink():
                             dest_path.unlink()
                         dest_path.symlink_to(inode.symlink_target)
                         self.log(f"Created symlink: {dest_path} -> {inode.symlink_target}")
-                    except OSError as e:
-                        print(f"Warning: Could not create symlink {dest_path}: {e}")
 
-            else:
-                self.log(f"Skipping special file: {dest_path} ({inode.type_str()})")
+                else:
+                    self.log(f"Skipping special file: {dest_path} ({inode.type_str()})")
 
-        print(f"Extracting to {output_path}...")
-        extract_inode(1, output_path)
-        print("Extraction complete!")
+            except OSError as e:
+                print(f"Warning: Error extracting {dest_path}: {e}")
+                errors += 1
+
+        print(f"Extraction complete! Extracted {extracted} items ({errors} errors)")
 
     def list_contents(self, show_blocks: bool = False):
-        """List filesystem contents"""
+        """List filesystem contents (iterative to avoid stack overflow)"""
         if 1 not in self.inodes:
             print("Error: Root inode (1) not found!")
             return
 
-        def list_inode(ino: int, path: str = "/", indent: int = 0):
+        # Use iterative approach with explicit stack
+        # Stack items: (inode_number, path, indent)
+        stack: List[Tuple[int, str, int]] = [(1, "/", 0)]
+
+        while stack:
+            ino, path, indent = stack.pop()
+
             if ino not in self.inodes:
                 print(f"{'  ' * indent}[missing inode {ino}]")
-                return
+                continue
 
             inode = self.inodes[ino]
             prefix = "  " * indent
@@ -465,11 +513,12 @@ class S3ClFSExtractor:
             if inode.is_dir():
                 print(f"{prefix}{mode_str} {inode.uid}:{inode.gid} {path}")
                 if inode.children:
-                    for child_name, (child_ino, child_type) in sorted(inode.children.items()):
+                    # Add children in reverse sorted order so they come out sorted
+                    for child_name, (child_ino, child_type) in sorted(inode.children.items(), reverse=True):
                         if child_name in ('.', '..'):
                             continue
                         child_path = f"{path}{child_name}/" if child_type & 0o40000 else f"{path}{child_name}"
-                        list_inode(child_ino, child_path, indent + 1)
+                        stack.append((child_ino, child_path, indent + 1))
 
             elif inode.is_file():
                 size_str = f"{inode.size:>10}"
@@ -484,8 +533,6 @@ class S3ClFSExtractor:
 
             else:
                 print(f"{prefix}{mode_str} {inode.uid}:{inode.gid} {path} ({inode.type_str()})")
-
-        list_inode(1)
 
     def dump_raw(self):
         """Dump raw inode information"""
